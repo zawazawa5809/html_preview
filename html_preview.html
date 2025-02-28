@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTMLプレビューアー</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", "Meiryo", sans-serif;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .split-view {
+        display: flex;
+        width: 100%;
+        height: 100vh;
+        position: relative;
+      }
+
+      .editor-panel,
+      .preview-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-width: 200px;
+        overflow: hidden;
+      }
+
+      .editor-panel {
+        background-color: #f8f9fa;
+        width: 50%;
+      }
+
+      .preview-panel {
+        background-color: #ffffff;
+        width: 50%;
+      }
+
+      .panel-header {
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+        font-weight: bold;
+        text-align: center;
+        user-select: none;
+      }
+
+      .panel-content {
+        flex-grow: 1;
+        overflow: auto;
+        padding: 10px;
+      }
+
+      #html-editor {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 14px;
+        resize: none;
+      }
+
+      #preview-container {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: white;
+      }
+
+      .gutter {
+        width: 8px;
+        height: 100%;
+        background-color: #dee2e6;
+        cursor: col-resize;
+        position: relative;
+      }
+
+      .gutter:hover {
+        background-color: #adb5bd;
+      }
+
+      .gutter::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 30px;
+        background-color: #6c757d;
+        border-radius: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="split-view" id="split-view">
+      <div class="editor-panel" id="editor-panel">
+        <div class="panel-header">HTMLエディタ</div>
+        <div class="panel-content">
+          <textarea
+            id="html-editor"
+            placeholder="HTMLコードをここに貼り付けてください..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="gutter" id="gutter"></div>
+      <div class="preview-panel" id="preview-panel">
+        <div class="panel-header">プレビュー</div>
+        <div class="panel-content">
+          <iframe id="preview-container" frameborder="0"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 要素の取得
+      const splitView = document.getElementById("split-view");
+      const editorPanel = document.getElementById("editor-panel");
+      const previewPanel = document.getElementById("preview-panel");
+      const gutter = document.getElementById("gutter");
+      const htmlEditor = document.getElementById("html-editor");
+      const previewContainer = document.getElementById("preview-container");
+
+      // HTMLプレビュー更新機能
+      htmlEditor.addEventListener("input", updatePreview);
+
+      function updatePreview() {
+        const htmlCode = htmlEditor.value;
+        const iframeDoc =
+          previewContainer.contentDocument ||
+          previewContainer.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(htmlCode);
+        iframeDoc.close();
+      }
+
+      // Split View のリサイズ機能
+      let isDragging = false;
+
+      // ドラッグ開始処理
+      gutter.addEventListener("mousedown", startDrag);
+      gutter.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        startDrag(e.touches[0]);
+      });
+
+      function startDrag(e) {
+        isDragging = true;
+        document.body.classList.add("dragging");
+
+        // マウス・タッチイベントのリスナー追加
+        window.addEventListener("mousemove", doDrag);
+        window.addEventListener("touchmove", (e) => doDrag(e.touches[0]), {
+          passive: false,
+        });
+        window.addEventListener("mouseup", stopDrag);
+        window.addEventListener("touchend", stopDrag);
+        window.addEventListener("mouseleave", stopDrag);
+
+        // テキスト選択を防止
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "col-resize";
+
+        // iframeがマウスイベントをキャプチャするのを防止
+        const overlay = document.createElement("div");
+        overlay.id = "resize-overlay";
+        overlay.style.position = "absolute";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.right = "0";
+        overlay.style.bottom = "0";
+        overlay.style.zIndex = "9999";
+        document.body.appendChild(overlay);
+      }
+
+      // ドラッグ中処理
+      function doDrag(e) {
+        if (!isDragging) return;
+
+        // リサイズ操作をアニメーションフレームで行う
+        requestAnimationFrame(() => {
+          // コンテナの全体幅を取得
+          const containerWidth = splitView.clientWidth;
+
+          // マウスX座標を取得（ウィンドウ上での絶対位置）
+          const mouseX = e.clientX || e.pageX;
+          const containerRect = splitView.getBoundingClientRect();
+          const position = mouseX - containerRect.left;
+
+          // 各パネルの最小幅（10%）を確保
+          const minWidth = containerWidth * 0.1;
+          const maxWidth = containerWidth - minWidth;
+
+          // 制限内に収める
+          const limitedPosition = Math.min(
+            Math.max(position, minWidth),
+            maxWidth
+          );
+
+          // パーセンテージ計算
+          const editorWidth = (limitedPosition / containerWidth) * 100;
+          const previewWidth = 100 - editorWidth;
+
+          // 幅を設定
+          editorPanel.style.width = `${editorWidth}%`;
+          previewPanel.style.width = `${previewWidth}%`;
+        });
+      }
+
+      // ドラッグ終了処理
+      function stopDrag() {
+        if (!isDragging) return;
+
+        isDragging = false;
+        document.body.classList.remove("dragging");
+
+        // イベントリスナーを削除
+        window.removeEventListener("mousemove", doDrag);
+        window.removeEventListener("touchmove", doDrag);
+        window.removeEventListener("mouseup", stopDrag);
+        window.removeEventListener("touchend", stopDrag);
+        window.removeEventListener("mouseleave", stopDrag);
+
+        // スタイルを元に戻す
+        document.body.style.userSelect = "";
+        document.body.style.cursor = "";
+
+        // オーバーレイを削除
+        const overlay = document.getElementById("resize-overlay");
+        if (overlay) {
+          document.body.removeChild(overlay);
+        }
+      }
+
+      // サンプルHTMLを初期表示
+      htmlEditor.value = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #0077cc;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    button {
+      background: #0077cc;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>HTMLプレビューアー</h1>
+    <p>左側のエディタにHTMLコードを入力すると、右側にリアルタイムでプレビューが表示されます。</p>
+    <p>中央のバーをドラッグして、エディタとプレビューの幅を調整できます。</p>
+    <button onclick="alert('こんにちは！')">クリックしてみてください</button>
+  </div>
+</body>
+</html>`;
+
+      // 初期プレビューを表示
+      updatePreview();
+    </script>
+  </body>
+</html>
