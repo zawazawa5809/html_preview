@@ -3,8 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HTMLプレビューアー</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://fonts.googleapis.com https://fonts.gstatic.com;" />
+    <title>拡張版HTMLプレビューアー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        /* Color Hunt Palette: https://colorhunt.co/palette/1b262c0f4c753282b8bbe1fa */
+        --color-darkest-navy: #1b262c;
+        --color-dark-blue: #0f4c75;
+        --color-medium-blue: #3282b8;
+        --color-light-blue: #bbe1fa;
+        --color-white: #ffffff;
+
+        /* Application specific roles using the new palette */
+        --app-text-on-light-bg: var(--color-darkest-navy);
+        --app-text-on-dark-bg: var(--color-light-blue);
+
+        --app-primary-accent: var(--color-medium-blue);
+        --app-primary-accent-hover: var(--color-dark-blue);
+
+        --app-toolbar-background: var(--color-darkest-navy);
+        --app-toolbar-text: var(--app-text-on-dark-bg);
+        --app-toolbar-border: var(--color-dark-blue);
+
+        --app-panel-header-background: var(--color-dark-blue);
+        --app-panel-header-text: var(--app-text-on-dark-bg);
+        --app-panel-border: var(
+          --color-medium-blue
+        ); /* Border for editor/preview content areas */
+
+        --app-editor-container-background: var(--color-white);
+        --app-editor-textarea-text: var(--app-text-on-light-bg);
+        --app-editor-textarea-placeholder: var(--color-medium-blue);
+
+        --app-line-numbers-background: var(--color-darkest-navy);
+        --app-line-numbers-text: var(--app-text-on-dark-bg);
+
+        --app-gutter-background: var(--color-darkest-navy);
+        --app-gutter-background-hover: var(--color-dark-blue);
+        --app-gutter-handle: var(--app-text-on-dark-bg);
+
+        --app-icon-default-fill: var(--app-text-on-dark-bg);
+        --app-icon-hover-fill: var(--color-white);
+        --app-icon-active-fill: var(
+          --color-white
+        ); /* For active layout button */
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -12,281 +62,744 @@
       }
 
       body {
-        font-family: "Segoe UI", "Meiryo", sans-serif;
+        font-family: "Inter", "Segoe UI", "Meiryo", sans-serif;
         height: 100vh;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--color-white);
+      }
+
+      .toolbar {
+        background-color: var(--app-toolbar-background);
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--app-toolbar-border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0; /* Prevent toolbar from shrinking */
+      }
+
+      .toolbar-title {
+        font-weight: 500;
+        font-size: 1em;
+        margin-right: auto;
+        color: var(--app-toolbar-text);
+      }
+
+      .toolbar-button {
+        background: none;
+        border: none;
+        padding: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+      }
+
+      .toolbar-button svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--app-icon-default-fill);
+        transition: fill 0.2s ease;
+      }
+
+      .toolbar-button:hover svg {
+        fill: var(--app-icon-hover-fill);
+      }
+      .toolbar-button.active svg {
+        /* For layout buttons */
+        fill: var(--app-icon-active-fill);
+        /* Optional: add a background to active layout button */
+        /* background-color: var(--color-medium-blue); */
+      }
+      
+      .toolbar-button:focus,
+      .toolbar-button:focus-visible {
+        outline: 2px solid var(--color-medium-blue);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      #html-editor:focus,
+      #html-editor:focus-visible {
+        outline: 2px solid var(--color-medium-blue);
+        outline-offset: -1px;
       }
 
       .split-view {
         display: flex;
         width: 100%;
-        height: 100vh;
+        flex-grow: 1;
         position: relative;
-      }
-
-      .editor-panel,
-      .preview-panel {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-width: 200px;
         overflow: hidden;
       }
 
-      .editor-panel {
-        background-color: #f8f9fa;
+      .split-view.layout-lr {
+        flex-direction: row;
+      }
+      .split-view.layout-tb {
+        flex-direction: column;
+      }
+
+      .editor-container,
+      .preview-panel {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .editor-container {
+        background-color: var(--app-editor-container-background);
+      }
+      .split-view.layout-lr .editor-container {
         width: 50%;
+        height: 100%;
+      }
+      .split-view.layout-tb .editor-container {
+        width: 100%;
+        height: 50%;
       }
 
       .preview-panel {
-        background-color: #ffffff;
+        background-color: var(--color-white);
+      }
+      .split-view.layout-lr .preview-panel {
         width: 50%;
+        height: 100%;
+      }
+      .split-view.layout-tb .preview-panel {
+        width: 100%;
+        height: 50%;
+      }
+
+      .split-view.layout-po .editor-container,
+      .split-view.layout-po .gutter {
+        display: none;
+      }
+      .split-view.layout-po .preview-panel {
+        width: 100% !important;
+        height: 100% !important;
       }
 
       .panel-header {
-        background-color: #007bff;
-        color: white;
+        background-color: var(--app-panel-header-background);
+        color: var(--app-panel-header-text);
         padding: 10px;
         font-weight: bold;
         text-align: center;
         user-select: none;
+        flex-shrink: 0;
+      }
+
+      .editor-content-wrapper {
+        display: flex;
+        flex-grow: 1;
+        overflow: hidden;
+        border: 1px solid var(--app-panel-border);
+        border-top: none;
+      }
+
+      #line-numbers {
+        width: 45px; /* Slightly wider for 3-digit numbers */
+        padding: 10px 5px 10px 10px;
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.5; /* Must match textarea */
+        background-color: var(--app-line-numbers-background);
+        color: var(--app-line-numbers-text);
+        text-align: right;
+        user-select: none;
+        overflow: hidden; /* Important: Prevents its own scrollbar */
+        flex-shrink: 0;
+      }
+      /* Individual line number styling (if needed, but usually handled by parent) */
+      #line-numbers div {
+        height: calc(14px * 1.5); /* font-size * line-height */
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      #html-editor {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 0;
+        padding: 10px; /* Matches line-numbers vertical padding */
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.5; /* Must match line-numbers */
+        resize: none;
+        flex-grow: 1;
+        background-color: var(
+          --app-editor-container-background
+        ); /* Ensure bg for editor itself */
+        color: var(--app-editor-textarea-text);
+        /* white-space: pre; */ /* This would disable wrapping, not desired */
+        /* overflow-wrap: break-word; */ /* Default for textarea */
+      }
+      #html-editor::placeholder {
+        color: var(--app-editor-textarea-placeholder);
       }
 
       .panel-content {
         flex-grow: 1;
         overflow: auto;
         padding: 10px;
-      }
-
-      #html-editor {
-        width: 100%;
-        height: 100%;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        padding: 10px;
-        font-family: monospace;
-        font-size: 14px;
-        resize: none;
+        border: 1px solid var(--app-panel-border);
+        border-top: none;
+        background-color: var(--color-white);
       }
 
       #preview-container {
         width: 100%;
         height: 100%;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        background-color: white;
+        border: none;
+        background-color: var(--color-white);
       }
 
       .gutter {
+        background-color: var(--app-gutter-background);
+        position: relative;
+      }
+      .split-view.layout-lr .gutter {
         width: 8px;
         height: 100%;
-        background-color: #dee2e6;
         cursor: col-resize;
-        position: relative;
+      }
+      .split-view.layout-tb .gutter {
+        width: 100%;
+        height: 8px;
+        cursor: row-resize;
       }
 
       .gutter:hover {
-        background-color: #adb5bd;
+        background-color: var(--app-gutter-background-hover);
       }
 
       .gutter::after {
         content: "";
         position: absolute;
+        background-color: var(--app-gutter-handle);
+        border-radius: 1px;
+      }
+      .split-view.layout-lr .gutter::after {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         width: 2px;
         height: 30px;
-        background-color: #6c757d;
-        border-radius: 1px;
+      }
+      .split-view.layout-tb .gutter::after {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 30px;
+        height: 2px;
+      }
+
+      body.dragging,
+      body.dragging * {
+        cursor: col-resize !important; /* Default, JS will adjust for TB */
+      }
+      .resize-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+      }
+
+      .security-notice {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 6px 8px;
+        font-size: 11px;
+        text-align: center;
+        border-radius: 3px;
+        margin: 5px;
+        display: none;
+      }
+
+      .security-notice.show {
+        display: block;
       }
     </style>
   </head>
   <body>
+    <div class="toolbar">
+      <span class="toolbar-title">HTMLプレビューアー</span>
+      <button class="toolbar-button" id="layout-lr-btn" title="左右分割" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z M3 21h8v-2H3v2zm10 0h8v-2h-8v2z M3 3v8h8V3H3zm10 0v8h8V3h-8z M5 5h4v4H5V5zm10 0h4v4h-4V5z M5 15h4v4H5v-4zm10 0h4v4h-4v-4z"
+            transform="rotate(90 12 12)"
+          />
+        </svg>
+      </button>
+      <button class="toolbar-button" id="layout-tb-btn" title="上下分割" aria-label="上下分割レイアウトに変更" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M21 2H3c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM3 11h18V4H3v7zm0 9v-7h18v7H3z"
+          />
+        </svg>
+      </button>
+      <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+      </button>
+      <div style="flex-grow: 1"></div>
+      <button class="toolbar-button" id="save-btn" title="HTMLとして保存 (Ctrl+S)" aria-label="HTMLファイルとして保存" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+        </svg>
+      </button>
+    </div>
+
     <div class="split-view" id="split-view">
-      <div class="editor-panel" id="editor-panel">
+      <div class="editor-container" id="editor-container">
         <div class="panel-header">HTMLエディタ</div>
-        <div class="panel-content">
+        <div class="editor-content-wrapper">
+          <div id="line-numbers" aria-hidden="true"></div>
           <textarea
             id="html-editor"
             placeholder="HTMLコードをここに貼り付けてください..."
+            wrap="soft"
+            aria-label="HTMLコードエディター"
+            role="textbox"
+            aria-multiline="true"
+            aria-describedby="security-notice"
           ></textarea>
         </div>
       </div>
       <div class="gutter" id="gutter"></div>
       <div class="preview-panel" id="preview-panel">
         <div class="panel-header">プレビュー</div>
+        <div class="security-notice" id="security-notice" role="alert" aria-live="polite">
+          ⚠️ 信頼できないHTMLコードの実行にご注意ください
+        </div>
         <div class="panel-content">
-          <iframe id="preview-container" frameborder="0"></iframe>
+          <iframe id="preview-container" frameborder="0" sandbox="allow-same-origin allow-scripts allow-forms allow-popups" aria-label="HTMLプレビュー表示エリア" title="HTMLコードのプレビュー結果"></iframe>
         </div>
       </div>
     </div>
 
     <script>
-      // 要素の取得
-      const splitView = document.getElementById("split-view");
-      const editorPanel = document.getElementById("editor-panel");
-      const previewPanel = document.getElementById("preview-panel");
-      const gutter = document.getElementById("gutter");
-      const htmlEditor = document.getElementById("html-editor");
-      const previewContainer = document.getElementById("preview-container");
+      (function() {
+        'use strict';
+        
+        // 設定オブジェクト
+        const CONFIG = {
+          defaultLayout: "lr",
+          storageKey: "htmlPreviewerCode",
+          debounceDelay: 300,
+          layouts: {
+            lr: "左右分割",
+            tb: "上下分割", 
+            po: "プレビューのみ"
+          }
+        };
 
-      // HTMLプレビュー更新機能
-      htmlEditor.addEventListener("input", updatePreview);
+        // 統一エラーハンドリング
+        const ErrorHandler = {
+          log: (error, context = '') => {
+            console.error(`[HTMLプレビューアー${context ? ` - ${context}` : ''}]`, error);
+          },
+          
+          showPreviewError: (error) => {
+            const iframeDoc = elements.previewContainer.contentDocument || 
+                              elements.previewContainer.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(`
+              <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; font-family: system-ui;">
+                <h3 style="margin-top: 0;">プレビューエラー</h3>
+                <p>HTMLの処理中にエラーが発生しました。</p>
+                <details style="margin-top: 10px;">
+                  <summary style="cursor: pointer;">詳細を表示</summary>
+                  <pre style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px; overflow-x: auto;">${error.message || error}</pre>
+                </details>
+              </div>
+            `);
+            iframeDoc.close();
+          },
+          
+          handle: (error, context = '', showToUser = true) => {
+            ErrorHandler.log(error, context);
+            if (showToUser && context === 'プレビュー更新') {
+              ErrorHandler.showPreviewError(error);
+            }
+          }
+        };
 
-      function updatePreview() {
-        const htmlCode = htmlEditor.value;
-        const iframeDoc =
-          previewContainer.contentDocument ||
-          previewContainer.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(htmlCode);
-        iframeDoc.close();
-      }
+        // ユーティリティ関数
+        const Utils = {
+          debounce: (func, delay) => {
+            let timeoutId;
+            return function(...args) {
+              clearTimeout(timeoutId);
+              timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
+          }
+        };
+        
+        // DOM要素の取得
+        const elements = {
+          splitView: document.getElementById("split-view"),
+          editorContainer: document.getElementById("editor-container"),
+          previewPanel: document.getElementById("preview-panel"),
+          gutter: document.getElementById("gutter"),
+          htmlEditor: document.getElementById("html-editor"),
+          previewContainer: document.getElementById("preview-container"),
+          lineNumbersDiv: document.getElementById("line-numbers"),
+          securityNotice: document.getElementById("security-notice"),
+          layoutLrBtn: document.getElementById("layout-lr-btn"),
+          layoutTbBtn: document.getElementById("layout-tb-btn"),
+          layoutPoBtn: document.getElementById("layout-po-btn"),
+          saveBtn: document.getElementById("save-btn")
+        };
 
-      // Split View のリサイズ機能
-      let isDragging = false;
+        // 状態管理
+        let state = {
+          currentLayout: CONFIG.defaultLayout,
+          isDragging: false,
+          dragContext: {},
+          lastLineCount: 0
+        };
 
-      // ドラッグ開始処理
-      gutter.addEventListener("mousedown", startDrag);
-      gutter.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        startDrag(e.touches[0]);
-      });
+        // --- 初期化 ---
+        function initialize() {
+          loadSavedCode();
+          // 初期行数を設定
+          state.lastLineCount = elements.htmlEditor.value.split("\n").length;
+          applyLayout(state.currentLayout); // 初期レイアウト適用
+          updatePreview();
+          updateLineNumbers();
+          
+          // セキュリティ警告を表示（コンテンツがある場合は非表示）
+          if (elements.htmlEditor.value.trim()) {
+            elements.securityNotice.classList.remove("show");
+          } else {
+            elements.securityNotice.classList.add("show");
+          }
 
-      function startDrag(e) {
-        isDragging = true;
-        document.body.classList.add("dragging");
+          elements.htmlEditor.addEventListener("input", handleEditorInput);
+          elements.htmlEditor.addEventListener("scroll", syncScroll);
+          // Observe textarea resize to update line numbers if its width changes affecting wrapping
+          new ResizeObserver(updateLineNumbers).observe(elements.htmlEditor);
 
-        // マウス・タッチイベントのリスナー追加
-        window.addEventListener("mousemove", doDrag);
-        window.addEventListener("touchmove", (e) => doDrag(e.touches[0]), {
-          passive: false,
-        });
-        window.addEventListener("mouseup", stopDrag);
-        window.addEventListener("touchend", stopDrag);
-        window.addEventListener("mouseleave", stopDrag);
+          elements.gutter.addEventListener("mousedown", startDrag);
+          elements.gutter.addEventListener("touchstart", (e) => {
+            e.preventDefault(); // スクロール防止
+            startDrag(e.touches[0]);
+          });
 
-        // テキスト選択を防止
-        document.body.style.userSelect = "none";
-        document.body.style.cursor = "col-resize";
-
-        // iframeがマウスイベントをキャプチャするのを防止
-        const overlay = document.createElement("div");
-        overlay.id = "resize-overlay";
-        overlay.style.position = "absolute";
-        overlay.style.top = "0";
-        overlay.style.left = "0";
-        overlay.style.right = "0";
-        overlay.style.bottom = "0";
-        overlay.style.zIndex = "9999";
-        document.body.appendChild(overlay);
-      }
-
-      // ドラッグ中処理
-      function doDrag(e) {
-        if (!isDragging) return;
-
-        // リサイズ操作をアニメーションフレームで行う
-        requestAnimationFrame(() => {
-          // コンテナの全体幅を取得
-          const containerWidth = splitView.clientWidth;
-
-          // マウスX座標を取得（ウィンドウ上での絶対位置）
-          const mouseX = e.clientX || e.pageX;
-          const containerRect = splitView.getBoundingClientRect();
-          const position = mouseX - containerRect.left;
-
-          // 各パネルの最小幅（10%）を確保
-          const minWidth = containerWidth * 0.1;
-          const maxWidth = containerWidth - minWidth;
-
-          // 制限内に収める
-          const limitedPosition = Math.min(
-            Math.max(position, minWidth),
-            maxWidth
-          );
-
-          // パーセンテージ計算
-          const editorWidth = (limitedPosition / containerWidth) * 100;
-          const previewWidth = 100 - editorWidth;
-
-          // 幅を設定
-          editorPanel.style.width = `${editorWidth}%`;
-          previewPanel.style.width = `${previewWidth}%`;
-        });
-      }
-
-      // ドラッグ終了処理
-      function stopDrag() {
-        if (!isDragging) return;
-
-        isDragging = false;
-        document.body.classList.remove("dragging");
-
-        // イベントリスナーを削除
-        window.removeEventListener("mousemove", doDrag);
-        window.removeEventListener("touchmove", doDrag);
-        window.removeEventListener("mouseup", stopDrag);
-        window.removeEventListener("touchend", stopDrag);
-        window.removeEventListener("mouseleave", stopDrag);
-
-        // スタイルを元に戻す
-        document.body.style.userSelect = "";
-        document.body.style.cursor = "";
-
-        // オーバーレイを削除
-        const overlay = document.getElementById("resize-overlay");
-        if (overlay) {
-          document.body.removeChild(overlay);
+          elements.layoutLrBtn.addEventListener("click", () => applyLayout("lr"));
+          elements.layoutTbBtn.addEventListener("click", () => applyLayout("tb"));
+          elements.layoutPoBtn.addEventListener("click", () => applyLayout("po"));
+          elements.saveBtn.addEventListener("click", saveToFile); // Add event listener for save
+          
+          // キーボードショートカット
+          document.addEventListener("keydown", handleKeyboard);
+          
+          // ツールバーボタンのキーボード操作対応
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.saveBtn];
+          toolbarButtons.forEach(btn => {
+            btn.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                btn.click();
+              }
+            });
+          });
         }
-      }
 
-      // サンプルHTMLを初期表示
-      htmlEditor.value = `<!DOCTYPE html>
+        // デバウンス版saveCode
+        const debouncedSaveCode = Utils.debounce(saveCode, CONFIG.debounceDelay);
+
+        function handleEditorInput() {
+          updatePreview();
+          updateLineNumbers();
+          debouncedSaveCode();
+          
+          // コンテンツが入力されたらセキュリティ警告を非表示
+          if (elements.htmlEditor.value.trim() && elements.securityNotice.classList.contains("show")) {
+            elements.securityNotice.classList.remove("show");
+          } else if (!elements.htmlEditor.value.trim() && !elements.securityNotice.classList.contains("show")) {
+            elements.securityNotice.classList.add("show");
+          }
+        }
+
+        function handleKeyboard(e) {
+          // Ctrl+S: 保存
+          if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveToFile();
+          }
+          // Ctrl+1: 左右分割
+          else if (e.ctrlKey && e.key === '1') {
+            e.preventDefault();
+            applyLayout("lr");
+          }
+          // Ctrl+2: 上下分割
+          else if (e.ctrlKey && e.key === '2') {
+            e.preventDefault();
+            applyLayout("tb");
+          }
+          // Ctrl+3: プレビューのみ
+          else if (e.ctrlKey && e.key === '3') {
+            e.preventDefault();
+            applyLayout("po");
+          }
+        }
+
+        // --- レイアウト制御 ---
+        function applyLayout(mode) {
+          state.currentLayout = mode;
+          elements.splitView.className = "split-view"; // Reset classes
+          elements.splitView.classList.add(`layout-${mode}`);
+
+          elements.editorContainer.style.width = "";
+          elements.editorContainer.style.height = "";
+          elements.previewPanel.style.width = "";
+          elements.previewPanel.style.height = "";
+
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn];
+          toolbarButtons.forEach((btn) => btn.classList.remove("active"));
+          if (mode === "lr") elements.layoutLrBtn.classList.add("active");
+          else if (mode === "tb") elements.layoutTbBtn.classList.add("active");
+          else if (mode === "po") elements.layoutPoBtn.classList.add("active");
+
+          if (mode === "lr") {
+            elements.editorContainer.style.width = "50%";
+            elements.previewPanel.style.width = "50%";
+          } else if (mode === "tb") {
+            elements.editorContainer.style.height = "50%";
+            elements.previewPanel.style.height = "50%";
+          }
+          // Ensure line numbers are updated after layout change, as width might affect wrapping
+          requestAnimationFrame(updateLineNumbers);
+        }
+
+        // --- プレビュー更新 ---
+        function updatePreview() {
+          const htmlCode = elements.htmlEditor.value;
+          const iframeDoc =
+            elements.previewContainer.contentDocument ||
+            elements.previewContainer.contentWindow.document;
+          try {
+            iframeDoc.open();
+            iframeDoc.write(htmlCode);
+            iframeDoc.close();
+          } catch (error) {
+            ErrorHandler.handle(error, 'プレビュー更新', true);
+          }
+        }
+
+        // --- 行番号処理 ---
+        function updateLineNumbers() {
+          const lines = elements.htmlEditor.value.split("\n");
+          const currentLineCount = lines.length;
+          
+          // 行数に変更がない場合はスキップ
+          if (currentLineCount === state.lastLineCount) {
+            syncScroll(); // スクロール同期は常に実行
+            return;
+          }
+          
+          let numbersHTML = "";
+          for (let i = 1; i <= currentLineCount; i++) {
+            numbersHTML += `<div>${i}</div>`;
+          }
+          elements.lineNumbersDiv.innerHTML = numbersHTML;
+          state.lastLineCount = currentLineCount;
+          
+          syncScroll(); // Ensure scroll is synced after updating numbers
+        }
+
+        function syncScroll() {
+          // Sync the scroll position of the line numbers div with the textarea
+          elements.lineNumbersDiv.scrollTop = elements.htmlEditor.scrollTop;
+        }
+
+        // --- ローカルストレージ ---
+        function saveCode() {
+          try {
+            localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.value);
+          } catch (error) {
+            ErrorHandler.handle(error, 'ローカル保存', false);
+          }
+        }
+
+        function loadSavedCode() {
+          try {
+            const savedCode = localStorage.getItem(CONFIG.storageKey);
+            if (savedCode !== null) {
+              elements.htmlEditor.value = savedCode;
+            } else {
+              elements.htmlEditor.value = `<!DOCTYPE html>
 <html>
 <head>
+  <title>サンプルページ</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      line-height: 1.6;
-    }
-    h1 {
-      color: #0077cc;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-    }
+    body { font-family: 'Inter', sans-serif; margin: 20px; line-height: 1.6; background-color: #f0f0f0; color: #333; }
+    .container { max-width: 700px; margin: 0 auto; padding: 25px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: var(--color-medium-blue, #3282B8); border-bottom: 2px solid var(--color-medium-blue, #3282B8); padding-bottom: 10px; }
+    p { margin-bottom: 15px; }
     button {
-      background: #0077cc;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 4px;
-      cursor: pointer;
+      background-color: var(--color-medium-blue, #3282B8); color: white; border: none; padding: 12px 18px;
+      border-radius: 5px; cursor: pointer; font-size: 1em; transition: background-color 0.2s ease;
     }
-    button:hover {
-      background: #005fa3;
-    }
+    button:hover { background-color: var(--color-dark-blue, #0F4C75); }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>HTMLプレビューアー</h1>
-    <p>左側のエディタにHTMLコードを入力すると、右側にリアルタイムでプレビューが表示されます。</p>
-    <p>中央のバーをドラッグして、エディタとプレビューの幅を調整できます。</p>
-    <button onclick="alert('こんにちは！')">クリックしてみてください</button>
+    <h1>HTMLプレビューアーへようこそ！</h1>
+    <p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p>
+    <p>ツールバーのアイコンでレイアウトを変更したり、ファイルを保存したりできます。</p>
+    <button onclick="alert('こんにちは！クリックされました。')">クリックテスト</button>
   </div>
 </body>
 </html>`;
+            }
+          } catch (error) {
+            ErrorHandler.handle(error, 'ローカル読み込み', false);
+          }
+        }
 
-      // 初期プレビューを表示
-      updatePreview();
+        // --- ファイル保存機能 ---
+        function getTitleFromHtml(html) {
+          const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i); // Use [\s\S]*? for multiline titles
+          if (titleMatch && titleMatch[1]) {
+            // Sanitize title to be a valid filename
+            let filename = titleMatch[1].trim();
+            filename = filename.replace(
+              /[^a-z0-9_\-\s\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]+/gi,
+              "_"
+            ); // Allow Japanese chars
+            filename = filename.replace(/\s+/g, "_");
+            return filename + ".html";
+          }
+          return "preview.html";
+        }
+
+        function saveToFile() {
+          const htmlCode = elements.htmlEditor.value;
+          const filename = getTitleFromHtml(htmlCode);
+
+          const blob = new Blob([htmlCode], { type: "text/html;charset=utf-8" });
+
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = filename;
+
+          document.body.appendChild(link); // Required for Firefox
+          link.click();
+          document.body.removeChild(link);
+
+          URL.revokeObjectURL(link.href); // Clean up
+        }
+
+        // --- Split View リサイズ機能 ---
+        function startDrag(e) {
+          state.isDragging = true;
+          document.body.classList.add("dragging");
+
+          state.dragContext.startX = e.clientX;
+          state.dragContext.startY = e.clientY;
+          state.dragContext.editorInitialWidth = elements.editorContainer.offsetWidth;
+          state.dragContext.editorInitialHeight = elements.editorContainer.offsetHeight;
+
+          window.addEventListener("mousemove", doDrag);
+          window.addEventListener("touchmove", (ev) => doDrag(ev.touches[0]), {
+            passive: false,
+          });
+          window.addEventListener("mouseup", stopDrag);
+          window.addEventListener("touchend", stopDrag);
+          window.addEventListener("mouseleave", stopDrag);
+
+          document.body.style.userSelect = "none";
+          if (state.currentLayout === "tb") {
+            document.body.style.cursor = "row-resize";
+          } else {
+            document.body.style.cursor = "col-resize";
+          }
+
+          const overlay = document.createElement("div");
+          overlay.className = "resize-overlay";
+          document.body.appendChild(overlay);
+        }
+
+        function doDrag(e) {
+          if (!state.isDragging) return;
+
+          requestAnimationFrame(() => {
+            const dx = e.clientX - state.dragContext.startX;
+            const dy = e.clientY - state.dragContext.startY;
+
+            let editorNewSize;
+
+            if (state.currentLayout === "lr") {
+              const totalWidth =
+                elements.editorContainer.parentElement.clientWidth - elements.gutter.offsetWidth;
+              editorNewSize = state.dragContext.editorInitialWidth + dx;
+              const minWidth = Math.max(totalWidth * 0.1, 100);
+              editorNewSize = Math.max(minWidth, editorNewSize);
+              editorNewSize = Math.min(totalWidth - minWidth, editorNewSize);
+
+              elements.editorContainer.style.width = `${editorNewSize}px`;
+              elements.previewPanel.style.width = `${totalWidth - editorNewSize}px`;
+            } else if (state.currentLayout === "tb") {
+              const totalHeight =
+                elements.editorContainer.parentElement.clientHeight - elements.gutter.offsetHeight;
+              editorNewSize = state.dragContext.editorInitialHeight + dy;
+              const minHeight = Math.max(totalHeight * 0.1, 100);
+              editorNewSize = Math.max(minHeight, editorNewSize);
+              editorNewSize = Math.min(totalHeight - minHeight, editorNewSize);
+
+              elements.editorContainer.style.height = `${editorNewSize}px`;
+              elements.previewPanel.style.height = `${totalHeight - editorNewSize}px`;
+            }
+            // Update line numbers as panel resize might affect textarea width and thus wrapping
+            updateLineNumbers();
+          });
+        }
+
+        function stopDrag() {
+          if (!state.isDragging) return;
+          state.isDragging = false;
+          document.body.classList.remove("dragging");
+
+          window.removeEventListener("mousemove", doDrag);
+          window.removeEventListener("touchmove", doDrag);
+          window.removeEventListener("mouseup", stopDrag);
+          window.removeEventListener("touchend", stopDrag);
+          window.removeEventListener("mouseleave", stopDrag);
+
+          document.body.style.userSelect = "";
+          document.body.style.cursor = "";
+
+          const overlay = document.querySelector(".resize-overlay");
+          if (overlay) {
+            document.body.removeChild(overlay);
+          }
+          state.dragContext = {};
+          // Final update to line numbers after dragging stops
+          requestAnimationFrame(updateLineNumbers);
+        }
+
+        // 初期化実行
+        initialize();
+      })();
     </script>
   </body>
 </html>
