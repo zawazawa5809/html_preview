@@ -335,6 +335,17 @@
   <body>
     <div class="toolbar">
       <span class="toolbar-title">HTMLプレビューアー</span>
+      <button class="toolbar-button" id="copy-btn" title="エディター内容をコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </svg>
+      </button>
+      <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+        </svg>
+      </button>
+      <div style="width: 1px; height: 20px; background-color: var(--app-toolbar-border); margin: 0 8px;"></div>
       <button class="toolbar-button" id="layout-lr-btn" title="左右分割" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -464,6 +475,8 @@
           layoutLrBtn: document.getElementById("layout-lr-btn"),
           layoutTbBtn: document.getElementById("layout-tb-btn"),
           layoutPoBtn: document.getElementById("layout-po-btn"),
+          copyBtn: document.getElementById("copy-btn"),
+          clearBtn: document.getElementById("clear-btn"),
           saveBtn: document.getElementById("save-btn")
         };
 
@@ -505,13 +518,15 @@
           elements.layoutLrBtn.addEventListener("click", () => applyLayout("lr"));
           elements.layoutTbBtn.addEventListener("click", () => applyLayout("tb"));
           elements.layoutPoBtn.addEventListener("click", () => applyLayout("po"));
+          elements.copyBtn.addEventListener("click", copyEditor);
+          elements.clearBtn.addEventListener("click", clearEditor);
           elements.saveBtn.addEventListener("click", saveToFile); // Add event listener for save
           
           // キーボードショートカット
           document.addEventListener("keydown", handleKeyboard);
           
           // ツールバーボタンのキーボード操作対応
-          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.saveBtn];
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.clearBtn, elements.saveBtn];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -543,6 +558,16 @@
           if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
             saveToFile();
+          }
+          // Ctrl+Shift+C: コピー
+          else if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            copyEditor();
+          }
+          // Ctrl+Delete: クリア
+          else if (e.ctrlKey && e.key === 'Delete') {
+            e.preventDefault();
+            clearEditor();
           }
           // Ctrl+1: 左右分割
           else if (e.ctrlKey && e.key === '1') {
@@ -674,6 +699,85 @@
           } catch (error) {
             ErrorHandler.handle(error, 'ローカル読み込み', false);
           }
+        }
+
+        // --- エディター操作機能 ---
+        function clearEditor() {
+          if (elements.htmlEditor.value.trim() === '') {
+            showTemporaryMessage('エディターは既に空です');
+            return;
+          }
+          
+          if (confirm('エディターの内容をクリアしますか？\n\n※この操作は取り消せません。')) {
+            elements.htmlEditor.value = '';
+            updatePreview();
+            updateLineNumbers();
+            debouncedSaveCode();
+            
+            // セキュリティ警告を表示
+            elements.securityNotice.classList.add("show");
+            showTemporaryMessage('エディターをクリアしました');
+          }
+        }
+
+        async function copyEditor() {
+          const content = elements.htmlEditor.value;
+          
+          if (content.trim() === '') {
+            showTemporaryMessage('コピーする内容がありません');
+            return;
+          }
+          
+          try {
+            await navigator.clipboard.writeText(content);
+            showTemporaryMessage('エディター内容をクリップボードにコピーしました');
+          } catch (error) {
+            ErrorHandler.handle(error, 'クリップボード操作', false);
+            // フォールバック: 古いブラウザ対応
+            try {
+              const textArea = document.createElement('textarea');
+              textArea.value = content;
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+              showTemporaryMessage('エディター内容をコピーしました（フォールバック）');
+            } catch (fallbackError) {
+              ErrorHandler.handle(fallbackError, 'フォールバックコピー', false);
+              showTemporaryMessage('コピーに失敗しました', 'error');
+            }
+          }
+        }
+
+        function showTemporaryMessage(message, type = 'success') {
+          // 一時的なメッセージ表示機能
+          const messageDiv = document.createElement('div');
+          messageDiv.textContent = message;
+          messageDiv.style.cssText = `
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 10000;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            ${type === 'error' 
+              ? 'background-color: #fee; color: #c33; border: 1px solid #fcc;' 
+              : 'background-color: #efe; color: #363; border: 1px solid #cfc;'}
+          `;
+          
+          document.body.appendChild(messageDiv);
+          
+          setTimeout(() => {
+            messageDiv.style.opacity = '0';
+            setTimeout(() => {
+              if (messageDiv.parentNode) {
+                document.body.removeChild(messageDiv);
+              }
+            }, 300);
+          }, 2000);
         }
 
         // --- ファイル保存機能 ---
