@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://fonts.googleapis.com https://fonts.gstatic.com;" />
     <title>拡張版HTMLプレビューアー</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -361,23 +360,6 @@
         z-index: 9999;
       }
 
-      .security-notice {
-        background-color: #fef3c7;
-        border: 1px solid var(--da-warning);
-        color: #92400e;
-        padding: 8px 12px;
-        font-size: 13px;
-        font-weight: 500;
-        text-align: center;
-        border-radius: 6px;
-        margin: 8px 16px;
-        display: none;
-        line-height: 1.4;
-      }
-
-      .security-notice.show {
-        display: block;
-      }
     </style>
   </head>
   <body>
@@ -431,7 +413,6 @@
             aria-label="HTMLコードエディター"
             role="textbox"
             aria-multiline="true"
-            aria-describedby="security-notice"
             spellcheck="false"
             autocomplete="off"
             autocorrect="off"
@@ -442,11 +423,8 @@
       <div class="gutter" id="gutter"></div>
       <div class="preview-panel" id="preview-panel">
         <div class="panel-header">プレビュー</div>
-        <div class="security-notice" id="security-notice" role="alert" aria-live="polite">
-          <span aria-hidden="true">⚠️</span> 信頼できないHTMLコードの実行にご注意ください
-        </div>
         <div class="panel-content">
-          <iframe id="preview-container" frameborder="0" sandbox="allow-same-origin allow-scripts allow-forms allow-popups" aria-label="HTMLプレビュー表示エリア" title="HTMLコードのプレビュー結果" role="application"></iframe>
+          <iframe id="preview-container" frameborder="0" aria-label="HTMLプレビュー表示エリア" title="HTMLコードのプレビュー結果" role="application"></iframe>
         </div>
       </div>
     </div>
@@ -518,7 +496,6 @@
           htmlEditor: document.getElementById("html-editor"),
           previewContainer: document.getElementById("preview-container"),
           lineNumbersDiv: document.getElementById("line-numbers"),
-          securityNotice: document.getElementById("security-notice"),
           layoutLrBtn: document.getElementById("layout-lr-btn"),
           layoutTbBtn: document.getElementById("layout-tb-btn"),
           layoutPoBtn: document.getElementById("layout-po-btn"),
@@ -543,13 +520,6 @@
           applyLayout(state.currentLayout); // 初期レイアウト適用
           updatePreview();
           updateLineNumbers();
-          
-          // セキュリティ警告を表示（コンテンツがある場合は非表示）
-          if (elements.htmlEditor.value.trim()) {
-            elements.securityNotice.classList.remove("show");
-          } else {
-            elements.securityNotice.classList.add("show");
-          }
 
           elements.htmlEditor.addEventListener("input", handleEditorInput);
           elements.htmlEditor.addEventListener("scroll", syncScroll);
@@ -591,13 +561,6 @@
           updatePreview();
           updateLineNumbers();
           debouncedSaveCode();
-          
-          // コンテンツが入力されたらセキュリティ警告を非表示
-          if (elements.htmlEditor.value.trim() && elements.securityNotice.classList.contains("show")) {
-            elements.securityNotice.classList.remove("show");
-          } else if (!elements.htmlEditor.value.trim() && !elements.securityNotice.classList.contains("show")) {
-            elements.securityNotice.classList.add("show");
-          }
         }
 
         function handleKeyboard(e) {
@@ -812,16 +775,11 @@
             return;
           }
           
-          if (confirm('エディターの内容をクリアしますか？\n\n※この操作は取り消せません。')) {
-            elements.htmlEditor.value = '';
-            updatePreview();
-            updateLineNumbers();
-            debouncedSaveCode();
-            
-            // セキュリティ警告を表示
-            elements.securityNotice.classList.add("show");
-            showTemporaryMessage('エディターをクリアしました');
-          }
+          elements.htmlEditor.value = '';
+          updatePreview();
+          updateLineNumbers();
+          debouncedSaveCode();
+          showTemporaryMessage('エディターをクリアしました');
         }
 
         async function copyEditor() {
