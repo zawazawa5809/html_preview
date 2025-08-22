@@ -10,22 +10,16 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
     <style>
       :root {
-        /* デジタル庁デザインシステム準拠カラーパレット */
-        /* プライマリカラー（ブランドの基調色） */
         --da-primary: #1f2937;
         --da-primary-hover: #111827;
-        
-        /* セカンダリカラー（プライマリと調和する補完色） */
         --da-secondary: #3b82f6;
         --da-secondary-hover: #2563eb;
-        
-        /* ターシャリカラー（視覚的階層構築用） */
         --da-tertiary: #60a5fa;
         --da-tertiary-light: #93c5fd;
-        
-        /* 機能的カラー */
         --da-neutral-white: #ffffff;
         --da-neutral-50: #f9fafb;
         --da-neutral-100: #f3f4f6;
@@ -37,45 +31,33 @@
         --da-neutral-700: #374151;
         --da-neutral-800: #1f2937;
         --da-neutral-900: #111827;
-        
-        /* セマンティックカラー */
         --da-success: #10b981;
         --da-warning: #f59e0b;
         --da-error: #ef4444;
         --da-info: var(--da-secondary);
-        
-        /* アプリケーション固有の役割 */
         --app-text-primary: var(--da-neutral-900);
         --app-text-secondary: var(--da-neutral-600);
         --app-text-on-dark: var(--da-neutral-white);
         --app-text-muted: var(--da-neutral-500);
-        
         --app-bg-primary: var(--da-neutral-white);
         --app-bg-secondary: var(--da-neutral-50);
         --app-bg-dark: var(--da-primary);
-        
         --app-border-default: var(--da-neutral-200);
         --app-border-focus: var(--da-secondary);
         --app-border-hover: var(--da-neutral-300);
-        
         --app-toolbar-bg: var(--da-primary);
         --app-toolbar-text: var(--app-text-on-dark);
         --app-toolbar-border: var(--da-neutral-700);
-        
         --app-panel-header-bg: var(--da-neutral-800);
         --app-panel-header-text: var(--app-text-on-dark);
-        
         --app-editor-bg: var(--app-bg-primary);
         --app-editor-text: var(--app-text-primary);
         --app-editor-placeholder: var(--app-text-muted);
-        
         --app-line-numbers-bg: var(--da-neutral-800);
         --app-line-numbers-text: var(--da-neutral-300);
-        
         --app-gutter-bg: var(--da-neutral-800);
         --app-gutter-hover: var(--da-neutral-700);
         --app-gutter-handle: var(--da-neutral-400);
-        
         --app-accent: var(--da-secondary);
         --app-accent-hover: var(--da-secondary-hover);
       }
@@ -133,23 +115,23 @@
         transition: all 0.2s ease;
       }
 
-      .toolbar-button svg {
+      .toolbar-button i {
         width: 20px;
         height: 20px;
-        color: var(--da-neutral-300);
+        color: var(--da-neutral-100);
         transition: all 0.2s ease;
       }
 
       .toolbar-button:hover {
         background-color: var(--da-neutral-700);
       }
-      .toolbar-button:hover svg {
+      .toolbar-button:hover i {
         color: var(--da-neutral-white);
       }
       .toolbar-button.active {
         background-color: var(--app-accent);
       }
-      .toolbar-button.active svg {
+      .toolbar-button.active i {
         color: var(--da-neutral-white);
       }
       
@@ -215,14 +197,7 @@
         height: 50%;
       }
 
-      .split-view.layout-po .editor-container,
-      .split-view.layout-po .gutter {
-        display: none;
-      }
-      .split-view.layout-po .preview-panel {
-        width: 100% !important;
-        height: 100% !important;
-      }
+.split-view.layout-po .editor-container,.split-view.layout-po .gutter{display:none}.split-view.layout-po .preview-panel{width:100%!important;height:100%!important}
 
       .panel-header {
         background-color: var(--app-panel-header-bg);
@@ -260,13 +235,7 @@
         flex-shrink: 0;
         border-right: 1px solid var(--da-neutral-600);
       }
-      /* Individual line number styling (if needed, but usually handled by parent) */
-      #line-numbers div {
-        height: calc(14px * 1.5); /* font-size * line-height */
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-      }
+#line-numbers div{height:21px;display:flex;align-items:center;justify-content:flex-end}
 
       #html-editor {
         width: 100%;
@@ -347,10 +316,7 @@
         height: 2px;
       }
 
-      body.dragging,
-      body.dragging * {
-        cursor: col-resize !important; /* Default, JS will adjust for TB */
-      }
+body.dragging,body.dragging *{cursor:col-resize!important}
       .resize-overlay {
         position: absolute;
         top: 0;
@@ -366,38 +332,24 @@
     <div class="toolbar">
       <span class="toolbar-title">HTMLプレビューアー</span>
       <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
-        </svg>
+        <i data-feather="copy"></i>
       </button>
       <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-        </svg>
+        <i data-feather="trash-2"></i>
       </button>
       <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
       <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-13.5-7.5h21" />
-        </svg>
+        <i data-feather="columns"></i>
       </button>
       <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割レイアウトに変更" role="button" tabindex="0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
+        <i data-feather="minimize-2"></i>
       </button>
       <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-          />
-        </svg>
+        <i data-feather="eye"></i>
       </button>
       <div style="flex-grow: 1" aria-hidden="true"></div>
       <button class="toolbar-button" id="save-btn" title="HTMLファイルをダウンロード (Ctrl+S)" aria-label="HTMLファイルとして保存" role="button" tabindex="0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-        </svg>
+        <i data-feather="download"></i>
       </button>
     </div>
 
@@ -433,17 +385,7 @@
       (function() {
         'use strict';
         
-        // 設定オブジェクト
-        const CONFIG = {
-          defaultLayout: "lr",
-          storageKey: "htmlPreviewerCode",
-          debounceDelay: 300,
-          layouts: {
-            lr: "左右分割",
-            tb: "上下分割", 
-            po: "プレビューのみ"
-          }
-        };
+        const CONFIG={defaultLayout:"lr",storageKey:"htmlPreviewerCode",debounceDelay:300,layouts:{lr:"左右分割",tb:"上下分割",po:"プレビューのみ"}};
 
         // 統一エラーハンドリング
         const ErrorHandler = {
@@ -476,15 +418,13 @@
           }
         };
 
-        // ユーティリティ関数
-        const Utils = {
-          debounce: (func, delay) => {
-            let timeoutId;
-            return function(...args) {
-              clearTimeout(timeoutId);
-              timeoutId = setTimeout(() => func.apply(this, args), delay);
-            };
-          }
+        // lodashのdebounceを使用（CDNから読み込み済み）
+        const debounce = window._ ? _.debounce : (func, delay) => {
+          let timeoutId;
+          return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+          };
         };
         
         // DOM要素の取得
@@ -555,7 +495,7 @@
         }
 
         // デバウンス版saveCode
-        const debouncedSaveCode = Utils.debounce(saveCode, CONFIG.debounceDelay);
+        const debouncedSaveCode = debounce(saveCode, CONFIG.debounceDelay);
 
         function handleEditorInput() {
           updatePreview();
@@ -680,88 +620,7 @@
             if (savedCode !== null) {
               elements.htmlEditor.value = savedCode;
             } else {
-              elements.htmlEditor.value = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>サンプルページ</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --da-primary: #1f2937;
-      --da-secondary: #3b82f6;
-      --da-neutral-white: #ffffff;
-      --da-neutral-50: #f9fafb;
-      --da-neutral-100: #f3f4f6;
-      --da-neutral-900: #111827;
-    }
-    body {
-      font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      margin: 0;
-      padding: 24px;
-      background-color: var(--da-neutral-50);
-      color: var(--da-neutral-900);
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 32px;
-      background-color: var(--da-neutral-white);
-      border-radius: 8px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    h1 {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--da-primary);
-      border-bottom: 2px solid var(--da-secondary);
-      padding-bottom: 12px;
-      margin-bottom: 24px;
-      letter-spacing: 0.02em;
-    }
-    p {
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 16px;
-      color: var(--da-neutral-900);
-    }
-    .button {
-      background-color: var(--da-secondary);
-      color: var(--da-neutral-white);
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      font-family: inherit;
-    }
-    .button:hover {
-      background-color: #2563eb;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-    }
-    .button:focus {
-      outline: 2px solid var(--da-secondary);
-      outline-offset: 2px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>HTMLプレビューアーへようこそ</h1>
-    <p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p>
-    <p>ツールバーのボタンでレイアウトを変更したり、ファイルを保存したりできます。デジタル庁デザインシステムに準拠した美しいUIをお楽しみください。</p>
-    <button class="button" onclick="alert('こんにちは！デザインシステムが適用されました。')">クリックテスト</button>
-  </div>
-</body>
-</html>`;
+              elements.htmlEditor.value = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>サンプルページ</title><style>:root{--p:#1f2937;--s:#3b82f6;--w:#fff;--g:#f9fafb;--d:#111827}body{font-family:system-ui,sans-serif;font-size:16px;line-height:1.6;margin:0;padding:24px;background:var(--g);color:var(--d)}.c{max-width:800px;margin:0 auto;padding:32px;background:var(--w);border-radius:8px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}h1{font-size:32px;font-weight:700;color:var(--p);border-bottom:2px solid var(--s);padding-bottom:12px;margin-bottom:24px}p{margin-bottom:16px}.btn{background:var(--s);color:var(--w);border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font:inherit;transition:all .2s}.btn:hover{background:#2563eb;transform:translateY(-1px)}</style></head><body><div class="c"><h1>HTMLプレビューアーへようこそ</h1><p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p><p>ツールバーのボタンでレイアウトを変更したり、ファイルを保存したりできます。</p><button class="btn" onclick="alert(\'こんにちは！\')">クリックテスト</button></div></body></html>';
             }
           } catch (error) {
             ErrorHandler.handle(error, 'ローカル読み込み', false);
@@ -965,6 +824,11 @@
 
         // 初期化実行
         initialize();
+        
+        // Feather iconsを初期化
+        if (typeof feather !== 'undefined') {
+          feather.replace();
+        }
       })();
     </script>
   </body>
