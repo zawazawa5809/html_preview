@@ -101,6 +101,12 @@
         letter-spacing: 0.02em;
       }
 
+      .toolbar-menu {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
       .toolbar-button {
         background: none;
         border: none;
@@ -134,12 +140,24 @@
       .toolbar-button.active i {
         color: var(--da-neutral-white);
       }
-      
+
       .toolbar-button:focus,
       .toolbar-button:focus-visible {
         outline: 2px solid var(--app-border-focus);
         outline-offset: 2px;
         border-radius: 6px;
+      }
+
+      @media (max-width: 600px) {
+        .toolbar {
+          flex-wrap: wrap;
+        }
+
+        .toolbar-menu {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
       }
 
       #html-editor:focus,
@@ -328,30 +346,32 @@ body.dragging,body.dragging *{cursor:col-resize!important}
 
     </style>
   </head>
-  <body>
-    <div class="toolbar">
-      <span class="toolbar-title">HTMLプレビューアー</span>
-      <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
-        <i data-feather="copy"></i>
-      </button>
-      <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
-        <i data-feather="trash-2"></i>
-      </button>
-      <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
-      <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
-        <i data-feather="columns"></i>
-      </button>
-      <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割レイアウトに変更" role="button" tabindex="0">
-        <i data-feather="minimize-2"></i>
-      </button>
-      <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
-        <i data-feather="eye"></i>
-      </button>
-      <div style="flex-grow: 1" aria-hidden="true"></div>
-      <button class="toolbar-button" id="save-btn" title="HTMLファイルをダウンロード (Ctrl+S)" aria-label="HTMLファイルとして保存" role="button" tabindex="0">
-        <i data-feather="download"></i>
-      </button>
-    </div>
+    <body>
+      <div class="toolbar">
+        <span class="toolbar-title">HTMLプレビューアー</span>
+        <div class="toolbar-menu">
+          <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
+            <i data-feather="copy"></i>
+          </button>
+          <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
+            <i data-feather="trash-2"></i>
+          </button>
+          <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
+          <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
+            <i data-feather="columns"></i>
+          </button>
+          <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割レイアウトに変更" role="button" tabindex="0">
+            <i data-feather="minimize-2"></i>
+          </button>
+          <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
+            <i data-feather="eye"></i>
+          </button>
+          <div style="flex-grow: 1" aria-hidden="true"></div>
+          <button class="toolbar-button" id="save-btn" title="HTMLファイルをダウンロード (Ctrl+S)" aria-label="HTMLファイルとして保存" role="button" tabindex="0">
+            <i data-feather="download"></i>
+          </button>
+        </div>
+      </div>
 
     <div class="split-view" id="split-view">
       <div class="editor-container" id="editor-container">
