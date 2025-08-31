@@ -354,6 +354,12 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
             <i data-feather="copy"></i>
           </button>
+          <button class="toolbar-button" id="paste-btn"
+                  title="クリップボードから貼り付け"
+                  aria-label="クリップボードから貼り付け"
+                  role="button" tabindex="0">
+            <i data-feather="clipboard"></i>
+          </button>
           <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
             <i data-feather="trash-2"></i>
           </button>
@@ -461,6 +467,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           layoutTbBtn: document.getElementById("layout-tb-btn"),
           layoutPoBtn: document.getElementById("layout-po-btn"),
           copyBtn: document.getElementById("copy-btn"),
+          pasteBtn: document.getElementById("paste-btn"),
           clearBtn: document.getElementById("clear-btn"),
           saveBtn: document.getElementById("save-btn")
         };
@@ -497,6 +504,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           elements.layoutTbBtn.addEventListener("click", () => applyLayout("tb"));
           elements.layoutPoBtn.addEventListener("click", () => applyLayout("po"));
           elements.copyBtn.addEventListener("click", copyEditor);
+          elements.pasteBtn.addEventListener("click", pasteEditor);
           elements.clearBtn.addEventListener("click", clearEditor);
           elements.saveBtn.addEventListener("click", saveToFile); // Add event listener for save
           
@@ -504,7 +512,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           document.addEventListener("keydown", handleKeyboard);
           
           // ツールバーボタンのキーボード操作対応
-          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.clearBtn, elements.saveBtn];
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.pasteBtn, elements.clearBtn, elements.saveBtn];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -534,6 +542,10 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           else if (e.ctrlKey && e.shiftKey && e.key === 'C') {
             e.preventDefault();
             copyEditor();
+          }
+          else if (e.ctrlKey && e.shiftKey && e.key === "V") {
+            e.preventDefault();
+            pasteEditor();
           }
           // Ctrl+Delete: クリア
           else if (e.ctrlKey && e.key === 'Delete') {
@@ -688,6 +700,24 @@ body.dragging,body.dragging *{cursor:col-resize!important}
               ErrorHandler.handle(fallbackError, 'フォールバックコピー', false);
               showTemporaryMessage('コピーに失敗しました', 'error');
             }
+          }
+        }
+
+        async function pasteEditor() {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (!text.trim()) {
+              showTemporaryMessage('クリップボードが空です', 'error');
+              return;
+            }
+            elements.htmlEditor.value = text;
+            updatePreview();
+            updateLineNumbers();
+            debouncedSaveCode();
+            showTemporaryMessage('クリップボードから貼り付けました');
+          } catch (error) {
+            ErrorHandler.handle(error, 'クリップボード貼り付け', false);
+            showTemporaryMessage('貼り付けに失敗しました', 'error');
           }
         }
 
