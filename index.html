@@ -412,7 +412,13 @@ body.dragging,body.dragging *{cursor:col-resize!important}
       (function() {
         'use strict';
         
-        const CONFIG={defaultLayout:"lr",storageKey:"htmlPreviewerCode",debounceDelay:300,layouts:{lr:"左右分割",tb:"上下分割",po:"プレビューのみ"}};
+        const CONFIG = {
+          defaultLayout: "lr",
+          storageKey: "htmlPreviewerCode",
+          layoutStorageKey: "htmlPreviewerLayout",
+          debounceDelay: 300,
+          layouts: { lr: "左右分割", tb: "上下分割", po: "プレビューのみ" },
+        };
 
         // 統一エラーハンドリング
         const ErrorHandler = {
@@ -483,6 +489,17 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         // --- 初期化 ---
         function initialize() {
           loadSavedCode();
+          try {
+            const savedLayout = localStorage.getItem(CONFIG.layoutStorageKey);
+            if (savedLayout && CONFIG.layouts[savedLayout]) {
+              state.currentLayout = savedLayout;
+            } else {
+              state.currentLayout = CONFIG.defaultLayout;
+            }
+          } catch (error) {
+            ErrorHandler.handle(error, 'レイアウト読み込み', false);
+            state.currentLayout = CONFIG.defaultLayout;
+          }
           // 初期行数を設定
           state.lastLineCount = elements.htmlEditor.value.split("\n").length;
           applyLayout(state.currentLayout); // 初期レイアウト適用
@@ -572,6 +589,11 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         // --- レイアウト制御 ---
         function applyLayout(mode) {
           state.currentLayout = mode;
+          try {
+            localStorage.setItem(CONFIG.layoutStorageKey, mode);
+          } catch (error) {
+            ErrorHandler.handle(error, 'レイアウト保存', false);
+          }
           elements.splitView.className = "split-view"; // Reset classes
           elements.splitView.classList.add(`layout-${mode}`);
 
