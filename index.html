@@ -6,13 +6,22 @@
     <title>拡張版HTMLプレビューアー</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
-    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
-    <style>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+      <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+      <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+      />
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/xml/xml.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/css/css.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/htmlmixed/htmlmixed.min.js"></script>
+      <style>
       :root {
         --da-primary: #1f2937;
         --da-primary-hover: #111827;
@@ -239,23 +248,6 @@
         border-top: none;
         border-radius: 0 0 4px 4px;
       }
-
-      #line-numbers {
-        width: 50px;
-        padding: 12px 8px 12px 12px;
-        font-family: "Noto Sans Mono", Consolas, "Courier New", monospace;
-        font-size: 14px;
-        line-height: 1.5;
-        background-color: var(--app-line-numbers-bg);
-        color: var(--app-line-numbers-text);
-        text-align: right;
-        user-select: none;
-        overflow: hidden;
-        flex-shrink: 0;
-        border-right: 1px solid var(--da-neutral-600);
-      }
-#line-numbers div{height:21px;display:flex;align-items:center;justify-content:flex-end}
-
       #html-editor {
         width: 100%;
         height: 100%;
@@ -269,6 +261,11 @@
         flex-grow: 1;
         background-color: var(--app-editor-bg);
         color: var(--app-editor-text);
+      }
+      .CodeMirror {
+        width: 100%;
+        height: 100%;
+        flex-grow: 1;
       }
       #html-editor::placeholder {
         color: var(--app-editor-placeholder);
@@ -388,7 +385,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
       <div class="editor-container" id="editor-container">
         <div class="panel-header">HTMLエディタ</div>
         <div class="editor-content-wrapper">
-          <div id="line-numbers" aria-hidden="true"></div>
           <textarea
             id="html-editor"
             placeholder="HTMLコードをここに貼り付けてください..."
@@ -472,7 +468,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           gutter: document.getElementById("gutter"),
           htmlEditor: document.getElementById("html-editor"),
           previewContainer: document.getElementById("preview-container"),
-          lineNumbersDiv: document.getElementById("line-numbers"),
           layoutLrBtn: document.getElementById("layout-lr-btn"),
           layoutTbBtn: document.getElementById("layout-tb-btn"),
           layoutPoBtn: document.getElementById("layout-po-btn"),
@@ -494,6 +489,10 @@ body.dragging,body.dragging *{cursor:col-resize!important}
 
         // --- 初期化 ---
         function initialize() {
+          elements.htmlEditor = CodeMirror.fromTextArea(elements.htmlEditor, {
+            lineNumbers: true,
+            mode: "htmlmixed",
+          });
           loadSavedCode();
           try {
             const savedLayout = localStorage.getItem(CONFIG.layoutStorageKey);
@@ -507,15 +506,12 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             state.currentLayout = CONFIG.defaultLayout;
           }
           // 初期行数を設定
-          state.lastLineCount = elements.htmlEditor.value.split("\n").length;
+          state.lastLineCount = elements.htmlEditor.lineCount();
           applyLayout(state.currentLayout); // 初期レイアウト適用
           updatePreview();
           updateLineNumbers();
 
-          elements.htmlEditor.addEventListener("input", handleEditorInput);
-          elements.htmlEditor.addEventListener("scroll", syncScroll);
-          // Observe textarea resize to update line numbers if its width changes affecting wrapping
-          new ResizeObserver(updateLineNumbers).observe(elements.htmlEditor);
+          elements.htmlEditor.on("change", handleEditorInput);
 
           elements.gutter.addEventListener("mousedown", startDrag);
           elements.gutter.addEventListener("touchstart", (e) => {
@@ -639,7 +635,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
 
         // --- プレビュー更新 ---
         function updatePreview() {
-          const htmlCode = elements.htmlEditor.value;
+          const htmlCode = elements.htmlEditor.getValue();
           const iframeDoc =
             elements.previewContainer.contentDocument ||
             elements.previewContainer.contentWindow.document;
@@ -654,34 +650,13 @@ body.dragging,body.dragging *{cursor:col-resize!important}
 
         // --- 行番号処理 ---
         function updateLineNumbers() {
-          const lines = elements.htmlEditor.value.split("\n");
-          const currentLineCount = lines.length;
-          
-          // 行数に変更がない場合はスキップ
-          if (currentLineCount === state.lastLineCount) {
-            syncScroll(); // スクロール同期は常に実行
-            return;
-          }
-          
-          let numbersHTML = "";
-          for (let i = 1; i <= currentLineCount; i++) {
-            numbersHTML += `<div>${i}</div>`;
-          }
-          elements.lineNumbersDiv.innerHTML = numbersHTML;
-          state.lastLineCount = currentLineCount;
-          
-          syncScroll(); // Ensure scroll is synced after updating numbers
-        }
-
-        function syncScroll() {
-          // Sync the scroll position of the line numbers div with the textarea
-          elements.lineNumbersDiv.scrollTop = elements.htmlEditor.scrollTop;
+          state.lastLineCount = elements.htmlEditor.lineCount();
         }
 
         // --- ローカルストレージ ---
         function saveCode() {
           try {
-            localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.value);
+            localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.getValue());
           } catch (error) {
             ErrorHandler.handle(error, 'ローカル保存', false);
           }
@@ -691,9 +666,9 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           try {
             const savedCode = localStorage.getItem(CONFIG.storageKey);
             if (savedCode !== null) {
-              elements.htmlEditor.value = savedCode;
+              elements.htmlEditor.setValue(savedCode);
             } else {
-              elements.htmlEditor.value = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>サンプルページ</title><style>:root{--p:#1f2937;--s:#3b82f6;--w:#fff;--g:#f9fafb;--d:#111827}body{font-family:system-ui,sans-serif;font-size:16px;line-height:1.6;margin:0;padding:24px;background:var(--g);color:var(--d)}.c{max-width:800px;margin:0 auto;padding:32px;background:var(--w);border-radius:8px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}h1{font-size:32px;font-weight:700;color:var(--p);border-bottom:2px solid var(--s);padding-bottom:12px;margin-bottom:24px}p{margin-bottom:16px}.btn{background:var(--s);color:var(--w);border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font:inherit;transition:all .2s}.btn:hover{background:#2563eb;transform:translateY(-1px)}</style></head><body><div class="c"><h1>HTMLプレビューアーへようこそ</h1><p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p><p>ツールバーのボタンでレイアウトを変更したり、ファイルを保存したりできます。</p><button class="btn" onclick="alert(\'こんにちは！\')">クリックテスト</button></div></body></html>';
+              elements.htmlEditor.setValue('<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>サンプルページ</title><style>:root{--p:#1f2937;--s:#3b82f6;--w:#fff;--g:#f9fafb;--d:#111827}body{font-family:system-ui,sans-serif;font-size:16px;line-height:1.6;margin:0;padding:24px;background:var(--g);color:var(--d)}.c{max-width:800px;margin:0 auto;padding:32px;background:var(--w);border-radius:8px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}h1{font-size:32px;font-weight:700;color:var(--p);border-bottom:2px solid var(--s);padding-bottom:12px;margin-bottom:24px}p{margin-bottom:16px}.btn{background:var(--s);color:var(--w);border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font:inherit;transition:all .2s}.btn:hover{background:#2563eb;transform:translateY(-1px)}</style></head><body><div class="c"><h1>HTMLプレビューアーへようこそ</h1><p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p><p>ツールバーのボタンでレイアウトを変更したり、ファイルを保存したりできます。</p><button class="btn" onclick="alert(\'こんにちは！\')">クリックテスト</button></div></body></html>');
             }
           } catch (error) {
             ErrorHandler.handle(error, 'ローカル読み込み', false);
@@ -702,12 +677,12 @@ body.dragging,body.dragging *{cursor:col-resize!important}
 
         // --- エディター操作機能 ---
         function clearEditor() {
-          if (elements.htmlEditor.value.trim() === '') {
+          if (elements.htmlEditor.getValue().trim() === '') {
             showTemporaryMessage('エディターは既に空です');
             return;
           }
-          
-          elements.htmlEditor.value = '';
+
+          elements.htmlEditor.setValue('');
           updatePreview();
           updateLineNumbers();
           debouncedSaveCode();
@@ -715,7 +690,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         }
 
         async function copyEditor() {
-          const content = elements.htmlEditor.value;
+          const content = elements.htmlEditor.getValue();
           
           if (content.trim() === '') {
             showTemporaryMessage('コピーする内容がありません');
@@ -750,7 +725,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
               showTemporaryMessage('クリップボードが空です', 'error');
               return;
             }
-            elements.htmlEditor.value = text;
+            elements.htmlEditor.setValue(text);
             updatePreview();
             updateLineNumbers();
             debouncedSaveCode();
@@ -797,7 +772,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           if (!file) return;
           const reader = new FileReader();
           reader.onload = (e) => {
-            elements.htmlEditor.value = e.target.result;
+            elements.htmlEditor.setValue(e.target.result);
             updatePreview();
             updateLineNumbers();
             debouncedSaveCode();
@@ -822,7 +797,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         }
 
         function saveToFile() {
-          const htmlCode = elements.htmlEditor.value;
+          const htmlCode = elements.htmlEditor.getValue();
           const filename = getTitleFromHtml(htmlCode);
 
           const blob = new Blob([htmlCode], { type: "text/html;charset=utf-8" });
