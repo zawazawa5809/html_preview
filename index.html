@@ -71,6 +71,30 @@
         --app-accent-hover: var(--da-secondary-hover);
       }
 
+      :root[data-theme="dark"] {
+        --app-text-primary: var(--da-neutral-100);
+        --app-text-secondary: var(--da-neutral-400);
+        --app-text-muted: var(--da-neutral-500);
+        --app-bg-primary: var(--da-neutral-800);
+        --app-bg-secondary: var(--da-neutral-900);
+        --app-bg-dark: var(--da-neutral-900);
+        --app-border-default: var(--da-neutral-700);
+        --app-border-hover: var(--da-neutral-600);
+        --app-toolbar-bg: var(--da-neutral-900);
+        --app-toolbar-text: var(--da-neutral-100);
+        --app-toolbar-border: var(--da-neutral-700);
+        --app-panel-header-bg: var(--da-neutral-900);
+        --app-panel-header-text: var(--da-neutral-100);
+        --app-editor-bg: var(--da-neutral-800);
+        --app-editor-text: var(--da-neutral-100);
+        --app-editor-placeholder: var(--da-neutral-500);
+        --app-line-numbers-bg: var(--da-neutral-900);
+        --app-line-numbers-text: var(--da-neutral-300);
+        --app-gutter-bg: var(--da-neutral-900);
+        --app-gutter-hover: var(--da-neutral-700);
+        --app-gutter-handle: var(--da-neutral-400);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -370,6 +394,9 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
             <i data-feather="eye"></i>
           </button>
+          <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" role="button" tabindex="0">
+            <i data-feather="moon" id="theme-toggle-icon"></i>
+          </button>
           <div style="flex-grow: 1" aria-hidden="true"></div>
           <button class="toolbar-button" id="open-btn" title="HTMLファイルを開く" aria-label="HTMLファイルを開く" role="button" tabindex="0">
             <i data-feather="upload"></i>
@@ -416,6 +443,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           defaultLayout: "lr",
           storageKey: "htmlPreviewerCode",
           layoutStorageKey: "htmlPreviewerLayout",
+          themeStorageKey: "htmlPreviewerTheme",
           debounceDelay: 300,
           layouts: { lr: "左右分割", tb: "上下分割", po: "プレビューのみ" },
         };
@@ -476,12 +504,15 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           clearBtn: document.getElementById("clear-btn"),
           openBtn: document.getElementById("open-btn"),
           fileInput: document.getElementById("file-input"),
-          saveBtn: document.getElementById("save-btn")
+          saveBtn: document.getElementById("save-btn"),
+          themeToggleBtn: document.getElementById("theme-toggle-btn"),
+          themeToggleIcon: document.getElementById("theme-toggle-icon")
         };
 
         // 状態管理
         let state = {
           currentLayout: CONFIG.defaultLayout,
+          currentTheme: 'light',
           isDragging: false,
           dragContext: {},
           lastLineCount: 0
@@ -494,6 +525,13 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             mode: "htmlmixed",
           });
           loadSavedCode();
+          let savedTheme;
+          try {
+            savedTheme = localStorage.getItem(CONFIG.themeStorageKey);
+          } catch (error) {
+            ErrorHandler.handle(error, 'テーマ読み込み', false);
+          }
+          applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
           try {
             const savedLayout = localStorage.getItem(CONFIG.layoutStorageKey);
             if (savedLayout && CONFIG.layouts[savedLayout]) {
@@ -538,12 +576,16 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             loadFromFile(file);
           });
           elements.saveBtn.addEventListener("click", saveToFile); // Add event listener for save
-          
+          elements.themeToggleBtn.addEventListener("click", () => {
+            const newTheme = state.currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+          });
+
           // キーボードショートカット
           document.addEventListener("keydown", handleKeyboard);
-          
+
           // ツールバーボタンのキーボード操作対応
-          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.pasteBtn, elements.clearBtn, elements.openBtn, elements.saveBtn];
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.pasteBtn, elements.clearBtn, elements.openBtn, elements.saveBtn, elements.themeToggleBtn];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -631,6 +673,23 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           }
           // Ensure line numbers are updated after layout change, as width might affect wrapping
           requestAnimationFrame(updateLineNumbers);
+        }
+
+        // --- テーマ制御 ---
+        function applyTheme(theme) {
+          state.currentTheme = theme;
+          document.documentElement.setAttribute('data-theme', theme);
+          try {
+            localStorage.setItem(CONFIG.themeStorageKey, theme);
+          } catch (error) {
+            ErrorHandler.handle(error, 'テーマ保存', false);
+          }
+          if (elements.themeToggleIcon) {
+            elements.themeToggleIcon.dataset.feather = theme === 'dark' ? 'sun' : 'moon';
+            if (typeof feather !== 'undefined') {
+              feather.replace();
+            }
+          }
         }
 
         // --- プレビュー更新 ---
