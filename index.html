@@ -372,6 +372,12 @@ body.dragging,body.dragging *{cursor:col-resize!important}
       <div class="toolbar">
         <span class="toolbar-title">HTMLプレビューアー</span>
         <div class="toolbar-menu">
+          <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" role="button" tabindex="0">
+            <i data-feather="rotate-ccw"></i>
+          </button>
+          <button class="toolbar-button" id="redo-btn" title="やり直す (Ctrl+Y)" aria-label="やり直す" role="button" tabindex="0">
+            <i data-feather="rotate-cw"></i>
+          </button>
           <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
             <i data-feather="copy"></i>
           </button>
@@ -499,6 +505,8 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           layoutLrBtn: document.getElementById("layout-lr-btn"),
           layoutTbBtn: document.getElementById("layout-tb-btn"),
           layoutPoBtn: document.getElementById("layout-po-btn"),
+          undoBtn: document.getElementById("undo-btn"),
+          redoBtn: document.getElementById("redo-btn"),
           copyBtn: document.getElementById("copy-btn"),
           pasteBtn: document.getElementById("paste-btn"),
           clearBtn: document.getElementById("clear-btn"),
@@ -560,6 +568,8 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           elements.layoutLrBtn.addEventListener("click", () => applyLayout("lr"));
           elements.layoutTbBtn.addEventListener("click", () => applyLayout("tb"));
           elements.layoutPoBtn.addEventListener("click", () => applyLayout("po"));
+          elements.undoBtn.addEventListener("click", undoEditor);
+          elements.redoBtn.addEventListener("click", redoEditor);
           elements.copyBtn.addEventListener("click", copyEditor);
           elements.pasteBtn.addEventListener("click", pasteEditor);
           elements.clearBtn.addEventListener("click", clearEditor);
@@ -585,7 +595,19 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           document.addEventListener("keydown", handleKeyboard);
 
           // ツールバーボタンのキーボード操作対応
-          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.pasteBtn, elements.clearBtn, elements.openBtn, elements.saveBtn, elements.themeToggleBtn];
+          const toolbarButtons = [
+            elements.layoutLrBtn,
+            elements.layoutTbBtn,
+            elements.layoutPoBtn,
+            elements.undoBtn,
+            elements.redoBtn,
+            elements.copyBtn,
+            elements.pasteBtn,
+            elements.clearBtn,
+            elements.openBtn,
+            elements.saveBtn,
+            elements.themeToggleBtn
+          ];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -619,6 +641,15 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           else if (e.ctrlKey && e.shiftKey && e.key === "V") {
             e.preventDefault();
             pasteEditor();
+          }
+          // Ctrl+Delete: クリア
+          else if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+            e.preventDefault();
+            undoEditor();
+          }
+          else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+            e.preventDefault();
+            redoEditor();
           }
           // Ctrl+Delete: クリア
           else if (e.ctrlKey && e.key === 'Delete') {
@@ -735,13 +766,24 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         }
 
         // --- エディター操作機能 ---
+        function undoEditor() {
+          elements.htmlEditor.undo();
+          showTemporaryMessage('元に戻しました');
+        }
+
+        function redoEditor() {
+          elements.htmlEditor.redo();
+          showTemporaryMessage('やり直しました');
+        }
+
         function clearEditor() {
           if (elements.htmlEditor.getValue().trim() === '') {
             showTemporaryMessage('エディターは既に空です');
             return;
           }
 
-          elements.htmlEditor.setValue('');
+          const last = elements.htmlEditor.lastLine();
+          elements.htmlEditor.replaceRange('', { line: 0, ch: 0 }, { line: last, ch: elements.htmlEditor.getLine(last).length });
           updatePreview();
           updateLineNumbers();
           debouncedSaveCode();
