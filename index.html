@@ -374,6 +374,10 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             <i data-feather="eye"></i>
           </button>
           <div style="flex-grow: 1" aria-hidden="true"></div>
+          <button class="toolbar-button" id="open-btn" title="HTMLファイルを開く" aria-label="HTMLファイルを開く" role="button" tabindex="0">
+            <i data-feather="upload"></i>
+          </button>
+          <input type="file" id="file-input" accept=".html,.htm,text/html" style="display: none;" />
           <button class="toolbar-button" id="save-btn" title="HTMLファイルをダウンロード (Ctrl+S)" aria-label="HTMLファイルとして保存" role="button" tabindex="0">
             <i data-feather="download"></i>
           </button>
@@ -475,6 +479,8 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           copyBtn: document.getElementById("copy-btn"),
           pasteBtn: document.getElementById("paste-btn"),
           clearBtn: document.getElementById("clear-btn"),
+          openBtn: document.getElementById("open-btn"),
+          fileInput: document.getElementById("file-input"),
           saveBtn: document.getElementById("save-btn")
         };
 
@@ -523,13 +529,25 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           elements.copyBtn.addEventListener("click", copyEditor);
           elements.pasteBtn.addEventListener("click", pasteEditor);
           elements.clearBtn.addEventListener("click", clearEditor);
+          elements.openBtn.addEventListener("click", () => elements.fileInput.click());
+          elements.fileInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            loadFromFile(file);
+            e.target.value = "";
+          });
+          elements.editorContainer.addEventListener("dragover", (e) => e.preventDefault());
+          elements.editorContainer.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            loadFromFile(file);
+          });
           elements.saveBtn.addEventListener("click", saveToFile); // Add event listener for save
           
           // キーボードショートカット
           document.addEventListener("keydown", handleKeyboard);
           
           // ツールバーボタンのキーボード操作対応
-          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.pasteBtn, elements.clearBtn, elements.saveBtn];
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn, elements.copyBtn, elements.pasteBtn, elements.clearBtn, elements.openBtn, elements.saveBtn];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -772,6 +790,19 @@ body.dragging,body.dragging *{cursor:col-resize!important}
               }
             }, 300);
           }, 2000);
+        }
+
+        // --- ファイル読み込み・保存機能 ---
+        function loadFromFile(file) {
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            elements.htmlEditor.value = e.target.result;
+            updatePreview();
+            updateLineNumbers();
+            debouncedSaveCode();
+          };
+          reader.readAsText(file);
         }
 
         // --- ファイル保存機能 ---
