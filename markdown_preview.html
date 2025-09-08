@@ -757,7 +757,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             if (savedCode !== null) {
               elements.htmlEditor.setValue(savedCode);
             } else {
-                elements.htmlEditor.setValue('# Markdownプレビューアーへようこそ\n\nエディタにMarkdownを入力すると、ここにHTMLプレビューが表示されます。');
+                elements.htmlEditor.setValue('# Markdownプレビューアーへようこそ\n\n以下はサンプルです。自由に編集してMarkdownを試してください。\n\n## 見出し\n\n### リスト\n- 箇条書き1\n- 箇条書き2\n\n### 番号付きリスト\n1. 最初\n2. 次\n\n### 強調\n**太字**と*斜体*\n\n### リンク\n[Google](https://www.google.com)\n\n### 画像\n![代替テキスト](https://via.placeholder.com/150)\n\n### コードブロック\n```javascript\nfunction hello() {\n  console.log("Hello, world!");\n}\n```\n\n### インラインコード\n`console.log`\n\n### 引用\n> 引用文\n\n### テーブル\n|列1|列2|\n|---|---|\n|セル1|セル2|');
             }
           } catch (error) {
             ErrorHandler.handle(error, 'ローカル読み込み', false);
