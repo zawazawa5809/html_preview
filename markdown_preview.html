@@ -388,6 +388,21 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
             <i data-feather="trash-2"></i>
           </button>
+          <button class="toolbar-button" id="bold-btn" title="太字 (Ctrl+B)" aria-label="太字" role="button" tabindex="0">
+            <i data-feather="bold"></i>
+          </button>
+          <button class="toolbar-button" id="italic-btn" title="斜体 (Ctrl+I)" aria-label="斜体" role="button" tabindex="0">
+            <i data-feather="italic"></i>
+          </button>
+          <button class="toolbar-button" id="heading-btn" title="見出し (Ctrl+H)" aria-label="見出し" role="button" tabindex="0">
+            <i data-feather="hash"></i>
+          </button>
+          <button class="toolbar-button" id="link-btn" title="リンク挿入 (Ctrl+K)" aria-label="リンク挿入" role="button" tabindex="0">
+            <i data-feather="link"></i>
+          </button>
+          <button class="toolbar-button" id="image-btn" title="画像挿入 (Ctrl+Shift+I)" aria-label="画像挿入" role="button" tabindex="0">
+            <i data-feather="image"></i>
+          </button>
           <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
           <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
             <i data-feather="columns"></i>
@@ -508,6 +523,11 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           copyBtn: document.getElementById("copy-btn"),
           pasteBtn: document.getElementById("paste-btn"),
           clearBtn: document.getElementById("clear-btn"),
+          boldBtn: document.getElementById("bold-btn"),
+          italicBtn: document.getElementById("italic-btn"),
+          headingBtn: document.getElementById("heading-btn"),
+          linkBtn: document.getElementById("link-btn"),
+          imageBtn: document.getElementById("image-btn"),
           openBtn: document.getElementById("open-btn"),
           fileInput: document.getElementById("file-input"),
           saveBtn: document.getElementById("save-btn"),
@@ -571,6 +591,11 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           elements.copyBtn.addEventListener("click", copyEditor);
           elements.pasteBtn.addEventListener("click", pasteEditor);
           elements.clearBtn.addEventListener("click", clearEditor);
+          elements.boldBtn.addEventListener("click", () => insertMarkdownSyntax('bold'));
+          elements.italicBtn.addEventListener("click", () => insertMarkdownSyntax('italic'));
+          elements.headingBtn.addEventListener("click", () => insertMarkdownSyntax('heading'));
+          elements.linkBtn.addEventListener("click", () => insertMarkdownSyntax('link'));
+          elements.imageBtn.addEventListener("click", () => insertMarkdownSyntax('image'));
           elements.openBtn.addEventListener("click", () => elements.fileInput.click());
           elements.fileInput.addEventListener("change", (e) => {
             const file = e.target.files[0];
@@ -602,6 +627,11 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             elements.copyBtn,
             elements.pasteBtn,
             elements.clearBtn,
+            elements.boldBtn,
+            elements.italicBtn,
+            elements.headingBtn,
+            elements.linkBtn,
+            elements.imageBtn,
             elements.openBtn,
             elements.saveBtn,
             elements.themeToggleBtn
@@ -640,7 +670,27 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             e.preventDefault();
             pasteEditor();
           }
-          // Ctrl+Delete: クリア
+          else if (e.ctrlKey && e.key === 'b') {
+            e.preventDefault();
+            insertMarkdownSyntax('bold');
+          }
+          else if (e.ctrlKey && e.key === 'i') {
+            e.preventDefault();
+            insertMarkdownSyntax('italic');
+          }
+          else if (e.ctrlKey && e.key === 'h') {
+            e.preventDefault();
+            insertMarkdownSyntax('heading');
+          }
+          else if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            insertMarkdownSyntax('link');
+          }
+          else if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+            e.preventDefault();
+            insertMarkdownSyntax('image');
+          }
+          // Ctrl+Z: 元に戻す
           else if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
             e.preventDefault();
             undoEditor();
@@ -834,6 +884,38 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             ErrorHandler.handle(error, 'クリップボード貼り付け', false);
             showTemporaryMessage('貼り付けに失敗しました', 'error');
           }
+        }
+
+        function insertMarkdownSyntax(type) {
+          const cm = elements.htmlEditor;
+          const selection = cm.getSelection();
+          let text = '';
+
+          switch (type) {
+            case 'bold':
+              text = `**${selection || '太字'}**`;
+              break;
+            case 'italic':
+              text = `*${selection || '斜体'}*`;
+              break;
+            case 'heading':
+              text = `# ${selection || '見出し'}`;
+              break;
+            case 'link':
+              text = `[${selection || 'リンクテキスト'}](https://)`;
+              break;
+            case 'image':
+              text = `![${selection || '代替テキスト'}](https://)`;
+              break;
+            default:
+              return;
+          }
+
+          cm.replaceSelection(text);
+          cm.focus();
+          updatePreview();
+          updateLineNumbers();
+          debouncedSaveCode();
         }
 
         function showTemporaryMessage(message, type = 'success') {
