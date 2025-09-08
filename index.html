@@ -19,17 +19,17 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/xml/xml.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/css/css.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/htmlmixed/htmlmixed.min.js"></script>
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/dialog/dialog.min.css"
-        />
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/dialog/dialog.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/searchcursor.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/search.min.js"></script>
-        <style>
-        :root {
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/css/css.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/htmlmixed/htmlmixed.min.js"></script>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/dialog/dialog.min.css"
+      />
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/dialog/dialog.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/searchcursor.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/search.min.js"></script>
+      <style>
+      :root {
         --da-primary: #1f2937;
         --da-primary-hover: #111827;
         --da-secondary: #3b82f6;
@@ -364,38 +364,38 @@
       }
 
 body.dragging,body.dragging *{cursor:col-resize!important}
-        .resize-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 9999;
-        }
+      .resize-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+      }
 
-        .CodeMirror-dialog {
-          padding: 8px;
-          background-color: var(--app-bg-secondary);
-          color: var(--app-text-primary);
-          border-bottom: 1px solid var(--app-border-default);
-        }
-        .CodeMirror-dialog input {
-          border: 1px solid var(--app-border-default);
-          background-color: var(--app-bg-primary);
-          color: var(--app-text-primary);
-          padding: 4px;
-        }
-        .CodeMirror-dialog button {
-          background-color: var(--app-accent);
-          color: var(--app-text-on-dark);
-          border: none;
-          padding: 4px 8px;
-          margin-left: 4px;
-          border-radius: 4px;
-          cursor: pointer;
-        }
+      .CodeMirror-dialog {
+        padding: 8px;
+        background-color: var(--app-bg-secondary);
+        color: var(--app-text-primary);
+        border-bottom: 1px solid var(--app-border-default);
+      }
+      .CodeMirror-dialog input {
+        border: 1px solid var(--app-border-default);
+        background-color: var(--app-bg-primary);
+        color: var(--app-text-primary);
+        padding: 4px;
+      }
+      .CodeMirror-dialog button {
+        background-color: var(--app-accent);
+        color: var(--app-text-on-dark);
+        border: none;
+        padding: 4px 8px;
+        margin-left: 4px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
 
-      </style>
+    </style>
   </head>
     <body>
       <div class="toolbar">
@@ -410,18 +410,18 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
             <i data-feather="copy"></i>
           </button>
-            <button class="toolbar-button" id="paste-btn"
-                    title="クリップボードから貼り付け"
-                    aria-label="クリップボードから貼り付け"
-                    role="button" tabindex="0">
-              <i data-feather="clipboard"></i>
-            </button>
-            <button class="toolbar-button" id="search-btn" title="検索 (Ctrl+F)" aria-label="検索" role="button" tabindex="0">
-              <i data-feather="search"></i>
-            </button>
-            <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
-              <i data-feather="trash-2"></i>
-            </button>
+          <button class="toolbar-button" id="paste-btn"
+                  title="クリップボードから貼り付け"
+                  aria-label="クリップボードから貼り付け"
+                  role="button" tabindex="0">
+            <i data-feather="clipboard"></i>
+          </button>
+          <button class="toolbar-button" id="search-btn" title="検索 (Ctrl+F)" aria-label="検索" role="button" tabindex="0">
+            <i data-feather="search"></i>
+          </button>
+          <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
+            <i data-feather="trash-2"></i>
+          </button>
           <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
           <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
             <i data-feather="columns"></i>
@@ -540,10 +540,10 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           undoBtn: document.getElementById("undo-btn"),
           redoBtn: document.getElementById("redo-btn"),
           copyBtn: document.getElementById("copy-btn"),
-            pasteBtn: document.getElementById("paste-btn"),
-            searchBtn: document.getElementById("search-btn"),
-            clearBtn: document.getElementById("clear-btn"),
-            openBtn: document.getElementById("open-btn"),
+          pasteBtn: document.getElementById("paste-btn"),
+          searchBtn: document.getElementById("search-btn"),
+          clearBtn: document.getElementById("clear-btn"),
+          openBtn: document.getElementById("open-btn"),
           fileInput: document.getElementById("file-input"),
           saveBtn: document.getElementById("save-btn"),
           themeToggleBtn: document.getElementById("theme-toggle-btn"),
@@ -603,11 +603,11 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           elements.layoutPoBtn.addEventListener("click", () => applyLayout("po"));
           elements.undoBtn.addEventListener("click", undoEditor);
           elements.redoBtn.addEventListener("click", redoEditor);
-            elements.copyBtn.addEventListener("click", copyEditor);
-            elements.pasteBtn.addEventListener("click", pasteEditor);
-            elements.searchBtn.addEventListener("click", () => elements.htmlEditor.execCommand("find"));
-            elements.clearBtn.addEventListener("click", clearEditor);
-            elements.openBtn.addEventListener("click", () => elements.fileInput.click());
+          elements.copyBtn.addEventListener("click", copyEditor);
+          elements.pasteBtn.addEventListener("click", pasteEditor);
+          elements.searchBtn.addEventListener("click", () => elements.htmlEditor.execCommand("find"));
+          elements.clearBtn.addEventListener("click", clearEditor);
+          elements.openBtn.addEventListener("click", () => elements.fileInput.click());
           elements.fileInput.addEventListener("change", (e) => {
             const file = e.target.files[0];
             loadFromFile(file);
@@ -629,20 +629,19 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           document.addEventListener("keydown", handleKeyboard);
 
           // ツールバーボタンのキーボード操作対応
-            const toolbarButtons = [
-              elements.layoutLrBtn,
-              elements.layoutTbBtn,
-              elements.layoutPoBtn,
-              elements.undoBtn,
-              elements.redoBtn,
-              elements.copyBtn,
-              elements.pasteBtn,
-              elements.searchBtn,
-              elements.clearBtn,
-              elements.openBtn,
-              elements.saveBtn,
-              elements.themeToggleBtn
-            ];
+          const toolbarButtons = [
+            elements.layoutLrBtn,
+            elements.layoutTbBtn,
+            elements.layoutPoBtn,
+            elements.undoBtn,
+            elements.redoBtn,
+            elements.copyBtn,
+            elements.pasteBtn,
+            elements.clearBtn,
+            elements.openBtn,
+            elements.saveBtn,
+            elements.themeToggleBtn
+          ];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -673,23 +672,23 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             e.preventDefault();
             copyEditor();
           }
-            else if (e.ctrlKey && e.shiftKey && e.key === "V") {
-              e.preventDefault();
-              pasteEditor();
-            }
-            else if (e.ctrlKey && e.key === 'f') {
-              e.preventDefault();
-              elements.htmlEditor.execCommand('find');
-            }
-            else if (e.ctrlKey && e.key === 'h') {
-              e.preventDefault();
-              elements.htmlEditor.execCommand('replace');
-            }
-            // Ctrl+Delete: クリア
-            else if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
-              e.preventDefault();
-              undoEditor();
-            }
+          else if (e.ctrlKey && e.shiftKey && e.key === "V") {
+            e.preventDefault();
+            pasteEditor();
+          }
+          else if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            elements.htmlEditor.execCommand('find');
+          }
+          else if (e.ctrlKey && e.key === 'h') {
+            e.preventDefault();
+            elements.htmlEditor.execCommand('replace');
+          }
+          // Ctrl+Delete: クリア
+          else if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+            e.preventDefault();
+            undoEditor();
+          }
           else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
             e.preventDefault();
             redoEditor();
