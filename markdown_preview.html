@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拡張版Markdownプレビューアー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+      <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+      <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+      />
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/markdown/markdown.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+      <style>
+      :root {
+        --da-primary: #1f2937;
+        --da-primary-hover: #111827;
+        --da-secondary: #3b82f6;
+        --da-secondary-hover: #2563eb;
+        --da-tertiary: #60a5fa;
+        --da-tertiary-light: #93c5fd;
+        --da-neutral-white: #ffffff;
+        --da-neutral-50: #f9fafb;
+        --da-neutral-100: #f3f4f6;
+        --da-neutral-200: #e5e7eb;
+        --da-neutral-300: #d1d5db;
+        --da-neutral-400: #9ca3af;
+        --da-neutral-500: #6b7280;
+        --da-neutral-600: #4b5563;
+        --da-neutral-700: #374151;
+        --da-neutral-800: #1f2937;
+        --da-neutral-900: #111827;
+        --da-success: #10b981;
+        --da-warning: #f59e0b;
+        --da-error: #ef4444;
+        --da-info: var(--da-secondary);
+        --app-text-primary: var(--da-neutral-900);
+        --app-text-secondary: var(--da-neutral-600);
+        --app-text-on-dark: var(--da-neutral-white);
+        --app-text-muted: var(--da-neutral-500);
+        --app-bg-primary: var(--da-neutral-white);
+        --app-bg-secondary: var(--da-neutral-50);
+        --app-bg-dark: var(--da-primary);
+        --app-border-default: var(--da-neutral-200);
+        --app-border-focus: var(--da-secondary);
+        --app-border-hover: var(--da-neutral-300);
+        --app-toolbar-bg: var(--da-primary);
+        --app-toolbar-text: var(--app-text-on-dark);
+        --app-toolbar-border: var(--da-neutral-700);
+        --app-panel-header-bg: var(--da-neutral-800);
+        --app-panel-header-text: var(--app-text-on-dark);
+        --app-editor-bg: var(--app-bg-primary);
+        --app-editor-text: var(--app-text-primary);
+        --app-editor-placeholder: var(--app-text-muted);
+        --app-line-numbers-bg: var(--da-neutral-800);
+        --app-line-numbers-text: var(--da-neutral-300);
+        --app-gutter-bg: var(--da-neutral-800);
+        --app-gutter-hover: var(--da-neutral-700);
+        --app-gutter-handle: var(--da-neutral-400);
+        --app-accent: var(--da-secondary);
+        --app-accent-hover: var(--da-secondary-hover);
+      }
+
+      :root[data-theme="dark"] {
+        --app-text-primary: var(--da-neutral-100);
+        --app-text-secondary: var(--da-neutral-400);
+        --app-text-muted: var(--da-neutral-500);
+        --app-bg-primary: var(--da-neutral-800);
+        --app-bg-secondary: var(--da-neutral-900);
+        --app-bg-dark: var(--da-neutral-900);
+        --app-border-default: var(--da-neutral-700);
+        --app-border-hover: var(--da-neutral-600);
+        --app-toolbar-bg: var(--da-neutral-900);
+        --app-toolbar-text: var(--da-neutral-100);
+        --app-toolbar-border: var(--da-neutral-700);
+        --app-panel-header-bg: var(--da-neutral-900);
+        --app-panel-header-text: var(--da-neutral-100);
+        --app-editor-bg: var(--da-neutral-800);
+        --app-editor-text: var(--da-neutral-100);
+        --app-editor-placeholder: var(--da-neutral-500);
+        --app-line-numbers-bg: var(--da-neutral-900);
+        --app-line-numbers-text: var(--da-neutral-300);
+        --app-gutter-bg: var(--da-neutral-900);
+        --app-gutter-hover: var(--da-neutral-700);
+        --app-gutter-handle: var(--da-neutral-400);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 400;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--app-bg-primary);
+        color: var(--app-text-primary);
+      }
+
+      .toolbar {
+        background-color: var(--app-toolbar-bg);
+        color: var(--app-toolbar-text);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--app-toolbar-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        min-height: 48px;
+      }
+
+      .toolbar-title {
+        font-weight: 500;
+        font-size: 18px;
+        line-height: 1.4;
+        margin-right: auto;
+        color: var(--app-toolbar-text);
+        letter-spacing: 0.02em;
+      }
+
+      .toolbar-menu {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .toolbar-button {
+        background: none;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        min-width: 40px;
+        min-height: 40px;
+        transition: all 0.2s ease;
+      }
+
+      .toolbar-button svg {
+        width: 20px;
+        height: 20px;
+        color: var(--da-neutral-100);
+        transition: all 0.2s ease;
+      }
+
+      .toolbar-button:hover {
+        background-color: var(--da-neutral-700);
+      }
+      .toolbar-button:hover svg {
+        color: var(--da-neutral-white);
+      }
+      .toolbar-button.active {
+        background-color: var(--app-accent);
+      }
+      .toolbar-button.active svg {
+        color: var(--da-neutral-white);
+      }
+
+      .toolbar-button:focus,
+      .toolbar-button:focus-visible {
+        outline: 2px solid var(--app-border-focus);
+        outline-offset: 2px;
+        border-radius: 6px;
+      }
+
+      @media (max-width: 600px) {
+        .toolbar {
+          flex-wrap: wrap;
+        }
+
+        .toolbar-menu {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+      }
+
+      #html-editor:focus,
+      #html-editor:focus-visible {
+        outline: 2px solid var(--app-border-focus);
+        outline-offset: -2px;
+        border-radius: 4px;
+      }
+
+      .split-view {
+        display: flex;
+        width: 100%;
+        flex-grow: 1;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .split-view.layout-lr {
+        flex-direction: row;
+      }
+      .split-view.layout-tb {
+        flex-direction: column;
+      }
+
+      .editor-container,
+      .preview-panel {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .editor-container {
+        background-color: var(--app-editor-bg);
+      }
+      .split-view.layout-lr .editor-container {
+        width: 50%;
+        height: 100%;
+      }
+      .split-view.layout-tb .editor-container {
+        width: 100%;
+        height: 50%;
+      }
+
+      .preview-panel {
+        background-color: var(--app-bg-primary);
+      }
+      .split-view.layout-lr .preview-panel {
+        width: 50%;
+        height: 100%;
+      }
+      .split-view.layout-tb .preview-panel {
+        width: 100%;
+        height: 50%;
+      }
+
+.split-view.layout-po .editor-container,.split-view.layout-po .gutter{display:none}.split-view.layout-po .preview-panel{width:100%!important;height:100%!important}
+
+      .panel-header {
+        background-color: var(--app-panel-header-bg);
+        color: var(--app-panel-header-text);
+        padding: 12px 16px;
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 1.5;
+        text-align: center;
+        user-select: none;
+        flex-shrink: 0;
+        letter-spacing: 0.02em;
+      }
+
+      .editor-content-wrapper {
+        display: flex;
+        flex-grow: 1;
+        overflow: hidden;
+        border: 1px solid var(--app-border-default);
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+      }
+      #html-editor {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 0;
+        padding: 12px 16px;
+        font-family: "Noto Sans Mono", Consolas, "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: none;
+        flex-grow: 1;
+        background-color: var(--app-editor-bg);
+        color: var(--app-editor-text);
+      }
+      .CodeMirror {
+        width: 100%;
+        height: 100%;
+        flex-grow: 1;
+      }
+      #html-editor::placeholder {
+        color: var(--app-editor-placeholder);
+        font-style: italic;
+      }
+
+      .panel-content {
+        flex-grow: 1;
+        overflow: auto;
+        padding: 12px 16px;
+        border: 1px solid var(--app-border-default);
+        border-top: none;
+        background-color: var(--app-bg-primary);
+        border-radius: 0 0 4px 4px;
+      }
+
+      #preview-container {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background-color: var(--app-bg-primary);
+        border-radius: 4px;
+      }
+
+      .gutter {
+        background-color: var(--app-gutter-bg);
+        position: relative;
+        transition: background-color 0.2s ease;
+      }
+      .split-view.layout-lr .gutter {
+        width: 8px;
+        height: 100%;
+        cursor: col-resize;
+      }
+      .split-view.layout-tb .gutter {
+        width: 100%;
+        height: 8px;
+        cursor: row-resize;
+      }
+
+      .gutter:hover {
+        background-color: var(--app-gutter-hover);
+      }
+
+      .gutter::after {
+        content: "";
+        position: absolute;
+        background-color: var(--app-gutter-handle);
+        border-radius: 2px;
+        transition: background-color 0.2s ease;
+      }
+      .split-view.layout-lr .gutter::after {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 30px;
+      }
+      .split-view.layout-tb .gutter::after {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 30px;
+        height: 2px;
+      }
+
+body.dragging,body.dragging *{cursor:col-resize!important}
+      .resize-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+      }
+
+    </style>
+  </head>
+    <body>
+      <div class="toolbar">
+        <span class="toolbar-title">Markdownプレビューアー</span>
+        <div class="toolbar-menu">
+          <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" role="button" tabindex="0">
+            <i data-feather="rotate-ccw"></i>
+          </button>
+          <button class="toolbar-button" id="redo-btn" title="やり直す (Ctrl+Y)" aria-label="やり直す" role="button" tabindex="0">
+            <i data-feather="rotate-cw"></i>
+          </button>
+          <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
+            <i data-feather="copy"></i>
+          </button>
+          <button class="toolbar-button" id="paste-btn"
+                  title="クリップボードから貼り付け"
+                  aria-label="クリップボードから貼り付け"
+                  role="button" tabindex="0">
+            <i data-feather="clipboard"></i>
+          </button>
+          <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
+            <i data-feather="trash-2"></i>
+          </button>
+          <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
+          <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
+            <i data-feather="columns"></i>
+          </button>
+          <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割レイアウトに変更" role="button" tabindex="0">
+            <i data-feather="minimize-2"></i>
+          </button>
+          <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
+            <i data-feather="eye"></i>
+          </button>
+          <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" role="button" tabindex="0">
+            <i data-feather="moon" id="theme-toggle-icon"></i>
+          </button>
+          <div style="flex-grow: 1" aria-hidden="true"></div>
+          <button class="toolbar-button" id="open-btn" title="Markdownファイルを開く" aria-label="Markdownファイルを開く" role="button" tabindex="0">
+            <i data-feather="upload"></i>
+          </button>
+          <input type="file" id="file-input" accept=".md,.markdown,text/markdown" style="display: none;" />
+          <button class="toolbar-button" id="save-btn" title="Markdownファイルをダウンロード (Ctrl+S)" aria-label="Markdownファイルとして保存" role="button" tabindex="0">
+            <i data-feather="download"></i>
+          </button>
+        </div>
+      </div>
+
+    <div class="split-view" id="split-view">
+      <div class="editor-container" id="editor-container">
+        <div class="panel-header">Markdownエディタ</div>
+        <div class="editor-content-wrapper">
+          <textarea
+            id="html-editor"
+            placeholder="Markdownをここに入力してください..."
+            wrap="soft"
+            aria-label="Markdownエディター"
+            role="textbox"
+            aria-multiline="true"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+      </div>
+      <div class="gutter" id="gutter"></div>
+      <div class="preview-panel" id="preview-panel">
+        <div class="panel-header">プレビュー</div>
+        <div class="panel-content">
+          <iframe id="preview-container" frameborder="0" aria-label="Markdownプレビュー表示エリア" title="Markdownのプレビュー結果" role="application"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        'use strict';
+        
+        const CONFIG = {
+          defaultLayout: "lr",
+          storageKey: "markdownPreviewerCode",
+          layoutStorageKey: "markdownPreviewerLayout",
+          themeStorageKey: "markdownPreviewerTheme",
+          debounceDelay: 300,
+          layouts: { lr: "左右分割", tb: "上下分割", po: "プレビューのみ" },
+        };
+
+        // 統一エラーハンドリング
+        const ErrorHandler = {
+          log: (error, context = '') => {
+            console.error(`[Markdownプレビューアー${context ? ` - ${context}` : ''}]`, error);
+          },
+          
+          showPreviewError: (error) => {
+            const iframeDoc = elements.previewContainer.contentDocument || 
+                              elements.previewContainer.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(`
+              <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; font-family: system-ui;">
+                <h3 style="margin-top: 0;">プレビューエラー</h3>
+                <p>Markdownの処理中にエラーが発生しました。</p>
+                <details style="margin-top: 10px;">
+                  <summary style="cursor: pointer;">詳細を表示</summary>
+                  <pre style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px; overflow-x: auto;">${error.message || error}</pre>
+                </details>
+              </div>
+            `);
+            iframeDoc.close();
+          },
+          
+          handle: (error, context = '', showToUser = true) => {
+            ErrorHandler.log(error, context);
+            if (showToUser && context === 'プレビュー更新') {
+              ErrorHandler.showPreviewError(error);
+            }
+          }
+        };
+
+        // lodashのdebounceを使用（CDNから読み込み済み）
+        const debounce = window._ ? _.debounce : (func, delay) => {
+          let timeoutId;
+          return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+          };
+        };
+        
+        // DOM要素の取得
+        const elements = {
+          splitView: document.getElementById("split-view"),
+          editorContainer: document.getElementById("editor-container"),
+          previewPanel: document.getElementById("preview-panel"),
+          gutter: document.getElementById("gutter"),
+          htmlEditor: document.getElementById("html-editor"),
+          previewContainer: document.getElementById("preview-container"),
+          layoutLrBtn: document.getElementById("layout-lr-btn"),
+          layoutTbBtn: document.getElementById("layout-tb-btn"),
+          layoutPoBtn: document.getElementById("layout-po-btn"),
+          undoBtn: document.getElementById("undo-btn"),
+          redoBtn: document.getElementById("redo-btn"),
+          copyBtn: document.getElementById("copy-btn"),
+          pasteBtn: document.getElementById("paste-btn"),
+          clearBtn: document.getElementById("clear-btn"),
+          openBtn: document.getElementById("open-btn"),
+          fileInput: document.getElementById("file-input"),
+          saveBtn: document.getElementById("save-btn"),
+          themeToggleBtn: document.getElementById("theme-toggle-btn"),
+          themeToggleIcon: document.getElementById("theme-toggle-icon")
+        };
+
+        // 状態管理
+        let state = {
+          currentLayout: CONFIG.defaultLayout,
+          currentTheme: 'light',
+          isDragging: false,
+          dragContext: {},
+          lastLineCount: 0
+        };
+
+        // --- 初期化 ---
+        function initialize() {
+          elements.htmlEditor = CodeMirror.fromTextArea(elements.htmlEditor, {
+            lineNumbers: true,
+            mode: "markdown",
+          });
+          loadSavedCode();
+          let savedTheme;
+          try {
+            savedTheme = localStorage.getItem(CONFIG.themeStorageKey);
+          } catch (error) {
+            ErrorHandler.handle(error, 'テーマ読み込み', false);
+          }
+          applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+          try {
+            const savedLayout = localStorage.getItem(CONFIG.layoutStorageKey);
+            if (savedLayout && CONFIG.layouts[savedLayout]) {
+              state.currentLayout = savedLayout;
+            } else {
+              state.currentLayout = CONFIG.defaultLayout;
+            }
+          } catch (error) {
+            ErrorHandler.handle(error, 'レイアウト読み込み', false);
+            state.currentLayout = CONFIG.defaultLayout;
+          }
+          // 初期行数を設定
+          state.lastLineCount = elements.htmlEditor.lineCount();
+          applyLayout(state.currentLayout); // 初期レイアウト適用
+          updatePreview();
+          updateLineNumbers();
+
+          elements.htmlEditor.on("change", handleEditorInput);
+
+          elements.gutter.addEventListener("mousedown", startDrag);
+          elements.gutter.addEventListener("touchstart", (e) => {
+            e.preventDefault(); // スクロール防止
+            startDrag(e.touches[0]);
+          });
+
+          elements.layoutLrBtn.addEventListener("click", () => applyLayout("lr"));
+          elements.layoutTbBtn.addEventListener("click", () => applyLayout("tb"));
+          elements.layoutPoBtn.addEventListener("click", () => applyLayout("po"));
+          elements.undoBtn.addEventListener("click", undoEditor);
+          elements.redoBtn.addEventListener("click", redoEditor);
+          elements.copyBtn.addEventListener("click", copyEditor);
+          elements.pasteBtn.addEventListener("click", pasteEditor);
+          elements.clearBtn.addEventListener("click", clearEditor);
+          elements.openBtn.addEventListener("click", () => elements.fileInput.click());
+          elements.fileInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            loadFromFile(file);
+            e.target.value = "";
+          });
+          elements.editorContainer.addEventListener("dragover", (e) => e.preventDefault());
+          elements.editorContainer.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            loadFromFile(file);
+          });
+          elements.saveBtn.addEventListener("click", saveToFile); // Add event listener for save
+          elements.themeToggleBtn.addEventListener("click", () => {
+            const newTheme = state.currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+          });
+
+          // キーボードショートカット
+          document.addEventListener("keydown", handleKeyboard);
+
+          // ツールバーボタンのキーボード操作対応
+          const toolbarButtons = [
+            elements.layoutLrBtn,
+            elements.layoutTbBtn,
+            elements.layoutPoBtn,
+            elements.undoBtn,
+            elements.redoBtn,
+            elements.copyBtn,
+            elements.pasteBtn,
+            elements.clearBtn,
+            elements.openBtn,
+            elements.saveBtn,
+            elements.themeToggleBtn
+          ];
+          toolbarButtons.forEach(btn => {
+            btn.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                btn.click();
+              }
+            });
+          });
+        }
+
+        // デバウンス版saveCode
+        const debouncedSaveCode = debounce(saveCode, CONFIG.debounceDelay);
+
+        function handleEditorInput() {
+          updatePreview();
+          updateLineNumbers();
+          debouncedSaveCode();
+        }
+
+        function handleKeyboard(e) {
+          // Ctrl+S: 保存
+          if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveToFile();
+          }
+          // Ctrl+Shift+C: コピー
+          else if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            copyEditor();
+          }
+          else if (e.ctrlKey && e.shiftKey && e.key === "V") {
+            e.preventDefault();
+            pasteEditor();
+          }
+          // Ctrl+Delete: クリア
+          else if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+            e.preventDefault();
+            undoEditor();
+          }
+          else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+            e.preventDefault();
+            redoEditor();
+          }
+          // Ctrl+Delete: クリア
+          else if (e.ctrlKey && e.key === 'Delete') {
+            e.preventDefault();
+            clearEditor();
+          }
+          // Ctrl+1: 左右分割
+          else if (e.ctrlKey && e.key === '1') {
+            e.preventDefault();
+            applyLayout("lr");
+          }
+          // Ctrl+2: 上下分割
+          else if (e.ctrlKey && e.key === '2') {
+            e.preventDefault();
+            applyLayout("tb");
+          }
+          // Ctrl+3: プレビューのみ
+          else if (e.ctrlKey && e.key === '3') {
+            e.preventDefault();
+            applyLayout("po");
+          }
+        }
+
+        // --- レイアウト制御 ---
+        function applyLayout(mode) {
+          state.currentLayout = mode;
+          try {
+            localStorage.setItem(CONFIG.layoutStorageKey, mode);
+          } catch (error) {
+            ErrorHandler.handle(error, 'レイアウト保存', false);
+          }
+          elements.splitView.className = "split-view"; // Reset classes
+          elements.splitView.classList.add(`layout-${mode}`);
+
+          elements.editorContainer.style.width = "";
+          elements.editorContainer.style.height = "";
+          elements.previewPanel.style.width = "";
+          elements.previewPanel.style.height = "";
+
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn];
+          toolbarButtons.forEach((btn) => btn.classList.remove("active"));
+          if (mode === "lr") elements.layoutLrBtn.classList.add("active");
+          else if (mode === "tb") elements.layoutTbBtn.classList.add("active");
+          else if (mode === "po") elements.layoutPoBtn.classList.add("active");
+
+          if (mode === "lr") {
+            elements.editorContainer.style.width = "50%";
+            elements.previewPanel.style.width = "50%";
+          } else if (mode === "tb") {
+            elements.editorContainer.style.height = "50%";
+            elements.previewPanel.style.height = "50%";
+          }
+          // Ensure line numbers are updated after layout change, as width might affect wrapping
+          requestAnimationFrame(updateLineNumbers);
+        }
+
+        // --- テーマ制御 ---
+        function applyTheme(theme) {
+          state.currentTheme = theme;
+          document.documentElement.setAttribute('data-theme', theme);
+          try {
+            localStorage.setItem(CONFIG.themeStorageKey, theme);
+          } catch (error) {
+            ErrorHandler.handle(error, 'テーマ保存', false);
+          }
+          if (elements.themeToggleIcon) {
+            elements.themeToggleIcon.dataset.feather = theme === 'dark' ? 'sun' : 'moon';
+            if (typeof feather !== 'undefined') {
+              feather.replace();
+            }
+          }
+        }
+
+        // --- プレビュー更新 ---
+        function updatePreview() {
+          const markdownText = elements.htmlEditor.getValue();
+          const html = marked.parse(markdownText);
+          const iframeDoc =
+            elements.previewContainer.contentDocument ||
+            elements.previewContainer.contentWindow.document;
+          try {
+            iframeDoc.open();
+            iframeDoc.write(html);
+            iframeDoc.close();
+          } catch (error) {
+            ErrorHandler.handle(error, 'プレビュー更新', true);
+          }
+        }
+
+        // --- 行番号処理 ---
+        function updateLineNumbers() {
+          state.lastLineCount = elements.htmlEditor.lineCount();
+        }
+
+        // --- ローカルストレージ ---
+        function saveCode() {
+          try {
+            localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.getValue());
+          } catch (error) {
+            ErrorHandler.handle(error, 'ローカル保存', false);
+          }
+        }
+
+        function loadSavedCode() {
+          try {
+            const savedCode = localStorage.getItem(CONFIG.storageKey);
+            if (savedCode !== null) {
+              elements.htmlEditor.setValue(savedCode);
+            } else {
+                elements.htmlEditor.setValue('# Markdownプレビューアーへようこそ\n\nエディタにMarkdownを入力すると、ここにHTMLプレビューが表示されます。');
+            }
+          } catch (error) {
+            ErrorHandler.handle(error, 'ローカル読み込み', false);
+          }
+        }
+
+        // --- エディター操作機能 ---
+        function undoEditor() {
+          elements.htmlEditor.undo();
+          showTemporaryMessage('元に戻しました');
+        }
+
+        function redoEditor() {
+          elements.htmlEditor.redo();
+          showTemporaryMessage('やり直しました');
+        }
+
+        function clearEditor() {
+          if (elements.htmlEditor.getValue().trim() === '') {
+            showTemporaryMessage('エディターは既に空です');
+            return;
+          }
+
+          const last = elements.htmlEditor.lastLine();
+          elements.htmlEditor.replaceRange('', { line: 0, ch: 0 }, { line: last, ch: elements.htmlEditor.getLine(last).length });
+          updatePreview();
+          updateLineNumbers();
+          debouncedSaveCode();
+          showTemporaryMessage('エディターをクリアしました');
+        }
+
+        async function copyEditor() {
+          const content = elements.htmlEditor.getValue();
+          
+          if (content.trim() === '') {
+            showTemporaryMessage('コピーする内容がありません');
+            return;
+          }
+          
+          try {
+            await navigator.clipboard.writeText(content);
+            showTemporaryMessage('エディター内容をクリップボードにコピーしました');
+          } catch (error) {
+            ErrorHandler.handle(error, 'クリップボード操作', false);
+            // フォールバック: 古いブラウザ対応
+            try {
+              const textArea = document.createElement('textarea');
+              textArea.value = content;
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+              showTemporaryMessage('エディター内容をコピーしました（フォールバック）');
+            } catch (fallbackError) {
+              ErrorHandler.handle(fallbackError, 'フォールバックコピー', false);
+              showTemporaryMessage('コピーに失敗しました', 'error');
+            }
+          }
+        }
+
+        async function pasteEditor() {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (!text.trim()) {
+              showTemporaryMessage('クリップボードが空です', 'error');
+              return;
+            }
+            elements.htmlEditor.setValue(text);
+            updatePreview();
+            updateLineNumbers();
+            debouncedSaveCode();
+            showTemporaryMessage('クリップボードから貼り付けました');
+          } catch (error) {
+            ErrorHandler.handle(error, 'クリップボード貼り付け', false);
+            showTemporaryMessage('貼り付けに失敗しました', 'error');
+          }
+        }
+
+        function showTemporaryMessage(message, type = 'success') {
+          // 一時的なメッセージ表示機能
+          const messageDiv = document.createElement('div');
+          messageDiv.textContent = message;
+          messageDiv.style.cssText = `
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 10000;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            ${type === 'error' 
+              ? 'background-color: #fee; color: #c33; border: 1px solid #fcc;' 
+              : 'background-color: #efe; color: #363; border: 1px solid #cfc;'}
+          `;
+          
+          document.body.appendChild(messageDiv);
+          
+          setTimeout(() => {
+            messageDiv.style.opacity = '0';
+            setTimeout(() => {
+              if (messageDiv.parentNode) {
+                document.body.removeChild(messageDiv);
+              }
+            }, 300);
+          }, 2000);
+        }
+
+        // --- ファイル読み込み・保存機能 ---
+        function loadFromFile(file) {
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            elements.htmlEditor.setValue(e.target.result);
+            updatePreview();
+            updateLineNumbers();
+            debouncedSaveCode();
+          };
+          reader.readAsText(file);
+        }
+
+          // --- ファイル保存機能 ---
+          function getTitleFromMarkdown(md) {
+            const titleMatch = md.match(/^#\s+(.+)$/m);
+            if (titleMatch && titleMatch[1]) {
+              let filename = titleMatch[1].trim();
+              filename = filename.replace(/[^a-z0-9_\-\s\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]+/gi, "_");
+              filename = filename.replace(/\s+/g, "_");
+              return filename + ".md";
+            }
+            return "preview.md";
+          }
+
+          function saveToFile() {
+            const markdown = elements.htmlEditor.getValue();
+            const filename = getTitleFromMarkdown(markdown);
+
+            const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(link.href); // Clean up
+          }
+        // --- Split View リサイズ機能 ---
+        function startDrag(e) {
+          state.isDragging = true;
+          document.body.classList.add("dragging");
+
+          state.dragContext.startX = e.clientX;
+          state.dragContext.startY = e.clientY;
+          state.dragContext.editorInitialWidth = elements.editorContainer.offsetWidth;
+          state.dragContext.editorInitialHeight = elements.editorContainer.offsetHeight;
+
+          window.addEventListener("mousemove", doDrag);
+          window.addEventListener("touchmove", (ev) => doDrag(ev.touches[0]), {
+            passive: false,
+          });
+          window.addEventListener("mouseup", stopDrag);
+          window.addEventListener("touchend", stopDrag);
+          window.addEventListener("mouseleave", stopDrag);
+
+          document.body.style.userSelect = "none";
+          if (state.currentLayout === "tb") {
+            document.body.style.cursor = "row-resize";
+          } else {
+            document.body.style.cursor = "col-resize";
+          }
+
+          const overlay = document.createElement("div");
+          overlay.className = "resize-overlay";
+          document.body.appendChild(overlay);
+        }
+
+        function doDrag(e) {
+          if (!state.isDragging) return;
+
+          requestAnimationFrame(() => {
+            const dx = e.clientX - state.dragContext.startX;
+            const dy = e.clientY - state.dragContext.startY;
+
+            let editorNewSize;
+
+            if (state.currentLayout === "lr") {
+              const totalWidth =
+                elements.editorContainer.parentElement.clientWidth - elements.gutter.offsetWidth;
+              editorNewSize = state.dragContext.editorInitialWidth + dx;
+              const minWidth = Math.max(totalWidth * 0.1, 100);
+              editorNewSize = Math.max(minWidth, editorNewSize);
+              editorNewSize = Math.min(totalWidth - minWidth, editorNewSize);
+
+              elements.editorContainer.style.width = `${editorNewSize}px`;
+              elements.previewPanel.style.width = `${totalWidth - editorNewSize}px`;
+            } else if (state.currentLayout === "tb") {
+              const totalHeight =
+                elements.editorContainer.parentElement.clientHeight - elements.gutter.offsetHeight;
+              editorNewSize = state.dragContext.editorInitialHeight + dy;
+              const minHeight = Math.max(totalHeight * 0.1, 100);
+              editorNewSize = Math.max(minHeight, editorNewSize);
+              editorNewSize = Math.min(totalHeight - minHeight, editorNewSize);
+
+              elements.editorContainer.style.height = `${editorNewSize}px`;
+              elements.previewPanel.style.height = `${totalHeight - editorNewSize}px`;
+            }
+            // Update line numbers as panel resize might affect textarea width and thus wrapping
+            updateLineNumbers();
+          });
+        }
+
+        function stopDrag() {
+          if (!state.isDragging) return;
+          state.isDragging = false;
+          document.body.classList.remove("dragging");
+
+          window.removeEventListener("mousemove", doDrag);
+          window.removeEventListener("touchmove", doDrag);
+          window.removeEventListener("mouseup", stopDrag);
+          window.removeEventListener("touchend", stopDrag);
+          window.removeEventListener("mouseleave", stopDrag);
+
+          document.body.style.userSelect = "";
+          document.body.style.cursor = "";
+
+          const overlay = document.querySelector(".resize-overlay");
+          if (overlay) {
+            document.body.removeChild(overlay);
+          }
+          state.dragContext = {};
+          // Final update to line numbers after dragging stops
+          requestAnimationFrame(updateLineNumbers);
+        }
+
+        // 初期化実行
+        initialize();
+        
+        // Feather iconsを初期化
+        if (typeof feather !== 'undefined') {
+          feather.replace();
+        }
+      })();
+    </script>
+  </body>
+</html>
