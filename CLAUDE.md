@@ -4,66 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a standalone HTML Preview application - a single-file web application that provides real-time HTML editing and preview capabilities with multiple layout options.
+ブラウザ上でHTML/Markdownをリアルタイム編集・プレビューできるシングルファイルWebアプリケーション群。AI出力の組み立てツール（Loom）も含む。
 
 ## Architecture
 
-- **Single File Application**: Everything is contained in `html_preview.html`
-- **No Build Process**: Direct HTML/CSS/JavaScript - no compilation or bundling required
-- **No External Dependencies**: Self-contained with inline styles and scripts
-- **LocalStorage Integration**: Automatically saves user's HTML code locally
+- **シングルファイル構成**: 各HTMLファイルが独立した完結アプリケーション。ビルド不要
+- **共通パターン**: `index.html`と`markdown_preview.html`はCSS変数・ツールバー・split-view・gutter resizeなど同じ設計パターンを共有。変更時は両方を確認する
+- **エディタ**: CodeMirror 5.65.7（CDN）を使用。`elements.htmlEditor`は初期化後CodeMirrorインスタンスに置き換わる（`getValue()` / `setValue()` / `replaceRange()`等のAPIを使用）
+- **外部CDN依存**: Feather Icons, lodash (debounce), CodeMirror, Noto Sans JP。Loomは外部依存なし（JetBrains Mono fontのみ）
+- **状態管理**: 各アプリがIIFE内でstate objectとlocalStorageで状態を管理
 
-## Core Features
+## Files
 
-1. **Real-time HTML Preview**: Updates as user types
-2. **Layout Modes**: 
-   - Left-Right split (lr)
-   - Top-Bottom split (tb)
-   - Preview only (po)
-3. **Resizable Panels**: Drag gutter to resize editor/preview panels
-4. **Line Numbers**: Synchronized with editor scrolling
-5. **Auto-save**: Persists code to localStorage
-6. **Export**: Save edited HTML as downloadable file
+| File | 用途 | localStorage Keys |
+|------|------|-------------------|
+| `index.html` | HTMLリアルタイムプレビュー | `htmlPreviewerCode`, `htmlPreviewerLayout`, `htmlPreviewerTheme` |
+| `markdown_preview.html` | Markdownプレビュー（marked.js使用） | `markdownPreviewerCode`, `markdownPreviewerLayout`, `markdownPreviewerTheme` |
+| `loom.html` | AI出力ワークベンチ（Context Builder + Output Assembler） | `loom_state` |
 
-## Development Tasks
+## Development
 
-### Running the Application
-Simply open `html_preview.html` in any modern web browser. No server required.
+ブラウザで直接HTMLファイルを開くだけ。サーバー不要。
 
-### Testing
-Open in browser and verify:
-- Preview updates in real-time
-- Layout switching works correctly
-- Panel resizing functions properly
-- Save functionality exports correct file
+## Key Patterns
 
-## Code Structure
+- **レイアウト**: `lr`(左右分割), `tb`(上下分割), `po`(プレビューのみ)の3モード
+- **ダークテーマ**: `data-theme="dark"` on `<html>` + CSS変数のオーバーライド
+- **デバウンス保存**: lodash `_.debounce`で300ms遅延のlocalStorage書き込み（Loomも同様）
+- **iframeプレビュー**: エディタ内容を`iframeDoc.open()/write()/close()`で描画
+- **gutterリサイズ**: mouse/touchイベント + overlay要素でパネル比率を変更
 
-### Key Components
-- **Toolbar** (lines 72-115): Layout controls and save button
-- **Editor Container** (lines 339-349): HTML textarea with line numbers
-- **Preview Panel** (lines 351-356): iframe for rendering HTML
-- **JavaScript Logic** (lines 359-642):
-  - Layout management: `applyLayout()`
-  - Preview updates: `updatePreview()`
-  - Line number sync: `updateLineNumbers()`, `syncScroll()`
-  - Panel resizing: drag handlers
-  - Storage: `saveCode()`, `loadSavedCode()`
-  - File export: `saveToFile()`
+## Loom固有の設計
 
-## Common Modifications
-
-### Adding New Toolbar Features
-Add button in toolbar section (around line 306-335) and corresponding event handler in JavaScript section.
-
-### Modifying Color Scheme
-Update CSS variables in `:root` section (lines 14-55).
-
-### Changing Default HTML Content
-Modify the default template in `loadSavedCode()` function (lines 487-511).
-
-## Important Notes
-
-- The application uses an iframe for preview which provides isolation but may have cross-origin limitations
-- Line numbers are synchronized with textarea scrolling through the `syncScroll()` function
-- Panel resizing uses mouse/touch event handlers with proper cleanup to prevent memory leaks
+- 2パネル構成: Context Builder（左: system/reference/previous/instruction）+ Output Assembler（右: code/text/config/data）
+- ブロックのドラッグ並べ替え、パネル間移動、スナップショット、テンプレート機能
+- `escHtml()`でXSSを防止。インポート時は`allowedKeys`でホワイトリスト検証

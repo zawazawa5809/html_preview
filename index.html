@@ -356,7 +356,8 @@
         height: 2px;
       }
 
-body.dragging,body.dragging *{cursor:col-resize!important}
+body.dragging-lr,body.dragging-lr *{cursor:col-resize!important}
+body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
       .resize-overlay {
         position: absolute;
         top: 0;
@@ -436,7 +437,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
       <div class="preview-panel" id="preview-panel">
         <div class="panel-header">プレビュー</div>
         <div class="panel-content">
-          <iframe id="preview-container" frameborder="0" aria-label="HTMLプレビュー表示エリア" title="HTMLコードのプレビュー結果" role="application"></iframe>
+          <iframe id="preview-container" frameborder="0" aria-label="HTMLプレビュー表示エリア" title="HTMLコードのプレビュー結果"></iframe>
         </div>
       </div>
     </div>
@@ -461,8 +462,9 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           },
           
           showPreviewError: (error) => {
-            const iframeDoc = elements.previewContainer.contentDocument || 
-                              elements.previewContainer.contentWindow.document;
+            const iframeDoc = elements.previewContainer.contentDocument ||
+              (elements.previewContainer.contentWindow && elements.previewContainer.contentWindow.document);
+            if (!iframeDoc) return;
             iframeDoc.open();
             iframeDoc.write(`
               <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; font-family: system-ui;">
@@ -470,7 +472,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
                 <p>HTMLの処理中にエラーが発生しました。</p>
                 <details style="margin-top: 10px;">
                   <summary style="cursor: pointer;">詳細を表示</summary>
-                  <pre style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px; overflow-x: auto;">${error.message || error}</pre>
+                  <pre style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px; overflow-x: auto;">${escHtml(error.message || String(error))}</pre>
                 </details>
               </div>
             `);
@@ -493,6 +495,12 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             timeoutId = setTimeout(() => func.apply(this, args), delay);
           };
         };
+
+        function escHtml(str) {
+          return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function doTouchDrag(ev) { doDrag(ev.touches[0]); }
         
         // DOM要素の取得
         const elements = {
@@ -522,8 +530,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           currentLayout: CONFIG.defaultLayout,
           currentTheme: 'light',
           isDragging: false,
-          dragContext: {},
-          lastLineCount: 0
+          dragContext: {}
         };
 
         // --- 初期化 ---
@@ -551,11 +558,8 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             ErrorHandler.handle(error, 'レイアウト読み込み', false);
             state.currentLayout = CONFIG.defaultLayout;
           }
-          // 初期行数を設定
-          state.lastLineCount = elements.htmlEditor.lineCount();
           applyLayout(state.currentLayout); // 初期レイアウト適用
           updatePreview();
-          updateLineNumbers();
 
           elements.htmlEditor.on("change", handleEditorInput);
 
@@ -623,7 +627,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
 
         function handleEditorInput() {
           updatePreview();
-          updateLineNumbers();
           debouncedSaveCode();
         }
 
@@ -702,8 +705,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             elements.editorContainer.style.height = "50%";
             elements.previewPanel.style.height = "50%";
           }
-          // Ensure line numbers are updated after layout change, as width might affect wrapping
-          requestAnimationFrame(updateLineNumbers);
         }
 
         // --- テーマ制御 ---
@@ -715,20 +716,24 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           } catch (error) {
             ErrorHandler.handle(error, 'テーマ保存', false);
           }
-          if (elements.themeToggleIcon) {
-            elements.themeToggleIcon.dataset.feather = theme === 'dark' ? 'sun' : 'moon';
-            if (typeof feather !== 'undefined') {
-              feather.replace();
-            }
+          const btn = elements.themeToggleBtn;
+          if (btn && typeof feather !== 'undefined') {
+            const oldIcon = btn.querySelector('svg, [data-feather]');
+            if (oldIcon) oldIcon.remove();
+            const newIcon = document.createElement('i');
+            newIcon.id = 'theme-toggle-icon';
+            newIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
+            btn.appendChild(newIcon);
+            feather.replace();
           }
         }
 
         // --- プレビュー更新 ---
         function updatePreview() {
           const htmlCode = elements.htmlEditor.getValue();
-          const iframeDoc =
-            elements.previewContainer.contentDocument ||
-            elements.previewContainer.contentWindow.document;
+          const iframeDoc = elements.previewContainer.contentDocument ||
+            (elements.previewContainer.contentWindow && elements.previewContainer.contentWindow.document);
+          if (!iframeDoc) return;
           try {
             iframeDoc.open();
             iframeDoc.write(htmlCode);
@@ -738,16 +743,14 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           }
         }
 
-        // --- 行番号処理 ---
-        function updateLineNumbers() {
-          state.lastLineCount = elements.htmlEditor.lineCount();
-        }
-
         // --- ローカルストレージ ---
         function saveCode() {
           try {
             localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.getValue());
           } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+              showTemporaryMessage('ストレージの容量が不足しています', 'error');
+            }
             ErrorHandler.handle(error, 'ローカル保存', false);
           }
         }
@@ -785,7 +788,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           const last = elements.htmlEditor.lastLine();
           elements.htmlEditor.replaceRange('', { line: 0, ch: 0 }, { line: last, ch: elements.htmlEditor.getLine(last).length });
           updatePreview();
-          updateLineNumbers();
           debouncedSaveCode();
           showTemporaryMessage('エディターをクリアしました');
         }
@@ -828,7 +830,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             }
             elements.htmlEditor.setValue(text);
             updatePreview();
-            updateLineNumbers();
             debouncedSaveCode();
             showTemporaryMessage('クリップボードから貼り付けました');
           } catch (error) {
@@ -838,8 +839,10 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         }
 
         function showTemporaryMessage(message, type = 'success') {
-          // 一時的なメッセージ表示機能
+          const existing = document.querySelector('.temp-message');
+          if (existing) existing.remove();
           const messageDiv = document.createElement('div');
+          messageDiv.className = 'temp-message';
           messageDiv.textContent = message;
           messageDiv.style.cssText = `
             position: fixed;
@@ -871,13 +874,25 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         // --- ファイル読み込み・保存機能 ---
         function loadFromFile(file) {
           if (!file) return;
+          const maxSize = 5 * 1024 * 1024; // 5MB
+          if (file.size > maxSize) {
+            showTemporaryMessage('ファイルサイズが5MBを超えています', 'error');
+            return;
+          }
+          const validExts = ['.html', '.htm'];
+          const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+          if (!validExts.includes(ext)) {
+            showTemporaryMessage('HTMLファイル(.html, .htm)のみ対応しています', 'error');
+            return;
+          }
           const reader = new FileReader();
           reader.onload = (e) => {
             elements.htmlEditor.setValue(e.target.result);
             updatePreview();
-            updateLineNumbers();
             debouncedSaveCode();
           };
+          reader.onerror = () => showTemporaryMessage('ファイルの読み込みに失敗しました', 'error');
+          reader.onabort = () => showTemporaryMessage('ファイルの読み込みが中断されました', 'error');
           reader.readAsText(file);
         }
 
@@ -892,6 +907,8 @@ body.dragging,body.dragging *{cursor:col-resize!important}
               "_"
             ); // Allow Japanese chars
             filename = filename.replace(/\s+/g, "_");
+            const reserved = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+            if (reserved.test(filename)) filename = '_' + filename;
             return filename + ".html";
           }
           return "preview.html";
@@ -917,7 +934,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
         // --- Split View リサイズ機能 ---
         function startDrag(e) {
           state.isDragging = true;
-          document.body.classList.add("dragging");
+          document.body.classList.add(state.currentLayout === "tb" ? "dragging-tb" : "dragging-lr");
 
           state.dragContext.startX = e.clientX;
           state.dragContext.startY = e.clientY;
@@ -925,7 +942,7 @@ body.dragging,body.dragging *{cursor:col-resize!important}
           state.dragContext.editorInitialHeight = elements.editorContainer.offsetHeight;
 
           window.addEventListener("mousemove", doDrag);
-          window.addEventListener("touchmove", (ev) => doDrag(ev.touches[0]), {
+          window.addEventListener("touchmove", doTouchDrag, {
             passive: false,
           });
           window.addEventListener("mouseup", stopDrag);
@@ -974,18 +991,16 @@ body.dragging,body.dragging *{cursor:col-resize!important}
               elements.editorContainer.style.height = `${editorNewSize}px`;
               elements.previewPanel.style.height = `${totalHeight - editorNewSize}px`;
             }
-            // Update line numbers as panel resize might affect textarea width and thus wrapping
-            updateLineNumbers();
           });
         }
 
         function stopDrag() {
           if (!state.isDragging) return;
           state.isDragging = false;
-          document.body.classList.remove("dragging");
+          document.body.classList.remove("dragging-lr", "dragging-tb");
 
           window.removeEventListener("mousemove", doDrag);
-          window.removeEventListener("touchmove", doDrag);
+          window.removeEventListener("touchmove", doTouchDrag);
           window.removeEventListener("mouseup", stopDrag);
           window.removeEventListener("touchend", stopDrag);
           window.removeEventListener("mouseleave", stopDrag);
@@ -998,8 +1013,6 @@ body.dragging,body.dragging *{cursor:col-resize!important}
             document.body.removeChild(overlay);
           }
           state.dragContext = {};
-          // Final update to line numbers after dragging stops
-          requestAnimationFrame(updateLineNumbers);
         }
 
         // 初期化実行

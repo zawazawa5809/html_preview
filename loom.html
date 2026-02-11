@@ -263,6 +263,8 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
       }
 
       .block-list::-webkit-scrollbar {
@@ -777,21 +779,15 @@
         <div class="logo">LOOM<span>AI Output Workbench</span></div>
       </div>
       <div class="header-actions">
-        <button class="btn" onclick="exportAll()">↓ Export</button>
-        <button
-          class="btn"
-          onclick="document.getElementById('importFile').click()"
-        >
-          ↑ Import
-        </button>
+        <button class="btn" id="exportBtn" aria-label="エクスポート">↓ Export</button>
+        <button class="btn" id="importBtn" aria-label="インポート">↑ Import</button>
         <input
           type="file"
           id="importFile"
           accept=".json"
           style="display: none"
-          onchange="importAll(event)"
         />
-        <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+        <button class="btn btn-danger" id="clearAllBtn" aria-label="すべてクリア">Clear All</button>
       </div>
     </div>
 
@@ -802,8 +798,8 @@
         <div class="panel-header">
           <div class="panel-title">⟨ Context Builder ⟩</div>
           <div class="panel-actions">
-            <button class="btn" onclick="saveTemplate()">Save Template</button>
-            <button class="btn" onclick="showTemplates()">Templates</button>
+            <button class="btn" id="saveTemplateBtn" aria-label="テンプレート保存">Save Template</button>
+            <button class="btn" id="showTemplatesBtn" aria-label="テンプレート一覧">Templates</button>
           </div>
         </div>
         <div class="token-bar">
@@ -819,7 +815,6 @@
             value="8000"
             min="100"
             step="1000"
-            onchange="updateTokenBar()"
           />
         </div>
         <div class="block-list" id="contextBlocks">
@@ -835,20 +830,20 @@
         </div>
         <div class="compose-area">
           <div class="compose-toolbar">
-            <button class="btn" onclick="addContextBlock('system')">
+            <button class="btn" id="addSystemBtn">
               + System
             </button>
-            <button class="btn" onclick="addContextBlock('reference')">
+            <button class="btn" id="addReferenceBtn">
               + Reference
             </button>
-            <button class="btn" onclick="addContextBlock('previous')">
+            <button class="btn" id="addPreviousBtn">
               + Previous
             </button>
-            <button class="btn" onclick="addContextBlock('instruction')">
+            <button class="btn" id="addInstructionBtn">
               + Instruction
             </button>
             <div style="flex: 1"></div>
-            <button class="btn btn-accent" onclick="composeContext()">
+            <button class="btn btn-accent" id="composeBtn" aria-label="コンテキストをコンポーズしてコピー">
               ⟩⟩ Compose & Copy
             </button>
           </div>
@@ -863,7 +858,7 @@
         <div class="panel-header">
           <div class="panel-title">⟨ Output Assembler ⟩</div>
           <div class="panel-actions">
-            <button class="btn" onclick="takeSnapshot()">📸 Snapshot</button>
+            <button class="btn" id="snapshotBtn" aria-label="スナップショット">📸 Snapshot</button>
           </div>
         </div>
         <div class="output-stats" id="outputStats">
@@ -885,14 +880,14 @@
         </div>
         <div class="compose-area">
           <div class="compose-toolbar">
-            <button class="btn" onclick="addOutputBlock('code')">+ Code</button>
-            <button class="btn" onclick="addOutputBlock('text')">+ Text</button>
-            <button class="btn" onclick="addOutputBlock('config')">
+            <button class="btn" id="addCodeBtn">+ Code</button>
+            <button class="btn" id="addTextBtn">+ Text</button>
+            <button class="btn" id="addConfigBtn">
               + Config
             </button>
-            <button class="btn" onclick="addOutputBlock('data')">+ Data</button>
+            <button class="btn" id="addDataBtn">+ Data</button>
             <div style="flex: 1"></div>
-            <button class="btn btn-accent" onclick="buildOutput()">
+            <button class="btn btn-accent" id="buildBtn" aria-label="出力をビルドしてコピー">
               ⟩⟩ Build & Copy
             </button>
           </div>
@@ -901,8 +896,8 @@
     </div>
 
     <!-- MODAL -->
-    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-      <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal" id="modalContent">
         <h3 id="modalTitle">Output</h3>
         <div id="modalBody"></div>
         <div class="modal-actions" id="modalActions"></div>
@@ -913,8 +908,11 @@
     <div class="toast" id="toast"></div>
 
     <script>
+    (function() {
+      'use strict';
+
       // ===== STATE =====
-      let state = {
+      var state = {
         contextBlocks: [],
         outputBlocks: [],
         templates: [],
@@ -922,14 +920,21 @@
         tokenBudget: 8000,
       };
 
-      let dragState = { panel: null, dragIndex: null };
+      var dragState = { panel: null, dragIndex: null };
 
       // ===== PERSISTENCE =====
-      let _saveTimer = null;
+      var _saveTimer = null;
       function _commitSave() {
         state.tokenBudget =
           parseInt(document.getElementById("tokenBudget").value) || 8000;
-        localStorage.setItem("loom_state", JSON.stringify(state));
+        try {
+          localStorage.setItem("loom_state", JSON.stringify(state));
+        } catch (error) {
+          if (error.name === 'QuotaExceededError') {
+            toast('ストレージの容量が不足しています');
+          }
+          console.error('[Loom] Save failed:', error);
+        }
       }
 
       function save() {
@@ -944,35 +949,37 @@
 
       function load() {
         try {
-          const saved = localStorage.getItem("loom_state");
+          var saved = localStorage.getItem("loom_state");
           if (saved) {
-            const parsed = JSON.parse(saved);
+            var parsed = JSON.parse(saved);
             state = { ...state, ...parsed };
             document.getElementById("tokenBudget").value = state.tokenBudget;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('[Loom] Failed to load state:', e);
+        }
       }
 
       // ===== TOKEN ESTIMATION =====
       function estimateTokens(text) {
         if (!text) return 0;
         // Rough estimation: ~4 chars per token for English, ~2 for Japanese
-        const jpChars = (text.match(/[\u3000-\u9fff\uff00-\uffef]/g) || [])
+        var jpChars = (text.match(/[\u3000-\u9fff\uff00-\uffef]/g) || [])
           .length;
-        const otherChars = text.length - jpChars;
+        var otherChars = text.length - jpChars;
         return Math.ceil(jpChars / 1.5 + otherChars / 4);
       }
 
       function updateTokenBar() {
-        const budget =
+        var budget =
           parseInt(document.getElementById("tokenBudget").value) || 8000;
         state.tokenBudget = budget;
-        let total = 0;
-        state.contextBlocks.forEach((b) => {
+        var total = 0;
+        state.contextBlocks.forEach(function(b) {
           total += estimateTokens(b.content);
         });
-        const pct = Math.min((total / budget) * 100, 100);
-        const fill = document.getElementById("tokenFill");
+        var pct = Math.min((total / budget) * 100, 100);
+        var fill = document.getElementById("tokenFill");
         fill.style.width = pct + "%";
         fill.className =
           "token-fill" + (pct > 90 ? " danger" : pct > 70 ? " warning" : "");
@@ -982,10 +989,10 @@
       }
 
       function updateOutputStats() {
-        const count = state.outputBlocks.length;
-        let chars = 0,
+        var count = state.outputBlocks.length;
+        var chars = 0,
           tokens = 0;
-        state.outputBlocks.forEach((b) => {
+        state.outputBlocks.forEach(function(b) {
           chars += (b.content || "").length;
           tokens += estimateTokens(b.content);
         });
@@ -998,11 +1005,11 @@
 
       // ===== RENDER =====
       // Cache empty-state elements so they survive innerHTML = ""
-      const contextEmptyEl = document.getElementById("contextEmpty");
-      const outputEmptyEl = document.getElementById("outputEmpty");
+      var contextEmptyEl = document.getElementById("contextEmpty");
+      var outputEmptyEl = document.getElementById("outputEmpty");
 
       function renderContextBlocks() {
-        const container = document.getElementById("contextBlocks");
+        var container = document.getElementById("contextBlocks");
         container.innerHTML = "";
         if (state.contextBlocks.length === 0) {
           contextEmptyEl.style.display = "flex";
@@ -1011,14 +1018,14 @@
           return;
         }
         contextEmptyEl.style.display = "none";
-        state.contextBlocks.forEach((block, i) => {
+        state.contextBlocks.forEach(function(block, i) {
           container.appendChild(createBlockElement(block, i, "context"));
         });
         updateTokenBar();
       }
 
       function renderOutputBlocks() {
-        const container = document.getElementById("outputBlocks");
+        var container = document.getElementById("outputBlocks");
         container.innerHTML = "";
         if (state.outputBlocks.length === 0) {
           outputEmptyEl.style.display = "flex";
@@ -1027,78 +1034,102 @@
           return;
         }
         outputEmptyEl.style.display = "none";
-        state.outputBlocks.forEach((block, i) => {
+        state.outputBlocks.forEach(function(block, i) {
           container.appendChild(createBlockElement(block, i, "output"));
         });
         updateOutputStats();
       }
 
       function createBlockElement(block, index, panel) {
-        const el = document.createElement("div");
+        var el = document.createElement("div");
         el.className = "block" + (block.collapsed ? " collapsed" : "");
         el.draggable = true;
         el.dataset.index = index;
         el.dataset.panel = panel;
+        el.tabIndex = 0;
 
-        const tokens = estimateTokens(block.content);
+        var tokens = estimateTokens(block.content);
 
-        el.innerHTML = `
-    <div class="block-head">
-      <div class="block-drag-handle"></div>
-      <span class="block-type-badge ${block.type}" onclick="cycleType(${index}, '${panel}')" title="Click to change type">${block.type}</span>
-      <input class="block-label-input" value="${escHtml(block.label)}"
-        onchange="updateBlockLabel(${index}, '${panel}', this.value)"
-        onclick="event.stopPropagation()"
-        placeholder="label...">
-      <span class="block-tokens">${tokens}t</span>
-      <div class="block-actions">
-        <button class="block-btn" onclick="toggleCollapse(${index}, '${panel}')" title="Toggle">${block.collapsed ? "▸" : "▾"}</button>
-        <button class="block-btn" onclick="duplicateBlock(${index}, '${panel}')" title="Duplicate">⧉</button>
-        <button class="block-btn" onclick="moveToOtherPanel(${index}, '${panel}')" title="Move to ${panel === "context" ? "Output" : "Context"}">⇄</button>
-        <button class="block-btn delete" onclick="deleteBlock(${index}, '${panel}')" title="Delete">✕</button>
-      </div>
-    </div>
-    <div class="block-body">
-      <textarea class="block-textarea"
-        placeholder="Paste content here..."
-        oninput="updateBlockContent(${index}, '${panel}', this.value)"
-      >${escHtml(block.content)}</textarea>
-    </div>
-  `;
+        el.innerHTML = '\
+    <div class="block-head">\
+      <div class="block-drag-handle" role="img" aria-label="\u30C9\u30E9\u30C3\u30B0\u3067\u4E26\u3079\u66FF\u3048"></div>\
+      <span class="block-type-badge ' + block.type + '" title="Click to change type" aria-label="\u30BF\u30A4\u30D7\u5909\u66F4">' + block.type + '</span>\
+      <input class="block-label-input" value="' + escHtml(block.label) + '"\
+        placeholder="label...">\
+      <span class="block-tokens">' + tokens + 't</span>\
+      <div class="block-actions">\
+        <button class="block-btn" title="Toggle" aria-label="\u6298\u308A\u305F\u305F\u307F\u5207\u66FF">' + (block.collapsed ? "\u25B8" : "\u25BE") + '</button>\
+        <button class="block-btn" title="Duplicate" aria-label="\u8907\u88FD">\u29C9</button>\
+        <button class="block-btn" title="Move to ' + (panel === "context" ? "Output" : "Context") + '" aria-label="\u30D1\u30CD\u30EB\u9593\u79FB\u52D5">\u21C4</button>\
+        <button class="block-btn delete" title="Delete" aria-label="\u524A\u9664">\u2715</button>\
+      </div>\
+    </div>\
+    <div class="block-body">\
+      <textarea class="block-textarea"\
+        placeholder="Paste content here..."\
+      >' + escHtml(block.content) + '</textarea>\
+    </div>';
+
+        // Bind event listeners (replacing inline handlers)
+        el.querySelector('.block-type-badge').addEventListener('click', function() { cycleType(index, panel); });
+        var labelInput = el.querySelector('.block-label-input');
+        labelInput.addEventListener('change', function() { updateBlockLabel(index, panel, this.value); });
+        labelInput.addEventListener('click', function(e) { e.stopPropagation(); });
+        var textarea = el.querySelector('.block-textarea');
+        textarea.addEventListener('input', function() { updateBlockContent(index, panel, this.value); });
+        var btns = el.querySelectorAll('.block-btn');
+        btns[0].addEventListener('click', function() { toggleCollapse(index, panel); });
+        btns[1].addEventListener('click', function() { duplicateBlock(index, panel); });
+        btns[2].addEventListener('click', function() { moveToOtherPanel(index, panel); });
+        btns[3].addEventListener('click', function() { deleteBlock(index, panel); });
+
+        // Keyboard navigation
+        el.addEventListener('keydown', function(e) {
+          if (e.altKey && e.key === 'ArrowUp') {
+            e.preventDefault();
+            moveBlockUp(index, panel);
+          } else if (e.altKey && e.key === 'ArrowDown') {
+            e.preventDefault();
+            moveBlockDown(index, panel);
+          } else if (e.key === 'Delete' && e.target === el) {
+            e.preventDefault();
+            deleteBlock(index, panel);
+          }
+        });
 
         // Drag events
-        el.addEventListener("dragstart", (e) => {
-          const tag = e.target.tagName;
+        el.addEventListener("dragstart", function(e) {
+          var tag = e.target.tagName;
           if (tag === "TEXTAREA" || tag === "INPUT") {
             e.preventDefault();
             return;
           }
-          dragState = { panel, dragIndex: index };
+          dragState = { panel: panel, dragIndex: index };
           el.classList.add("dragging");
           e.dataTransfer.effectAllowed = "move";
         });
-        el.addEventListener("dragend", () => {
+        el.addEventListener("dragend", function() {
           el.classList.remove("dragging");
           document
             .querySelectorAll(".drag-over")
-            .forEach((x) => x.classList.remove("drag-over"));
+            .forEach(function(x) { x.classList.remove("drag-over"); });
         });
-        el.addEventListener("dragover", (e) => {
+        el.addEventListener("dragover", function(e) {
           e.preventDefault();
           if (dragState.panel === panel) {
             el.classList.add("drag-over");
           }
         });
-        el.addEventListener("dragleave", () => {
+        el.addEventListener("dragleave", function() {
           el.classList.remove("drag-over");
         });
-        el.addEventListener("drop", (e) => {
+        el.addEventListener("drop", function(e) {
           e.preventDefault();
           el.classList.remove("drag-over");
           if (dragState.panel === panel && dragState.dragIndex !== index) {
-            const blocks =
+            var blocks =
               panel === "context" ? state.contextBlocks : state.outputBlocks;
-            const [moved] = blocks.splice(dragState.dragIndex, 1);
+            var moved = blocks.splice(dragState.dragIndex, 1)[0];
             blocks.splice(index, 0, moved);
             saveImmediate();
             panel === "context" ? renderContextBlocks() : renderOutputBlocks();
@@ -1111,7 +1142,7 @@
       // ===== BLOCK OPERATIONS =====
       function addContextBlock(type) {
         state.contextBlocks.push({
-          type,
+          type: type,
           label: "",
           content: "",
           collapsed: false,
@@ -1124,7 +1155,7 @@
 
       function addOutputBlock(type) {
         state.outputBlocks.push({
-          type,
+          type: type,
           label: "",
           content: "",
           collapsed: false,
@@ -1136,15 +1167,15 @@
       }
 
       function updateBlockContent(index, panel, value) {
-        const blocks =
+        var blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
         blocks[index].content = value;
         // Update token display for this block
-        const blockEl = document.querySelectorAll(`#${panel}Blocks .block`)[
+        var blockEl = document.querySelectorAll("#" + panel + "Blocks .block")[
           index
         ];
         if (blockEl) {
-          const tokenSpan = blockEl.querySelector(".block-tokens");
+          var tokenSpan = blockEl.querySelector(".block-tokens");
           if (tokenSpan) tokenSpan.textContent = estimateTokens(value) + "t";
         }
         if (panel === "context") updateTokenBar();
@@ -1153,14 +1184,14 @@
       }
 
       function updateBlockLabel(index, panel, value) {
-        const blocks =
+        var blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
         blocks[index].label = value;
         save();
       }
 
       function deleteBlock(index, panel) {
-        const blocks =
+        var blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
         blocks.splice(index, 1);
         saveImmediate();
@@ -1168,9 +1199,9 @@
       }
 
       function duplicateBlock(index, panel) {
-        const blocks =
+        var blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
-        const copy = {
+        var copy = {
           ...blocks[index],
           id: genId(),
           label: blocks[index].label + " (copy)",
@@ -1181,7 +1212,7 @@
       }
 
       function toggleCollapse(index, panel) {
-        const blocks =
+        var blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
         blocks[index].collapsed = !blocks[index].collapsed;
         saveImmediate();
@@ -1189,13 +1220,13 @@
       }
 
       function moveToOtherPanel(index, panel) {
-        const from =
+        var from =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
-        const to =
+        var to =
           panel === "context" ? state.outputBlocks : state.contextBlocks;
-        const [block] = from.splice(index, 1);
+        var block = from.splice(index, 1)[0];
         // Map types if needed
-        const typeMap = {
+        var typeMap = {
           system: "text",
           reference: "text",
           previous: "text",
@@ -1217,17 +1248,49 @@
         toast("Moved to " + (panel === "context" ? "Output" : "Context"));
       }
 
-      const contextTypes = ["system", "reference", "previous", "instruction"];
-      const outputTypes = ["code", "text", "config", "data"];
+      var contextTypes = ["system", "reference", "previous", "instruction"];
+      var outputTypes = ["code", "text", "config", "data"];
 
       function cycleType(index, panel) {
-        const blocks =
+        var blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
-        const types = panel === "context" ? contextTypes : outputTypes;
-        const current = types.indexOf(blocks[index].type);
+        var types = panel === "context" ? contextTypes : outputTypes;
+        var current = types.indexOf(blocks[index].type);
         blocks[index].type = types[(current + 1) % types.length];
         saveImmediate();
         panel === "context" ? renderContextBlocks() : renderOutputBlocks();
+      }
+
+      // ===== KEYBOARD BLOCK MOVE =====
+      function moveBlockUp(index, panel) {
+        if (index === 0) return;
+        var blocks = panel === 'context' ? state.contextBlocks : state.outputBlocks;
+        var temp = blocks[index - 1];
+        blocks[index - 1] = blocks[index];
+        blocks[index] = temp;
+        saveImmediate();
+        panel === 'context' ? renderContextBlocks() : renderOutputBlocks();
+        // Re-focus the moved block
+        setTimeout(function() {
+          var container = document.getElementById(panel === 'context' ? 'contextBlocks' : 'outputBlocks');
+          var movedBlock = container.querySelectorAll('.block')[index - 1];
+          if (movedBlock) movedBlock.focus();
+        }, 50);
+      }
+
+      function moveBlockDown(index, panel) {
+        var blocks = panel === 'context' ? state.contextBlocks : state.outputBlocks;
+        if (index >= blocks.length - 1) return;
+        var temp = blocks[index];
+        blocks[index] = blocks[index + 1];
+        blocks[index + 1] = temp;
+        saveImmediate();
+        panel === 'context' ? renderContextBlocks() : renderOutputBlocks();
+        setTimeout(function() {
+          var container = document.getElementById(panel === 'context' ? 'contextBlocks' : 'outputBlocks');
+          var movedBlock = container.querySelectorAll('.block')[index + 1];
+          if (movedBlock) movedBlock.focus();
+        }, 50);
       }
 
       // ===== COMPOSE / BUILD =====
@@ -1237,31 +1300,29 @@
           return;
         }
 
-        let composed = "";
-        const separators = {
+        var composed = "";
+        var separators = {
           system: "--- SYSTEM ---",
           reference: "--- REFERENCE ---",
           previous: "--- PREVIOUS OUTPUT ---",
           instruction: "--- INSTRUCTION ---",
         };
 
-        state.contextBlocks.forEach((block) => {
+        state.contextBlocks.forEach(function(block) {
           if (!block.content.trim()) return;
-          const label = block.label ? ` [${block.label}]` : "";
-          composed += `${separators[block.type] || "---"}${label}\n${block.content.trim()}\n\n`;
+          var label = block.label ? " [" + block.label + "]" : "";
+          composed += (separators[block.type] || "---") + label + "\n" + block.content.trim() + "\n\n";
         });
 
         composed = composed.trim();
         showModal(
           "Composed Context",
-          `
-    <textarea class="modal-output" id="composedOutput" readonly>${escHtml(composed)}</textarea>
-  `,
+          '<textarea class="modal-output" id="composedOutput" readonly>' + escHtml(composed) + '</textarea>',
           [
             {
               label: "Copy to Clipboard",
               accent: true,
-              action: () => {
+              action: function() {
                 copyText(composed);
                 toast("Copied to clipboard");
                 closeModalDirect();
@@ -1278,28 +1339,26 @@
           return;
         }
 
-        let built = "";
-        state.outputBlocks.forEach((block) => {
+        var built = "";
+        state.outputBlocks.forEach(function(block) {
           if (!block.content.trim()) return;
-          const label = block.label ? `[${block.label}] ` : "";
+          var label = block.label ? "[" + block.label + "] " : "";
           if (block.type === "code") {
-            built += `${label}\n\`\`\`\n${block.content.trim()}\n\`\`\`\n\n`;
+            built += label + "\n```\n" + block.content.trim() + "\n```\n\n";
           } else {
-            built += `${label}\n${block.content.trim()}\n\n`;
+            built += label + "\n" + block.content.trim() + "\n\n";
           }
         });
 
         built = built.trim();
         showModal(
           "Built Output",
-          `
-    <textarea class="modal-output" id="builtOutput" readonly>${escHtml(built)}</textarea>
-  `,
+          '<textarea class="modal-output" id="builtOutput" readonly>' + escHtml(built) + '</textarea>',
           [
             {
               label: "Copy to Clipboard",
               accent: true,
-              action: () => {
+              action: function() {
                 copyText(built);
                 toast("Copied to clipboard");
                 closeModalDirect();
@@ -1311,15 +1370,12 @@
       }
 
       // ===== SNAPSHOTS =====
-      function takeSnapshot() {
-        const name = prompt(
-          "Snapshot name:",
-          `snap_${state.snapshots.length + 1}`,
-        );
+      async function takeSnapshot() {
+        var name = await showPromptModal('スナップショット名:', 'snap_' + (state.snapshots.length + 1));
         if (!name) return;
         state.snapshots.push({
-          name,
-          blocks: JSON.parse(JSON.stringify(state.outputBlocks)),
+          name: name,
+          blocks: structuredClone(state.outputBlocks),
           time: Date.now(),
         });
         saveImmediate();
@@ -1328,7 +1384,7 @@
       }
 
       function renderSnapshots() {
-        const bar = document.getElementById("snapshotBar");
+        var bar = document.getElementById("snapshotBar");
         if (state.snapshots.length === 0) {
           bar.style.display = "none";
           return;
@@ -1336,11 +1392,16 @@
         bar.style.display = "flex";
         bar.innerHTML =
           '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);flex-shrink:0;">SNAPSHOTS</span>';
-        state.snapshots.forEach((snap, i) => {
-          const chip = document.createElement("span");
+        state.snapshots.forEach(function(snap, i) {
+          var chip = document.createElement("span");
           chip.className = "snapshot-chip";
-          chip.innerHTML = `${escHtml(snap.name)} <span class="snapshot-delete" onclick="event.stopPropagation();deleteSnapshot(${i})">✕</span>`;
-          chip.onclick = () => restoreSnapshot(i);
+          chip.innerHTML = escHtml(snap.name) + ' <span class="snapshot-delete">\u2715</span>';
+          var deleteBtn = chip.querySelector('.snapshot-delete');
+          deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            deleteSnapshot(i);
+          });
+          chip.addEventListener('click', function() { restoreSnapshot(i); });
           bar.appendChild(chip);
         });
       }
@@ -1348,35 +1409,34 @@
       function restoreSnapshot(index) {
         if (
           !confirm(
-            "Restore this snapshot? Current output blocks will be replaced.",
+            "このスナップショットを復元するのん？ 現在の出力ブロックは置き換えられるん。",
           )
         )
           return;
-        state.outputBlocks = JSON.parse(
-          JSON.stringify(state.snapshots[index].blocks),
-        );
+        state.outputBlocks = structuredClone(state.snapshots[index].blocks);
         saveImmediate();
         renderOutputBlocks();
         toast("Restored: " + state.snapshots[index].name);
       }
 
       function deleteSnapshot(index) {
+        if (!confirm('このスナップショットを削除するのん？')) return;
         state.snapshots.splice(index, 1);
         saveImmediate();
         renderSnapshots();
       }
 
       // ===== TEMPLATES =====
-      function saveTemplate() {
+      async function saveTemplate() {
         if (state.contextBlocks.length === 0) {
           toast("No blocks to save as template");
           return;
         }
-        const name = prompt("Template name:");
+        var name = await showPromptModal('テンプレート名:', '');
         if (!name) return;
         state.templates.push({
-          name,
-          blocks: JSON.parse(JSON.stringify(state.contextBlocks)),
+          name: name,
+          blocks: structuredClone(state.contextBlocks),
           time: Date.now(),
         });
         saveImmediate();
@@ -1389,31 +1449,42 @@
           return;
         }
 
-        let listHtml = '<div class="template-list">';
-        state.templates.forEach((t, i) => {
-          const blockCount = t.blocks.length;
-          const date = new Date(t.time).toLocaleDateString();
-          listHtml += `
-      <div class="template-item" onclick="loadTemplate(${i})">
-        <span class="template-name">${escHtml(t.name)}</span>
-        <span class="template-meta">${blockCount} blocks · ${date}
-          <span style="cursor:pointer;margin-left:8px;color:var(--danger)" onclick="event.stopPropagation();deleteTemplate(${i})">✕</span>
-        </span>
-      </div>`;
+        var listHtml = '<div class="template-list">';
+        state.templates.forEach(function(t, i) {
+          var blockCount = t.blocks.length;
+          var date = new Date(t.time).toLocaleDateString();
+          listHtml +=
+            '<div class="template-item" data-template-index="' + i + '">' +
+              '<span class="template-name">' + escHtml(t.name) + '</span>' +
+              '<span class="template-meta">' + blockCount + ' blocks \u00B7 ' + date +
+                ' <span class="template-delete-btn" data-template-index="' + i + '" style="cursor:pointer;margin-left:8px;color:var(--danger)">\u2715</span>' +
+              '</span>' +
+            '</div>';
         });
         listHtml += "</div>";
 
         showModal("Templates", listHtml, [
           { label: "Close", action: closeModalDirect },
         ]);
+
+        // Bind template item click listeners
+        document.querySelectorAll('.template-item').forEach(function(item) {
+          item.addEventListener('click', function() {
+            loadTemplate(parseInt(this.dataset.templateIndex));
+          });
+        });
+        document.querySelectorAll('.template-delete-btn').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            deleteTemplate(parseInt(this.dataset.templateIndex));
+          });
+        });
       }
 
       function loadTemplate(index) {
-        state.contextBlocks = JSON.parse(
-          JSON.stringify(state.templates[index].blocks),
-        );
+        state.contextBlocks = structuredClone(state.templates[index].blocks);
         // Regenerate IDs
-        state.contextBlocks.forEach((b) => (b.id = genId()));
+        state.contextBlocks.forEach(function(b) { b.id = genId(); });
         saveImmediate();
         renderContextBlocks();
         closeModalDirect();
@@ -1421,6 +1492,7 @@
       }
 
       function deleteTemplate(index) {
+        if (!confirm('このテンプレートを削除するのん？')) return;
         state.templates.splice(index, 1);
         saveImmediate();
         closeModalDirect();
@@ -1429,27 +1501,50 @@
 
       // ===== IMPORT / EXPORT =====
       function exportAll() {
-        const data = JSON.stringify(state, null, 2);
-        const blob = new Blob([data], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        var data = JSON.stringify(state, null, 2);
+        var blob = new Blob([data], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
         a.href = url;
-        a.download = `loom_${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = "loom_" + new Date().toISOString().slice(0, 10) + ".json";
         a.click();
         URL.revokeObjectURL(url);
         toast("Exported");
       }
 
       function importAll(event) {
-        const file = event.target.files[0];
+        var file = event.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        var reader = new FileReader();
+        reader.onload = function(e) {
           try {
-            const imported = JSON.parse(e.target.result);
-            const allowedKeys = ["contextBlocks", "outputBlocks", "templates", "snapshots", "tokenBudget"];
-            allowedKeys.forEach((key) => {
-              if (key in imported) state[key] = imported[key];
+            var imported = JSON.parse(e.target.result);
+            // Validate imported data types
+            var arrayKeys = ['contextBlocks', 'outputBlocks', 'templates', 'snapshots'];
+            for (var k = 0; k < arrayKeys.length; k++) {
+              var key = arrayKeys[k];
+              if (key in imported && !Array.isArray(imported[key])) {
+                toast('Import failed: invalid data format');
+                return;
+              }
+            }
+            if ('tokenBudget' in imported && typeof imported.tokenBudget !== 'number') {
+              toast('Import failed: invalid token budget');
+              return;
+            }
+            // Validate block structure
+            var validateBlock = function(b) { return b && typeof b === 'object' && typeof b.type === 'string' && typeof b.content === 'string'; };
+            var blockKeys = ['contextBlocks', 'outputBlocks'];
+            for (var j = 0; j < blockKeys.length; j++) {
+              var bKey = blockKeys[j];
+              if (bKey in imported && !imported[bKey].every(validateBlock)) {
+                toast('Import failed: invalid block structure');
+                return;
+              }
+            }
+            var allowedKeys = ["contextBlocks", "outputBlocks", "templates", "snapshots", "tokenBudget"];
+            allowedKeys.forEach(function(aKey) {
+              if (aKey in imported) state[aKey] = imported[aKey];
             });
             document.getElementById("tokenBudget").value = state.tokenBudget;
             saveImmediate();
@@ -1461,6 +1556,8 @@
             toast("Import failed: invalid file");
           }
         };
+        reader.onerror = function() { toast('ファイルの読み込みに失敗しました'); };
+        reader.onabort = function() { toast('ファイルの読み込みが中断されました'); };
         reader.readAsText(file);
         event.target.value = "";
       }
@@ -1479,10 +1576,10 @@
       function showModal(title, bodyHtml, buttons) {
         document.getElementById("modalTitle").textContent = title;
         document.getElementById("modalBody").innerHTML = bodyHtml;
-        const actions = document.getElementById("modalActions");
+        var actions = document.getElementById("modalActions");
         actions.innerHTML = "";
-        (buttons || []).forEach((b) => {
-          const btn = document.createElement("button");
+        (buttons || []).forEach(function(b) {
+          var btn = document.createElement("button");
           btn.className = "btn" + (b.accent ? " btn-accent" : "");
           btn.textContent = b.label;
           btn.onclick = b.action;
@@ -1499,13 +1596,42 @@
         document.getElementById("modalOverlay").classList.remove("active");
       }
 
+      function showPromptModal(title, defaultValue) {
+        return new Promise(function(resolve) {
+          var inputId = 'promptModalInput';
+          showModal(title, '<input type="text" id="' + inputId + '" class="modal-output" style="min-height:auto;padding:10px;margin-bottom:0" value="' + escHtml(defaultValue || '') + '">', [
+            {
+              label: 'OK',
+              accent: true,
+              action: function() {
+                var val = document.getElementById(inputId).value;
+                closeModalDirect();
+                resolve(val || null);
+              }
+            },
+            {
+              label: 'Cancel',
+              action: function() {
+                closeModalDirect();
+                resolve(null);
+              }
+            }
+          ]);
+          // Focus the input after modal is shown
+          setTimeout(function() {
+            var input = document.getElementById(inputId);
+            if (input) { input.focus(); input.select(); }
+          }, 100);
+        });
+      }
+
       // ===== TOAST =====
       function toast(msg) {
-        const el = document.getElementById("toast");
+        var el = document.getElementById("toast");
         el.textContent = msg;
         el.classList.add("show");
         clearTimeout(el._timeout);
-        el._timeout = setTimeout(() => el.classList.remove("show"), 2000);
+        el._timeout = setTimeout(function() { el.classList.remove("show"); }, 2000);
       }
 
       // ===== UTILS =====
@@ -1523,8 +1649,8 @@
       }
 
       function copyText(text) {
-        navigator.clipboard.writeText(text).catch(() => {
-          const ta = document.createElement("textarea");
+        navigator.clipboard.writeText(text).catch(function() {
+          var ta = document.createElement("textarea");
           ta.value = text;
           document.body.appendChild(ta);
           ta.select();
@@ -1534,9 +1660,9 @@
       }
 
       function focusLastTextarea(containerId) {
-        setTimeout(() => {
-          const textareas = document.querySelectorAll(
-            `#${containerId} .block-textarea`,
+        setTimeout(function() {
+          var textareas = document.querySelectorAll(
+            "#" + containerId + " .block-textarea",
           );
           if (textareas.length) textareas[textareas.length - 1].focus();
         }, 50);
@@ -1544,30 +1670,30 @@
 
       // ===== DIVIDER RESIZE =====
       (function () {
-        const divider = document.getElementById("divider");
-        const left = document.getElementById("panelLeft");
-        let dragging = false;
+        var divider = document.getElementById("divider");
+        var left = document.getElementById("panelLeft");
+        var dragging = false;
 
-        divider.addEventListener("mousedown", (e) => {
+        divider.addEventListener("mousedown", function(e) {
           dragging = true;
           divider.classList.add("dragging");
           document.body.style.cursor = "col-resize";
           document.body.style.userSelect = "none";
         });
 
-        document.addEventListener("mousemove", (e) => {
+        document.addEventListener("mousemove", function(e) {
           if (!dragging) return;
-          const mainRect = document
+          var mainRect = document
             .querySelector(".main")
             .getBoundingClientRect();
-          const pct = ((e.clientX - mainRect.left) / mainRect.width) * 100;
+          var pct = ((e.clientX - mainRect.left) / mainRect.width) * 100;
           if (pct > 20 && pct < 80) {
             left.style.flex = "none";
             left.style.width = pct + "%";
           }
         });
 
-        document.addEventListener("mouseup", () => {
+        document.addEventListener("mouseup", function() {
           dragging = false;
           divider.classList.remove("dragging");
           document.body.style.cursor = "";
@@ -1576,15 +1702,40 @@
       })();
 
       // ===== KEYBOARD SHORTCUTS =====
-      document.addEventListener("keydown", (e) => {
+      document.addEventListener("keydown", function(e) {
         if (e.key === "Escape") closeModalDirect();
       });
+
+      // ===== EVENT LISTENERS (migrated from inline handlers) =====
+      document.getElementById('exportBtn').addEventListener('click', exportAll);
+      document.getElementById('importBtn').addEventListener('click', function() {
+        document.getElementById('importFile').click();
+      });
+      document.getElementById('importFile').addEventListener('change', importAll);
+      document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+      document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplate);
+      document.getElementById('showTemplatesBtn').addEventListener('click', showTemplates);
+      document.getElementById('tokenBudget').addEventListener('change', updateTokenBar);
+      document.getElementById('addSystemBtn').addEventListener('click', function() { addContextBlock('system'); });
+      document.getElementById('addReferenceBtn').addEventListener('click', function() { addContextBlock('reference'); });
+      document.getElementById('addPreviousBtn').addEventListener('click', function() { addContextBlock('previous'); });
+      document.getElementById('addInstructionBtn').addEventListener('click', function() { addContextBlock('instruction'); });
+      document.getElementById('composeBtn').addEventListener('click', composeContext);
+      document.getElementById('snapshotBtn').addEventListener('click', takeSnapshot);
+      document.getElementById('addCodeBtn').addEventListener('click', function() { addOutputBlock('code'); });
+      document.getElementById('addTextBtn').addEventListener('click', function() { addOutputBlock('text'); });
+      document.getElementById('addConfigBtn').addEventListener('click', function() { addOutputBlock('config'); });
+      document.getElementById('addDataBtn').addEventListener('click', function() { addOutputBlock('data'); });
+      document.getElementById('buildBtn').addEventListener('click', buildOutput);
+      document.getElementById('modalOverlay').addEventListener('click', closeModal);
+      document.getElementById('modalContent').addEventListener('click', function(e) { e.stopPropagation(); });
 
       // ===== INIT =====
       load();
       renderContextBlocks();
       renderOutputBlocks();
       renderSnapshots();
+    })();
     </script>
   </body>
 </html>
