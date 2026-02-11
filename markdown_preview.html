@@ -22,76 +22,86 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
       <style>
       :root {
-        --da-primary: #1f2937;
-        --da-primary-hover: #111827;
-        --da-secondary: #3b82f6;
-        --da-secondary-hover: #2563eb;
-        --da-tertiary: #60a5fa;
-        --da-tertiary-light: #93c5fd;
-        --da-neutral-white: #ffffff;
-        --da-neutral-50: #f9fafb;
-        --da-neutral-100: #f3f4f6;
-        --da-neutral-200: #e5e7eb;
-        --da-neutral-300: #d1d5db;
-        --da-neutral-400: #9ca3af;
-        --da-neutral-500: #6b7280;
-        --da-neutral-600: #4b5563;
-        --da-neutral-700: #374151;
-        --da-neutral-800: #1f2937;
-        --da-neutral-900: #111827;
-        --da-success: #10b981;
-        --da-warning: #f59e0b;
-        --da-error: #ef4444;
-        --da-info: var(--da-secondary);
-        --app-text-primary: var(--da-neutral-900);
-        --app-text-secondary: var(--da-neutral-600);
-        --app-text-on-dark: var(--da-neutral-white);
-        --app-text-muted: var(--da-neutral-500);
-        --app-bg-primary: var(--da-neutral-white);
-        --app-bg-secondary: var(--da-neutral-50);
-        --app-bg-dark: var(--da-primary);
-        --app-border-default: var(--da-neutral-200);
+        /* Foundation - warm charcoal greys */
+        --da-ink: #1e1f25;
+        --da-charcoal: #282a32;
+        --da-graphite: #353842;
+        --da-slate: #4a4e5c;
+        --da-ash: #6b7085;
+        --da-stone: #9498ab;
+        --da-cloud: #c4c8d6;
+        --da-mist: #e2e4ec;
+        --da-frost: #f0f1f5;
+        --da-snow: #f8f9fb;
+
+        /* Accent - muted blue */
+        --da-secondary: #5b8fcc;
+        --da-secondary-hover: #4a7db8;
+        --da-accent-muted: #5b8fcc26;
+        --da-accent-glow: #5b8fcc12;
+
+        /* Semantic */
+        --da-success: #4aba8a;
+        --da-warning: #d4943a;
+        --da-error: #d45a5a;
+
+        /* Motion & shadow tokens */
+        --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+        --duration-fast: 100ms;
+        --duration-normal: 200ms;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+        /* App semantic tokens - light */
+        --app-text-primary: var(--da-ink);
+        --app-text-secondary: var(--da-slate);
+        --app-text-on-dark: var(--da-snow);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-snow);
+        --app-bg-secondary: var(--da-frost);
+        --app-bg-dark: var(--da-charcoal);
+        --app-border-default: var(--da-mist);
         --app-border-focus: var(--da-secondary);
-        --app-border-hover: var(--da-neutral-300);
-        --app-toolbar-bg: var(--da-primary);
-        --app-toolbar-text: var(--app-text-on-dark);
-        --app-toolbar-border: var(--da-neutral-700);
-        --app-panel-header-bg: var(--da-neutral-800);
-        --app-panel-header-text: var(--app-text-on-dark);
-        --app-editor-bg: var(--app-bg-primary);
-        --app-editor-text: var(--app-text-primary);
-        --app-editor-placeholder: var(--app-text-muted);
-        --app-line-numbers-bg: var(--da-neutral-800);
-        --app-line-numbers-text: var(--da-neutral-300);
-        --app-gutter-bg: var(--da-neutral-800);
-        --app-gutter-hover: var(--da-neutral-700);
-        --app-gutter-handle: var(--da-neutral-400);
+        --app-border-hover: var(--da-cloud);
+        --app-toolbar-bg: var(--da-charcoal);
+        --app-toolbar-text: var(--da-snow);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-snow);
+        --app-editor-bg: var(--da-snow);
+        --app-editor-text: var(--da-ink);
+        --app-editor-placeholder: var(--da-ash);
+        --app-line-numbers-bg: var(--da-ink);
+        --app-line-numbers-text: var(--da-cloud);
+        --app-gutter-bg: var(--da-ink);
+        --app-gutter-hover: var(--da-graphite);
+        --app-gutter-handle: var(--da-stone);
         --app-accent: var(--da-secondary);
         --app-accent-hover: var(--da-secondary-hover);
       }
 
       :root[data-theme="dark"] {
-        --app-text-primary: var(--da-neutral-100);
-        --app-text-secondary: var(--da-neutral-400);
-        --app-text-muted: var(--da-neutral-500);
-        --app-bg-primary: var(--da-neutral-800);
-        --app-bg-secondary: var(--da-neutral-900);
-        --app-bg-dark: var(--da-neutral-900);
-        --app-border-default: var(--da-neutral-700);
-        --app-border-hover: var(--da-neutral-600);
-        --app-toolbar-bg: var(--da-neutral-900);
-        --app-toolbar-text: var(--da-neutral-100);
-        --app-toolbar-border: var(--da-neutral-700);
-        --app-panel-header-bg: var(--da-neutral-900);
-        --app-panel-header-text: var(--da-neutral-100);
-        --app-editor-bg: var(--da-neutral-800);
-        --app-editor-text: var(--da-neutral-100);
-        --app-editor-placeholder: var(--da-neutral-500);
-        --app-line-numbers-bg: var(--da-neutral-900);
-        --app-line-numbers-text: var(--da-neutral-300);
-        --app-gutter-bg: var(--da-neutral-900);
-        --app-gutter-hover: var(--da-neutral-700);
-        --app-gutter-handle: var(--da-neutral-400);
+        --app-text-primary: var(--da-frost);
+        --app-text-secondary: var(--da-stone);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-charcoal);
+        --app-bg-secondary: var(--da-ink);
+        --app-bg-dark: var(--da-ink);
+        --app-border-default: var(--da-graphite);
+        --app-border-hover: var(--da-slate);
+        --app-toolbar-bg: var(--da-ink);
+        --app-toolbar-text: var(--da-frost);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-frost);
+        --app-editor-bg: var(--da-charcoal);
+        --app-editor-text: var(--da-frost);
+        --app-editor-placeholder: var(--da-ash);
+        --app-line-numbers-bg: var(--da-ink);
+        --app-line-numbers-text: var(--da-cloud);
+        --app-gutter-bg: var(--da-ink);
+        --app-gutter-hover: var(--da-graphite);
+        --app-gutter-handle: var(--da-stone);
       }
 
       * {
@@ -116,8 +126,9 @@
       .toolbar {
         background-color: var(--app-toolbar-bg);
         color: var(--app-toolbar-text);
-        padding: 12px 16px;
+        padding: 8px 16px;
         border-bottom: 1px solid var(--app-toolbar-border);
+        box-shadow: inset 0 -2px 0 0 var(--da-secondary);
         display: flex;
         align-items: center;
         gap: 12px;
@@ -127,57 +138,69 @@
 
       .toolbar-title {
         font-weight: 500;
-        font-size: 18px;
+        font-size: 15px;
         line-height: 1.4;
         margin-right: auto;
         color: var(--app-toolbar-text);
-        letter-spacing: 0.02em;
+        letter-spacing: 0.05em;
       }
 
       .toolbar-menu {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        padding: 2px;
       }
 
       .toolbar-button {
         background: none;
-        border: none;
-        padding: 8px;
+        border: 1px solid transparent;
+        padding: 6px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 6px;
-        min-width: 40px;
-        min-height: 40px;
-        transition: all 0.2s ease;
+        min-width: 34px;
+        min-height: 34px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
       }
 
       .toolbar-button svg {
-        width: 20px;
-        height: 20px;
-        color: var(--da-neutral-100);
-        transition: all 0.2s ease;
+        width: 17px;
+        height: 17px;
+        color: var(--da-cloud);
+        transition: all var(--duration-normal) var(--ease-out-expo);
       }
 
       .toolbar-button:hover {
-        background-color: var(--da-neutral-700);
+        background-color: var(--da-graphite);
       }
       .toolbar-button:hover svg {
-        color: var(--da-neutral-white);
+        color: var(--da-snow);
+      }
+      .toolbar-button:active {
+        transform: scale(0.93);
       }
       .toolbar-button.active {
-        background-color: var(--app-accent);
+        background: var(--da-accent-muted);
+        border-color: var(--da-secondary);
       }
       .toolbar-button.active svg {
-        color: var(--da-neutral-white);
+        color: var(--da-snow);
       }
 
-      .toolbar-button:focus,
       .toolbar-button:focus-visible {
-        outline: 2px solid var(--app-border-focus);
+        outline: 2px solid var(--da-secondary);
         outline-offset: 2px;
+        box-shadow: 0 0 0 4px var(--da-accent-muted);
         border-radius: 6px;
       }
 
@@ -222,6 +245,7 @@
         min-width: 0;
         min-height: 0;
         overflow: hidden;
+        transition: width 250ms var(--ease-out-expo), height 250ms var(--ease-out-expo);
       }
 
       .editor-container {
@@ -251,16 +275,18 @@
 .split-view.layout-po .editor-container,.split-view.layout-po .gutter{display:none}.split-view.layout-po .preview-panel{width:100%!important;height:100%!important}
 
       .panel-header {
-        background-color: var(--app-panel-header-bg);
+        background: linear-gradient(90deg, var(--da-accent-glow), var(--app-panel-header-bg) 30%);
         color: var(--app-panel-header-text);
-        padding: 12px 16px;
-        font-weight: 500;
-        font-size: 16px;
+        padding: 8px 16px;
+        border-left: 3px solid var(--da-secondary);
+        font-weight: 600;
+        font-size: 11px;
         line-height: 1.5;
-        text-align: center;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
         user-select: none;
         flex-shrink: 0;
-        letter-spacing: 0.02em;
       }
 
       .editor-content-wrapper {
@@ -270,6 +296,10 @@
         border: 1px solid var(--app-border-default);
         border-top: none;
         border-radius: 0 0 4px 4px;
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      :root[data-theme="dark"] .editor-content-wrapper {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
       }
       #html-editor {
         width: 100%;
@@ -289,6 +319,15 @@
         width: 100%;
         height: 100%;
         flex-grow: 1;
+      }
+      .CodeMirror-activeline-background {
+        background: var(--da-accent-glow) !important;
+      }
+      .CodeMirror-selected {
+        background: var(--da-accent-muted) !important;
+      }
+      .CodeMirror-focused .CodeMirror-selected {
+        background: var(--da-accent-muted) !important;
       }
       #html-editor::placeholder {
         color: var(--app-editor-placeholder);
@@ -316,43 +355,62 @@
       .gutter {
         background-color: var(--app-gutter-bg);
         position: relative;
-        transition: background-color 0.2s ease;
+        transition: background-color var(--duration-normal) var(--ease-out-expo);
       }
       .split-view.layout-lr .gutter {
-        width: 8px;
+        width: 6px;
         height: 100%;
         cursor: col-resize;
+        margin: 0 -4px;
+        padding: 0 4px;
+        background-clip: content-box;
       }
       .split-view.layout-tb .gutter {
         width: 100%;
-        height: 8px;
+        height: 6px;
         cursor: row-resize;
+        margin: -4px 0;
+        padding: 4px 0;
+        background-clip: content-box;
       }
 
       .gutter:hover {
-        background-color: var(--app-gutter-hover);
+        background-color: var(--da-secondary);
       }
 
-      .gutter::after {
+      .gutter.dragging {
+        box-shadow: 0 0 8px var(--da-accent-muted);
+      }
+
+      .gutter::before {
         content: "";
         position: absolute;
-        background-color: var(--app-gutter-handle);
         border-radius: 2px;
-        transition: background-color 0.2s ease;
+        transition: background-color var(--duration-normal) var(--ease-out-expo);
       }
-      .split-view.layout-lr .gutter::after {
+      .split-view.layout-lr .gutter::before {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 2px;
-        height: 30px;
+        width: 3px;
+        height: 3px;
+        box-shadow:
+          0 -6px 0 0 var(--app-gutter-handle),
+          0 0 0 0 var(--app-gutter-handle),
+          0 6px 0 0 var(--app-gutter-handle);
+        background: var(--app-gutter-handle);
       }
-      .split-view.layout-tb .gutter::after {
+      .split-view.layout-tb .gutter::before {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 30px;
-        height: 2px;
+        width: 3px;
+        height: 3px;
+        box-shadow:
+          -6px 0 0 0 var(--app-gutter-handle),
+          0 0 0 0 var(--app-gutter-handle),
+          6px 0 0 0 var(--app-gutter-handle);
+        background: var(--app-gutter-handle);
       }
 
 body.dragging-lr,body.dragging-lr *{cursor:col-resize!important}
@@ -366,66 +424,122 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
         z-index: 9999;
       }
 
+      /* Toast notifications */
+      @keyframes toast-slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes toast-fade-out {
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(-8px); opacity: 0; }
+      }
+      .temp-message {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 10000;
+        pointer-events: none;
+        background-color: var(--da-charcoal);
+        color: var(--da-snow);
+        border: 1px solid var(--da-graphite);
+        box-shadow: var(--shadow-md);
+        animation: toast-slide-in 300ms var(--ease-out-expo);
+      }
+      .temp-message[role="status"] {
+        border-left: 3px solid var(--da-success);
+      }
+      .temp-message.toast-error[role="status"] {
+        border-left: 3px solid var(--da-error);
+      }
+      .temp-message.toast-out {
+        animation: toast-fade-out 300ms var(--ease-out-expo) forwards;
+      }
+
+      /* Theme toggle animation */
+      .theme-icon-spin svg {
+        animation: theme-spin 400ms var(--ease-out-expo);
+      }
+      @keyframes theme-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* Accessibility: reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
     </style>
   </head>
     <body>
       <div class="toolbar">
         <span class="toolbar-title">Markdownプレビューアー</span>
         <div class="toolbar-menu">
-          <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" role="button" tabindex="0">
-            <i data-feather="rotate-ccw"></i>
-          </button>
-          <button class="toolbar-button" id="redo-btn" title="やり直す (Ctrl+Y)" aria-label="やり直す" role="button" tabindex="0">
-            <i data-feather="rotate-cw"></i>
-          </button>
-          <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" role="button" tabindex="0">
-            <i data-feather="copy"></i>
-          </button>
-          <button class="toolbar-button" id="paste-btn"
-                  title="クリップボードから貼り付け"
-                  aria-label="クリップボードから貼り付け"
-                  role="button" tabindex="0">
-            <i data-feather="clipboard"></i>
-          </button>
-          <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" role="button" tabindex="0">
-            <i data-feather="trash-2"></i>
-          </button>
-          <button class="toolbar-button" id="bold-btn" title="太字 (Ctrl+B)" aria-label="太字" role="button" tabindex="0">
-            <i data-feather="bold"></i>
-          </button>
-          <button class="toolbar-button" id="italic-btn" title="斜体 (Ctrl+I)" aria-label="斜体" role="button" tabindex="0">
-            <i data-feather="italic"></i>
-          </button>
-          <button class="toolbar-button" id="heading-btn" title="見出し (Ctrl+H)" aria-label="見出し" role="button" tabindex="0">
-            <i data-feather="hash"></i>
-          </button>
-          <button class="toolbar-button" id="link-btn" title="リンク挿入 (Ctrl+K)" aria-label="リンク挿入" role="button" tabindex="0">
-            <i data-feather="link"></i>
-          </button>
-          <button class="toolbar-button" id="image-btn" title="画像挿入 (Ctrl+Shift+I)" aria-label="画像挿入" role="button" tabindex="0">
-            <i data-feather="image"></i>
-          </button>
-          <div style="width: 1px; height: 24px; background-color: var(--app-toolbar-border); margin: 0 12px;" role="separator" aria-orientation="vertical"></div>
-          <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" role="button" tabindex="0">
-            <i data-feather="columns"></i>
-          </button>
-          <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割レイアウトに変更" role="button" tabindex="0">
-            <i data-feather="minimize-2"></i>
-          </button>
-          <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" role="button" tabindex="0">
-            <i data-feather="eye"></i>
-          </button>
-          <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" role="button" tabindex="0">
-            <i data-feather="moon" id="theme-toggle-icon"></i>
-          </button>
+          <div class="btn-group" role="group" aria-label="編集操作">
+            <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" tabindex="0">
+              <i data-feather="rotate-ccw"></i>
+            </button>
+            <button class="toolbar-button" id="redo-btn" title="やり直す (Ctrl+Y)" aria-label="やり直す" tabindex="0">
+              <i data-feather="rotate-cw"></i>
+            </button>
+            <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="エディター内容をクリップボードにコピー" tabindex="0">
+              <i data-feather="copy"></i>
+            </button>
+            <button class="toolbar-button" id="paste-btn" title="クリップボードから貼り付け" aria-label="クリップボードから貼り付け" tabindex="0">
+              <i data-feather="clipboard"></i>
+            </button>
+            <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="エディター内容をクリア" tabindex="0">
+              <i data-feather="trash-2"></i>
+            </button>
+          </div>
+          <div class="btn-group" role="group" aria-label="Markdown書式">
+            <button class="toolbar-button" id="bold-btn" title="太字 (Ctrl+B)" aria-label="太字" tabindex="0">
+              <i data-feather="bold"></i>
+            </button>
+            <button class="toolbar-button" id="italic-btn" title="斜体 (Ctrl+I)" aria-label="斜体" tabindex="0">
+              <i data-feather="italic"></i>
+            </button>
+            <button class="toolbar-button" id="heading-btn" title="見出し (Ctrl+H)" aria-label="見出し" tabindex="0">
+              <i data-feather="hash"></i>
+            </button>
+            <button class="toolbar-button" id="link-btn" title="リンク挿入 (Ctrl+K)" aria-label="リンク挿入" tabindex="0">
+              <i data-feather="link"></i>
+            </button>
+            <button class="toolbar-button" id="image-btn" title="画像挿入 (Ctrl+Shift+I)" aria-label="画像挿入" tabindex="0">
+              <i data-feather="image"></i>
+            </button>
+          </div>
+          <div class="btn-group" role="group" aria-label="レイアウト切り替え">
+            <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割レイアウトに変更" tabindex="0">
+              <i data-feather="columns"></i>
+            </button>
+            <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割レイアウトに変更" tabindex="0">
+              <i data-feather="minimize-2"></i>
+            </button>
+            <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ表示" tabindex="0">
+              <i data-feather="eye"></i>
+            </button>
+            <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" tabindex="0">
+              <i data-feather="moon" id="theme-toggle-icon"></i>
+            </button>
+          </div>
           <div style="flex-grow: 1" aria-hidden="true"></div>
-          <button class="toolbar-button" id="open-btn" title="Markdownファイルを開く" aria-label="Markdownファイルを開く" role="button" tabindex="0">
-            <i data-feather="upload"></i>
-          </button>
-          <input type="file" id="file-input" accept=".md,.markdown,text/markdown" style="display: none;" />
-          <button class="toolbar-button" id="save-btn" title="Markdownファイルをダウンロード (Ctrl+S)" aria-label="Markdownファイルとして保存" role="button" tabindex="0">
-            <i data-feather="download"></i>
-          </button>
+          <div class="btn-group" role="group" aria-label="ファイル操作">
+            <button class="toolbar-button" id="open-btn" title="Markdownファイルを開く" aria-label="Markdownファイルを開く" tabindex="0">
+              <i data-feather="upload"></i>
+            </button>
+            <input type="file" id="file-input" accept=".md,.markdown,text/markdown" style="display: none;" />
+            <button class="toolbar-button" id="save-btn" title="Markdownファイルをダウンロード (Ctrl+S)" aria-label="Markdownファイルとして保存" tabindex="0">
+              <i data-feather="download"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -768,6 +882,7 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           }
           const btn = elements.themeToggleBtn;
           if (btn && typeof feather !== 'undefined') {
+            btn.classList.add('theme-icon-spin');
             const oldIcon = btn.querySelector('svg, [data-feather]');
             if (oldIcon) oldIcon.remove();
             const newIcon = document.createElement('i');
@@ -775,6 +890,7 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
             newIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
             btn.appendChild(newIcon);
             feather.replace();
+            setTimeout(() => btn.classList.remove('theme-icon-spin'), 400);
           }
         }
 
@@ -923,29 +1039,16 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
         function showTemporaryMessage(message, type = 'success') {
           const existing = document.querySelector('.temp-message');
           if (existing) existing.remove();
-          // 一時的なメッセージ表示機能
           const messageDiv = document.createElement('div');
-          messageDiv.className = 'temp-message';
+          messageDiv.className = 'temp-message' + (type === 'error' ? ' toast-error' : '');
           messageDiv.textContent = message;
-          messageDiv.style.cssText = `
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            padding: 10px 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            z-index: 10000;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            ${type === 'error' 
-              ? 'background-color: #fee; color: #c33; border: 1px solid #fcc;' 
-              : 'background-color: #efe; color: #363; border: 1px solid #cfc;'}
-          `;
-          
+          messageDiv.setAttribute('role', 'status');
+          messageDiv.setAttribute('aria-live', 'polite');
+
           document.body.appendChild(messageDiv);
-          
+
           setTimeout(() => {
-            messageDiv.style.opacity = '0';
+            messageDiv.classList.add('toast-out');
             setTimeout(() => {
               if (messageDiv.parentNode) {
                 document.body.removeChild(messageDiv);
@@ -1013,6 +1116,7 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
         function startDrag(e) {
           state.isDragging = true;
           document.body.classList.add(state.currentLayout === "tb" ? "dragging-tb" : "dragging-lr");
+          elements.gutter.classList.add('dragging');
 
           state.dragContext.startX = e.clientX;
           state.dragContext.startY = e.clientY;
@@ -1074,6 +1178,7 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           if (!state.isDragging) return;
           state.isDragging = false;
           document.body.classList.remove("dragging-lr", "dragging-tb");
+          elements.gutter.classList.remove('dragging');
 
           window.removeEventListener("mousemove", doDrag);
           window.removeEventListener("touchmove", doTouchDrag);

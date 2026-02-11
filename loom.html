@@ -25,20 +25,25 @@
         --accent-text: #5ec7c1;
         --accent-config: #c75e8f;
         --accent-data: #c7885e;
-        --accent-system-bg: #c79a5e12;
-        --accent-reference-bg: #5e8fc712;
-        --accent-previous-bg: #7e5ec712;
-        --accent-instruction-bg: #5ec78a12;
-        --accent-code-bg: #c7c15e12;
-        --accent-text-bg: #5ec7c112;
-        --accent-config-bg: #c75e8f12;
-        --accent-data-bg: #c7885e12;
+        --accent-system-bg: #c79a5e40;
+        --accent-reference-bg: #5e8fc740;
+        --accent-previous-bg: #7e5ec740;
+        --accent-instruction-bg: #5ec78a40;
+        --accent-code-bg: #c7c15e40;
+        --accent-text-bg: #5ec7c140;
+        --accent-config-bg: #c75e8f40;
+        --accent-data-bg: #c7885e40;
         --danger: #c75e5e;
         --success: #5ec78a;
         --font-mono: "JetBrains Mono", monospace;
         --font-sans: "Noto Sans JP", sans-serif;
         --radius: 6px;
         --transition: 150ms ease;
+        --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+        --duration-fast: 100ms;
+        --duration-normal: 200ms;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
 
       * {
@@ -113,6 +118,13 @@
         background: var(--bg-hover);
         color: var(--text-primary);
         border-color: var(--border-light);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+        box-shadow: none;
       }
 
       .btn-accent {
@@ -123,6 +135,7 @@
       .btn-accent:hover {
         background: var(--accent-instruction);
         color: var(--bg-primary);
+        box-shadow: 0 2px 12px rgba(94, 199, 138, 0.3);
       }
 
       .btn-danger {
@@ -134,6 +147,16 @@
         background: var(--danger);
         color: var(--bg-primary);
       }
+
+      /* Add button accent hover colors */
+      #addSystemBtn:hover { border-color: var(--accent-system); color: var(--accent-system); }
+      #addReferenceBtn:hover { border-color: var(--accent-reference); color: var(--accent-reference); }
+      #addPreviousBtn:hover { border-color: var(--accent-previous); color: var(--accent-previous); }
+      #addInstructionBtn:hover { border-color: var(--accent-instruction); color: var(--accent-instruction); }
+      #addCodeBtn:hover { border-color: var(--accent-code); color: var(--accent-code); }
+      #addTextBtn:hover { border-color: var(--accent-text); color: var(--accent-text); }
+      #addConfigBtn:hover { border-color: var(--accent-config); color: var(--accent-config); }
+      #addDataBtn:hover { border-color: var(--accent-data); color: var(--accent-data); }
 
       /* ===== MAIN LAYOUT ===== */
       .main {
@@ -159,10 +182,41 @@
         position: relative;
       }
 
+      .divider::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -6px;
+        right: -6px;
+        z-index: 10;
+      }
+
+      .divider::after {
+        content: '···';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--text-muted);
+        font-size: 10px;
+        letter-spacing: 2px;
+        opacity: 0;
+        transition: opacity var(--duration-normal) ease;
+        pointer-events: none;
+        writing-mode: vertical-lr;
+      }
+
       .divider:hover,
       .divider.dragging {
         background: var(--accent-instruction);
-        width: 2px;
+        width: 3px;
+        box-shadow: 0 0 8px rgba(94, 199, 138, 0.3);
+      }
+
+      .divider:hover::after,
+      .divider.dragging::after {
+        opacity: 1;
       }
 
       /* ===== PANEL HEADER ===== */
@@ -212,27 +266,36 @@
 
       .token-track {
         flex: 1;
-        height: 4px;
+        height: 6px;
         background: var(--bg-primary);
-        border-radius: 2px;
+        border-radius: 3px;
         overflow: hidden;
         position: relative;
       }
 
       .token-fill {
         height: 100%;
-        background: var(--accent-instruction);
-        border-radius: 2px;
+        background: linear-gradient(90deg, var(--accent-instruction), #7ee8aa);
+        border-radius: 3px;
         transition:
-          width 300ms ease,
-          background 300ms ease;
+          width 300ms var(--ease-out-expo),
+          background 300ms var(--ease-out-expo);
+        box-shadow: 0 0 8px rgba(94, 199, 138, 0.3);
       }
 
       .token-fill.warning {
-        background: var(--accent-system);
+        background: linear-gradient(90deg, var(--accent-system), #e0b96e);
+        box-shadow: 0 0 8px rgba(199, 154, 94, 0.3);
       }
       .token-fill.danger {
-        background: var(--danger);
+        background: linear-gradient(90deg, var(--danger), #e87070);
+        box-shadow: 0 0 8px rgba(199, 94, 94, 0.3);
+        animation: danger-pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes danger-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
       }
 
       .token-count {
@@ -241,6 +304,7 @@
         color: var(--text-secondary);
         min-width: 100px;
         text-align: right;
+        font-variant-numeric: tabular-nums;
       }
 
       .token-budget-input {
@@ -283,18 +347,42 @@
         background: var(--bg-secondary);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        overflow: hidden;
-        transition: all var(--transition);
+        overflow: visible;
+        transition: all var(--duration-normal) var(--ease-out-expo);
         position: relative;
+        box-shadow: var(--shadow-sm);
       }
+
+      .block::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 3px 0 0 3px;
+        background: var(--border);
+      }
+
+      .block[data-type="system"]::before { background: var(--accent-system); }
+      .block[data-type="reference"]::before { background: var(--accent-reference); }
+      .block[data-type="previous"]::before { background: var(--accent-previous); }
+      .block[data-type="instruction"]::before { background: var(--accent-instruction); }
+      .block[data-type="code"]::before { background: var(--accent-code); }
+      .block[data-type="text"]::before { background: var(--accent-text); }
+      .block[data-type="config"]::before { background: var(--accent-config); }
+      .block[data-type="data"]::before { background: var(--accent-data); }
 
       .block:hover {
         border-color: var(--border-light);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        transform: translateY(-1px);
       }
 
       .block.dragging {
         opacity: 0.5;
-        transform: scale(0.98);
+        transform: scale(0.96) rotate(-1deg);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       }
 
       .block.drag-over {
@@ -334,53 +422,60 @@
       .block-type-badge {
         font-family: var(--font-mono);
         font-size: 9px;
-        font-weight: 500;
-        letter-spacing: 1px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
         text-transform: uppercase;
         padding: 2px 8px;
         border-radius: 3px;
         flex-shrink: 0;
+        transition: all var(--duration-fast) ease;
+        cursor: pointer;
+      }
+
+      .block-type-badge:hover {
+        filter: brightness(1.2);
+        transform: scale(1.05);
       }
 
       .block-type-badge.system {
         background: var(--accent-system-bg);
         color: var(--accent-system);
-        border: 1px solid var(--accent-system);
+        border: 1px solid #c79a5e66;
       }
       .block-type-badge.reference {
         background: var(--accent-reference-bg);
         color: var(--accent-reference);
-        border: 1px solid var(--accent-reference);
+        border: 1px solid #5e8fc766;
       }
       .block-type-badge.previous {
         background: var(--accent-previous-bg);
         color: var(--accent-previous);
-        border: 1px solid var(--accent-previous);
+        border: 1px solid #7e5ec766;
       }
       .block-type-badge.instruction {
         background: var(--accent-instruction-bg);
         color: var(--accent-instruction);
-        border: 1px solid var(--accent-instruction);
+        border: 1px solid #5ec78a66;
       }
       .block-type-badge.code {
         background: var(--accent-code-bg);
         color: var(--accent-code);
-        border: 1px solid var(--accent-code);
+        border: 1px solid #c7c15e66;
       }
       .block-type-badge.text {
         background: var(--accent-text-bg);
         color: var(--accent-text);
-        border: 1px solid var(--accent-text);
+        border: 1px solid #5ec7c166;
       }
       .block-type-badge.config {
         background: var(--accent-config-bg);
         color: var(--accent-config);
-        border: 1px solid var(--accent-config);
+        border: 1px solid #c75e8f66;
       }
       .block-type-badge.data {
         background: var(--accent-data-bg);
         color: var(--accent-data);
-        border: 1px solid var(--accent-data);
+        border: 1px solid #c7885e66;
       }
 
       .block-label {
@@ -666,14 +761,20 @@
         justify-content: center;
         color: var(--text-muted);
         gap: 8px;
-        padding: 40px;
+        padding: 60px;
         text-align: center;
       }
 
       .empty-state-icon {
-        font-size: 32px;
-        opacity: 0.3;
+        font-size: 48px;
+        opacity: 0.15;
         margin-bottom: 8px;
+        animation: empty-pulse 3s ease-in-out infinite;
+      }
+
+      @keyframes empty-pulse {
+        0%, 100% { opacity: 0.15; transform: scale(1); }
+        50% { opacity: 0.25; transform: scale(1.05); }
       }
 
       .empty-state-text {
@@ -697,15 +798,18 @@
         transform: translateX(-50%) translateY(20px);
         background: var(--bg-tertiary);
         border: 1px solid var(--border-light);
+        border-left: 3px solid var(--accent-instruction);
         color: var(--text-primary);
         font-family: var(--font-mono);
         font-size: 11px;
         padding: 8px 20px;
-        border-radius: 20px;
+        border-radius: 8px;
         opacity: 0;
-        transition: all 300ms ease;
+        transition: all 300ms var(--ease-out-expo);
         z-index: 2000;
         pointer-events: none;
+        backdrop-filter: blur(8px);
+        box-shadow: var(--shadow-md);
       }
 
       .toast.show {
@@ -755,6 +859,44 @@
         background: var(--bg-hover);
       }
 
+      /* ===== LIGHT THEME ===== */
+      :root[data-theme="light"] {
+        --bg-primary: #f8f8fb;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f0f1f5;
+        --bg-hover: #e8e9ee;
+        --border: #d8dae0;
+        --border-light: #c8cad0;
+        --text-primary: #1a1a2e;
+        --text-secondary: #5a5d6b;
+        --text-muted: #8e919e;
+        --accent-system-bg: #c79a5e30;
+        --accent-reference-bg: #5e8fc730;
+        --accent-previous-bg: #7e5ec730;
+        --accent-instruction-bg: #5ec78a30;
+        --accent-code-bg: #c7c15e30;
+        --accent-text-bg: #5ec7c130;
+        --accent-config-bg: #c75e8f30;
+        --accent-data-bg: #c7885e30;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      /* ===== FOCUS VISIBLE ===== */
+      :focus-visible {
+        outline: 2px solid var(--accent-instruction);
+        outline-offset: 2px;
+      }
+
+      /* ===== REDUCED MOTION ===== */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
       /* responsive */
       @media (max-width: 800px) {
         .main {
@@ -779,6 +921,7 @@
         <div class="logo">LOOM<span>AI Output Workbench</span></div>
       </div>
       <div class="header-actions">
+        <button class="btn" id="themeToggleBtn" aria-label="テーマ切替">☀ Light</button>
         <button class="btn" id="exportBtn" aria-label="エクスポート">↓ Export</button>
         <button class="btn" id="importBtn" aria-label="インポート">↑ Import</button>
         <input
@@ -905,7 +1048,7 @@
     </div>
 
     <!-- TOAST -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
     (function() {
@@ -1046,6 +1189,7 @@
         el.draggable = true;
         el.dataset.index = index;
         el.dataset.panel = panel;
+        el.dataset.type = block.type;
         el.tabIndex = 0;
 
         var tokens = estimateTokens(block.content);
@@ -1730,7 +1874,33 @@
       document.getElementById('modalOverlay').addEventListener('click', closeModal);
       document.getElementById('modalContent').addEventListener('click', function(e) { e.stopPropagation(); });
 
+      // ===== THEME TOGGLE =====
+      function initTheme() {
+        var saved = localStorage.getItem('loom_theme');
+        if (saved) {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+        updateThemeButton();
+      }
+
+      function toggleTheme() {
+        var current = document.documentElement.getAttribute('data-theme');
+        var next = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('loom_theme', next);
+        updateThemeButton();
+      }
+
+      function updateThemeButton() {
+        var btn = document.getElementById('themeToggleBtn');
+        var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        btn.textContent = isLight ? '\u263E Dark' : '\u2600 Light';
+      }
+
+      document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
       // ===== INIT =====
+      initTheme();
       load();
       renderContextBlocks();
       renderOutputBlocks();
