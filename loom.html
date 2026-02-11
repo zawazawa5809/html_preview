@@ -1057,6 +1057,11 @@
 
         // Drag events
         el.addEventListener("dragstart", (e) => {
+          const tag = e.target.tagName;
+          if (tag === "TEXTAREA" || tag === "INPUT") {
+            e.preventDefault();
+            return;
+          }
           dragState = { panel, dragIndex: index };
           el.classList.add("dragging");
           e.dataTransfer.effectAllowed = "move";
