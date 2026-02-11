@@ -1,0 +1,1570 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loom — AI Output Workbench</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap");
+
+      :root {
+        --bg-primary: #0f1114;
+        --bg-secondary: #161920;
+        --bg-tertiary: #1c2028;
+        --bg-hover: #222730;
+        --border: #2a2f3a;
+        --border-light: #363c4a;
+        --text-primary: #e0e4ec;
+        --text-secondary: #8891a0;
+        --text-muted: #5a6270;
+        --accent-system: #c79a5e;
+        --accent-reference: #5e8fc7;
+        --accent-previous: #7e5ec7;
+        --accent-instruction: #5ec78a;
+        --accent-code: #c7c15e;
+        --accent-text: #5ec7c1;
+        --accent-config: #c75e8f;
+        --accent-data: #c7885e;
+        --accent-system-bg: #c79a5e12;
+        --accent-reference-bg: #5e8fc712;
+        --accent-previous-bg: #7e5ec712;
+        --accent-instruction-bg: #5ec78a12;
+        --accent-code-bg: #c7c15e12;
+        --accent-text-bg: #5ec7c112;
+        --accent-config-bg: #c75e8f12;
+        --accent-data-bg: #c7885e12;
+        --danger: #c75e5e;
+        --success: #5ec78a;
+        --font-mono: "JetBrains Mono", monospace;
+        --font-sans: "Noto Sans JP", sans-serif;
+        --radius: 6px;
+        --transition: 150ms ease;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        height: 100vh;
+        overflow: hidden;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      /* ===== HEADER ===== */
+      .header {
+        height: 48px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        flex-shrink: 0;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .logo {
+        font-family: var(--font-mono);
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--text-primary);
+      }
+
+      .logo span {
+        color: var(--text-muted);
+        font-weight: 300;
+        font-size: 11px;
+        letter-spacing: 1px;
+        margin-left: 8px;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all var(--transition);
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+      }
+
+      .btn-accent {
+        border-color: var(--accent-instruction);
+        color: var(--accent-instruction);
+      }
+
+      .btn-accent:hover {
+        background: var(--accent-instruction);
+        color: var(--bg-primary);
+      }
+
+      .btn-danger {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .btn-danger:hover {
+        background: var(--danger);
+        color: var(--bg-primary);
+      }
+
+      /* ===== MAIN LAYOUT ===== */
+      .main {
+        display: flex;
+        height: calc(100vh - 48px);
+      }
+
+      .panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .panel-left {
+        border-right: 1px solid var(--border);
+      }
+
+      .divider {
+        width: 1px;
+        background: var(--border);
+        cursor: col-resize;
+        position: relative;
+      }
+
+      .divider:hover,
+      .divider.dragging {
+        background: var(--accent-instruction);
+        width: 2px;
+      }
+
+      /* ===== PANEL HEADER ===== */
+      .panel-header {
+        height: 42px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        flex-shrink: 0;
+      }
+
+      .panel-title {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+      }
+
+      .panel-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      /* ===== TOKEN BUDGET BAR ===== */
+      .token-bar {
+        height: 32px;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .token-bar label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-muted);
+        letter-spacing: 1px;
+      }
+
+      .token-track {
+        flex: 1;
+        height: 4px;
+        background: var(--bg-primary);
+        border-radius: 2px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .token-fill {
+        height: 100%;
+        background: var(--accent-instruction);
+        border-radius: 2px;
+        transition:
+          width 300ms ease,
+          background 300ms ease;
+      }
+
+      .token-fill.warning {
+        background: var(--accent-system);
+      }
+      .token-fill.danger {
+        background: var(--danger);
+      }
+
+      .token-count {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-secondary);
+        min-width: 100px;
+        text-align: right;
+      }
+
+      .token-budget-input {
+        width: 60px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        text-align: right;
+      }
+
+      /* ===== BLOCK LIST ===== */
+      .block-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .block-list::-webkit-scrollbar {
+        width: 6px;
+      }
+      .block-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .block-list::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+
+      /* ===== BLOCK ===== */
+      .block {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: all var(--transition);
+        position: relative;
+      }
+
+      .block:hover {
+        border-color: var(--border-light);
+      }
+
+      .block.dragging {
+        opacity: 0.5;
+        transform: scale(0.98);
+      }
+
+      .block.drag-over {
+        border-color: var(--accent-instruction);
+        box-shadow: 0 0 0 1px var(--accent-instruction);
+      }
+
+      .block-head {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        gap: 10px;
+        cursor: grab;
+        user-select: none;
+      }
+
+      .block-head:active {
+        cursor: grabbing;
+      }
+
+      .block-drag-handle {
+        color: var(--text-muted);
+        font-size: 10px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        line-height: 1;
+      }
+
+      .block-drag-handle::before,
+      .block-drag-handle::after {
+        content: "··";
+        letter-spacing: 2px;
+      }
+
+      .block-type-badge {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      .block-type-badge.system {
+        background: var(--accent-system-bg);
+        color: var(--accent-system);
+        border: 1px solid var(--accent-system);
+      }
+      .block-type-badge.reference {
+        background: var(--accent-reference-bg);
+        color: var(--accent-reference);
+        border: 1px solid var(--accent-reference);
+      }
+      .block-type-badge.previous {
+        background: var(--accent-previous-bg);
+        color: var(--accent-previous);
+        border: 1px solid var(--accent-previous);
+      }
+      .block-type-badge.instruction {
+        background: var(--accent-instruction-bg);
+        color: var(--accent-instruction);
+        border: 1px solid var(--accent-instruction);
+      }
+      .block-type-badge.code {
+        background: var(--accent-code-bg);
+        color: var(--accent-code);
+        border: 1px solid var(--accent-code);
+      }
+      .block-type-badge.text {
+        background: var(--accent-text-bg);
+        color: var(--accent-text);
+        border: 1px solid var(--accent-text);
+      }
+      .block-type-badge.config {
+        background: var(--accent-config-bg);
+        color: var(--accent-config);
+        border: 1px solid var(--accent-config);
+      }
+      .block-type-badge.data {
+        background: var(--accent-data-bg);
+        color: var(--accent-data);
+        border: 1px solid var(--accent-data);
+      }
+
+      .block-label {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-primary);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .block-label-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 12px;
+        font-weight: 500;
+        outline: none;
+        min-width: 0;
+      }
+
+      .block-tokens {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+
+      .block-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .block-btn {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 3px;
+        font-size: 12px;
+        transition: all var(--transition);
+      }
+
+      .block-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+      }
+
+      .block-btn.delete:hover {
+        background: #c75e5e22;
+        color: var(--danger);
+      }
+
+      .block-body {
+        padding: 0 12px 10px 12px;
+      }
+
+      .block-textarea {
+        width: 100%;
+        min-height: 80px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.7;
+        padding: 10px;
+        resize: vertical;
+        outline: none;
+        transition: border-color var(--transition);
+      }
+
+      .block-textarea:focus {
+        border-color: var(--border-light);
+      }
+
+      .block-textarea::placeholder {
+        color: var(--text-muted);
+      }
+
+      /* ===== COMPOSE AREA ===== */
+      .compose-area {
+        border-top: 1px solid var(--border);
+        background: var(--bg-secondary);
+        flex-shrink: 0;
+      }
+
+      .compose-toolbar {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        gap: 6px;
+      }
+
+      /* ===== OUTPUT PANEL SPECIFICS ===== */
+      .output-stats {
+        height: 32px;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 16px;
+        flex-shrink: 0;
+      }
+
+      .stat {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+      }
+
+      .stat strong {
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      /* ===== SNAPSHOT BAR ===== */
+      .snapshot-bar {
+        height: 36px;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 6px;
+        flex-shrink: 0;
+        overflow-x: auto;
+      }
+
+      .snapshot-chip {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        padding: 3px 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all var(--transition);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .snapshot-chip:hover {
+        border-color: var(--border-light);
+        color: var(--text-primary);
+      }
+
+      .snapshot-chip.active {
+        border-color: var(--accent-instruction);
+        color: var(--accent-instruction);
+      }
+
+      .snapshot-delete {
+        font-size: 10px;
+        opacity: 0.5;
+        cursor: pointer;
+      }
+
+      .snapshot-delete:hover {
+        opacity: 1;
+        color: var(--danger);
+      }
+
+      /* ===== MODAL ===== */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .modal {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        width: 600px;
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow: auto;
+        padding: 24px;
+      }
+
+      .modal h3 {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+      }
+
+      .modal-output {
+        width: 100%;
+        min-height: 300px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.7;
+        padding: 14px;
+        resize: vertical;
+        outline: none;
+        margin-bottom: 12px;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      /* ===== TEMPLATE LIST IN MODAL ===== */
+      .template-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .template-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all var(--transition);
+      }
+
+      .template-item:hover {
+        border-color: var(--border-light);
+        background: var(--bg-hover);
+      }
+
+      .template-name {
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .template-meta {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-muted);
+      }
+
+      /* ===== EMPTY STATE ===== */
+      .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        gap: 8px;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .empty-state-icon {
+        font-size: 32px;
+        opacity: 0.3;
+        margin-bottom: 8px;
+      }
+
+      .empty-state-text {
+        font-size: 12px;
+        line-height: 1.8;
+      }
+
+      .empty-state-hint {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-muted);
+        opacity: 0.6;
+        margin-top: 4px;
+      }
+
+      /* ===== TOAST ===== */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-light);
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        padding: 8px 20px;
+        border-radius: 20px;
+        opacity: 0;
+        transition: all 300ms ease;
+        z-index: 2000;
+        pointer-events: none;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ===== COLLAPSED BLOCK ===== */
+      .block.collapsed .block-body {
+        display: none;
+      }
+
+      .block.collapsed .block-head {
+        padding: 6px 12px;
+      }
+
+      /* ===== TYPE SELECTOR DROPDOWN ===== */
+      .type-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 40px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius);
+        padding: 4px;
+        z-index: 100;
+        display: none;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+
+      .type-dropdown.show {
+        display: block;
+      }
+
+      .type-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        cursor: pointer;
+        border-radius: 3px;
+        font-size: 11px;
+        transition: background var(--transition);
+      }
+
+      .type-dropdown-item:hover {
+        background: var(--bg-hover);
+      }
+
+      /* responsive */
+      @media (max-width: 800px) {
+        .main {
+          flex-direction: column;
+        }
+        .panel-left {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+        .divider {
+          width: 100%;
+          height: 1px;
+          cursor: row-resize;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">LOOM<span>AI Output Workbench</span></div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="exportAll()">↓ Export</button>
+        <button
+          class="btn"
+          onclick="document.getElementById('importFile').click()"
+        >
+          ↑ Import
+        </button>
+        <input
+          type="file"
+          id="importFile"
+          accept=".json"
+          style="display: none"
+          onchange="importAll(event)"
+        />
+        <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <!-- LEFT: CONTEXT BUILDER -->
+      <div class="panel panel-left" id="panelLeft">
+        <div class="panel-header">
+          <div class="panel-title">⟨ Context Builder ⟩</div>
+          <div class="panel-actions">
+            <button class="btn" onclick="saveTemplate()">Save Template</button>
+            <button class="btn" onclick="showTemplates()">Templates</button>
+          </div>
+        </div>
+        <div class="token-bar">
+          <label>TOKEN BUDGET</label>
+          <div class="token-track">
+            <div class="token-fill" id="tokenFill"></div>
+          </div>
+          <div class="token-count" id="tokenCount">0 / 8,000</div>
+          <input
+            type="number"
+            class="token-budget-input"
+            id="tokenBudget"
+            value="8000"
+            min="100"
+            step="1000"
+            onchange="updateTokenBar()"
+          />
+        </div>
+        <div class="block-list" id="contextBlocks">
+          <div class="empty-state" id="contextEmpty">
+            <div class="empty-state-icon">⟨⟩</div>
+            <div class="empty-state-text">
+              コンテキストブロックがまだないん<br />下の＋ボタンでブロックを追加するん
+            </div>
+            <div class="empty-state-hint">
+              System / Reference / Previous / Instruction
+            </div>
+          </div>
+        </div>
+        <div class="compose-area">
+          <div class="compose-toolbar">
+            <button class="btn" onclick="addContextBlock('system')">
+              + System
+            </button>
+            <button class="btn" onclick="addContextBlock('reference')">
+              + Reference
+            </button>
+            <button class="btn" onclick="addContextBlock('previous')">
+              + Previous
+            </button>
+            <button class="btn" onclick="addContextBlock('instruction')">
+              + Instruction
+            </button>
+            <div style="flex: 1"></div>
+            <button class="btn btn-accent" onclick="composeContext()">
+              ⟩⟩ Compose & Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div class="divider" id="divider"></div>
+
+      <!-- RIGHT: OUTPUT ASSEMBLER -->
+      <div class="panel panel-right" id="panelRight">
+        <div class="panel-header">
+          <div class="panel-title">⟨ Output Assembler ⟩</div>
+          <div class="panel-actions">
+            <button class="btn" onclick="takeSnapshot()">📸 Snapshot</button>
+          </div>
+        </div>
+        <div class="output-stats" id="outputStats">
+          <div class="stat">Fragments: <strong id="fragCount">0</strong></div>
+          <div class="stat">Total chars: <strong id="fragChars">0</strong></div>
+          <div class="stat">
+            Est. tokens: <strong id="fragTokens">0</strong>
+          </div>
+        </div>
+        <div class="snapshot-bar" id="snapshotBar" style="display: none"></div>
+        <div class="block-list" id="outputBlocks">
+          <div class="empty-state" id="outputEmpty">
+            <div class="empty-state-icon">◇</div>
+            <div class="empty-state-text">
+              AIの出力をここに集めるん<br />断片を蓄積して、一つの成果物に織り上げるん
+            </div>
+            <div class="empty-state-hint">Code / Text / Config / Data</div>
+          </div>
+        </div>
+        <div class="compose-area">
+          <div class="compose-toolbar">
+            <button class="btn" onclick="addOutputBlock('code')">+ Code</button>
+            <button class="btn" onclick="addOutputBlock('text')">+ Text</button>
+            <button class="btn" onclick="addOutputBlock('config')">
+              + Config
+            </button>
+            <button class="btn" onclick="addOutputBlock('data')">+ Data</button>
+            <div style="flex: 1"></div>
+            <button class="btn btn-accent" onclick="buildOutput()">
+              ⟩⟩ Build & Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h3 id="modalTitle">Output</h3>
+        <div id="modalBody"></div>
+        <div class="modal-actions" id="modalActions"></div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ===== STATE =====
+      let state = {
+        contextBlocks: [],
+        outputBlocks: [],
+        templates: [],
+        snapshots: [],
+        tokenBudget: 8000,
+      };
+
+      let dragState = { panel: null, dragIndex: null };
+
+      // ===== PERSISTENCE =====
+      function save() {
+        state.tokenBudget =
+          parseInt(document.getElementById("tokenBudget").value) || 8000;
+        localStorage.setItem("loom_state", JSON.stringify(state));
+      }
+
+      function load() {
+        try {
+          const saved = localStorage.getItem("loom_state");
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            state = { ...state, ...parsed };
+            document.getElementById("tokenBudget").value = state.tokenBudget;
+          }
+        } catch (e) {}
+      }
+
+      // ===== TOKEN ESTIMATION =====
+      function estimateTokens(text) {
+        if (!text) return 0;
+        // Rough estimation: ~4 chars per token for English, ~2 for Japanese
+        const jpChars = (text.match(/[\u3000-\u9fff\uff00-\uffef]/g) || [])
+          .length;
+        const otherChars = text.length - jpChars;
+        return Math.ceil(jpChars / 1.5 + otherChars / 4);
+      }
+
+      function updateTokenBar() {
+        const budget =
+          parseInt(document.getElementById("tokenBudget").value) || 8000;
+        state.tokenBudget = budget;
+        let total = 0;
+        state.contextBlocks.forEach((b) => {
+          total += estimateTokens(b.content);
+        });
+        const pct = Math.min((total / budget) * 100, 100);
+        const fill = document.getElementById("tokenFill");
+        fill.style.width = pct + "%";
+        fill.className =
+          "token-fill" + (pct > 90 ? " danger" : pct > 70 ? " warning" : "");
+        document.getElementById("tokenCount").textContent =
+          total.toLocaleString() + " / " + budget.toLocaleString();
+        save();
+      }
+
+      function updateOutputStats() {
+        const count = state.outputBlocks.length;
+        let chars = 0,
+          tokens = 0;
+        state.outputBlocks.forEach((b) => {
+          chars += (b.content || "").length;
+          tokens += estimateTokens(b.content);
+        });
+        document.getElementById("fragCount").textContent = count;
+        document.getElementById("fragChars").textContent =
+          chars.toLocaleString();
+        document.getElementById("fragTokens").textContent =
+          tokens.toLocaleString();
+      }
+
+      // ===== RENDER =====
+      function renderContextBlocks() {
+        const container = document.getElementById("contextBlocks");
+        const empty = document.getElementById("contextEmpty");
+        if (state.contextBlocks.length === 0) {
+          container.innerHTML = "";
+          container.appendChild(empty);
+          empty.style.display = "flex";
+          updateTokenBar();
+          return;
+        }
+        empty.style.display = "none";
+        container.innerHTML = "";
+        state.contextBlocks.forEach((block, i) => {
+          container.appendChild(createBlockElement(block, i, "context"));
+        });
+        updateTokenBar();
+      }
+
+      function renderOutputBlocks() {
+        const container = document.getElementById("outputBlocks");
+        const empty = document.getElementById("outputEmpty");
+        if (state.outputBlocks.length === 0) {
+          container.innerHTML = "";
+          container.appendChild(empty);
+          empty.style.display = "flex";
+          updateOutputStats();
+          return;
+        }
+        empty.style.display = "none";
+        container.innerHTML = "";
+        state.outputBlocks.forEach((block, i) => {
+          container.appendChild(createBlockElement(block, i, "output"));
+        });
+        updateOutputStats();
+      }
+
+      function createBlockElement(block, index, panel) {
+        const el = document.createElement("div");
+        el.className = "block" + (block.collapsed ? " collapsed" : "");
+        el.draggable = true;
+        el.dataset.index = index;
+        el.dataset.panel = panel;
+
+        const tokens = estimateTokens(block.content);
+
+        el.innerHTML = `
+    <div class="block-head">
+      <div class="block-drag-handle"></div>
+      <span class="block-type-badge ${block.type}" onclick="cycleType(${index}, '${panel}')" title="Click to change type">${block.type}</span>
+      <input class="block-label-input" value="${escHtml(block.label)}"
+        onchange="updateBlockLabel(${index}, '${panel}', this.value)"
+        onclick="event.stopPropagation()"
+        placeholder="label...">
+      <span class="block-tokens">${tokens}t</span>
+      <div class="block-actions">
+        <button class="block-btn" onclick="toggleCollapse(${index}, '${panel}')" title="Toggle">${block.collapsed ? "▸" : "▾"}</button>
+        <button class="block-btn" onclick="duplicateBlock(${index}, '${panel}')" title="Duplicate">⧉</button>
+        <button class="block-btn" onclick="moveToOtherPanel(${index}, '${panel}')" title="Move to ${panel === "context" ? "Output" : "Context"}">⇄</button>
+        <button class="block-btn delete" onclick="deleteBlock(${index}, '${panel}')" title="Delete">✕</button>
+      </div>
+    </div>
+    <div class="block-body">
+      <textarea class="block-textarea"
+        placeholder="Paste content here..."
+        oninput="updateBlockContent(${index}, '${panel}', this.value)"
+      >${escHtml(block.content)}</textarea>
+    </div>
+  `;
+
+        // Drag events
+        el.addEventListener("dragstart", (e) => {
+          dragState = { panel, dragIndex: index };
+          el.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+        });
+        el.addEventListener("dragend", () => {
+          el.classList.remove("dragging");
+          document
+            .querySelectorAll(".drag-over")
+            .forEach((x) => x.classList.remove("drag-over"));
+        });
+        el.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          if (dragState.panel === panel) {
+            el.classList.add("drag-over");
+          }
+        });
+        el.addEventListener("dragleave", () => {
+          el.classList.remove("drag-over");
+        });
+        el.addEventListener("drop", (e) => {
+          e.preventDefault();
+          el.classList.remove("drag-over");
+          if (dragState.panel === panel && dragState.dragIndex !== index) {
+            const blocks =
+              panel === "context" ? state.contextBlocks : state.outputBlocks;
+            const [moved] = blocks.splice(dragState.dragIndex, 1);
+            blocks.splice(index, 0, moved);
+            save();
+            panel === "context" ? renderContextBlocks() : renderOutputBlocks();
+          }
+        });
+
+        return el;
+      }
+
+      // ===== BLOCK OPERATIONS =====
+      function addContextBlock(type) {
+        state.contextBlocks.push({
+          type,
+          label: "",
+          content: "",
+          collapsed: false,
+          id: genId(),
+        });
+        save();
+        renderContextBlocks();
+        focusLastTextarea("contextBlocks");
+      }
+
+      function addOutputBlock(type) {
+        state.outputBlocks.push({
+          type,
+          label: "",
+          content: "",
+          collapsed: false,
+          id: genId(),
+        });
+        save();
+        renderOutputBlocks();
+        focusLastTextarea("outputBlocks");
+      }
+
+      function updateBlockContent(index, panel, value) {
+        const blocks =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        blocks[index].content = value;
+        // Update token display for this block
+        const blockEl = document.querySelectorAll(`#${panel}Blocks .block`)[
+          index
+        ];
+        if (blockEl) {
+          const tokenSpan = blockEl.querySelector(".block-tokens");
+          if (tokenSpan) tokenSpan.textContent = estimateTokens(value) + "t";
+        }
+        if (panel === "context") updateTokenBar();
+        else updateOutputStats();
+        save();
+      }
+
+      function updateBlockLabel(index, panel, value) {
+        const blocks =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        blocks[index].label = value;
+        save();
+      }
+
+      function deleteBlock(index, panel) {
+        const blocks =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        blocks.splice(index, 1);
+        save();
+        panel === "context" ? renderContextBlocks() : renderOutputBlocks();
+      }
+
+      function duplicateBlock(index, panel) {
+        const blocks =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        const copy = {
+          ...blocks[index],
+          id: genId(),
+          label: blocks[index].label + " (copy)",
+        };
+        blocks.splice(index + 1, 0, copy);
+        save();
+        panel === "context" ? renderContextBlocks() : renderOutputBlocks();
+      }
+
+      function toggleCollapse(index, panel) {
+        const blocks =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        blocks[index].collapsed = !blocks[index].collapsed;
+        save();
+        panel === "context" ? renderContextBlocks() : renderOutputBlocks();
+      }
+
+      function moveToOtherPanel(index, panel) {
+        const from =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        const to =
+          panel === "context" ? state.outputBlocks : state.contextBlocks;
+        const [block] = from.splice(index, 1);
+        // Map types if needed
+        const typeMap = {
+          system: "text",
+          reference: "text",
+          previous: "text",
+          instruction: "text",
+          code: "previous",
+          text: "reference",
+          config: "reference",
+          data: "reference",
+        };
+        if (panel === "context") {
+          block.type = typeMap[block.type] || "text";
+        } else {
+          block.type = typeMap[block.type] || "reference";
+        }
+        to.push(block);
+        save();
+        renderContextBlocks();
+        renderOutputBlocks();
+        toast("Moved to " + (panel === "context" ? "Output" : "Context"));
+      }
+
+      const contextTypes = ["system", "reference", "previous", "instruction"];
+      const outputTypes = ["code", "text", "config", "data"];
+
+      function cycleType(index, panel) {
+        const blocks =
+          panel === "context" ? state.contextBlocks : state.outputBlocks;
+        const types = panel === "context" ? contextTypes : outputTypes;
+        const current = types.indexOf(blocks[index].type);
+        blocks[index].type = types[(current + 1) % types.length];
+        save();
+        panel === "context" ? renderContextBlocks() : renderOutputBlocks();
+      }
+
+      // ===== COMPOSE / BUILD =====
+      function composeContext() {
+        if (state.contextBlocks.length === 0) {
+          toast("No context blocks to compose");
+          return;
+        }
+
+        let composed = "";
+        const separators = {
+          system: "--- SYSTEM ---",
+          reference: "--- REFERENCE ---",
+          previous: "--- PREVIOUS OUTPUT ---",
+          instruction: "--- INSTRUCTION ---",
+        };
+
+        state.contextBlocks.forEach((block) => {
+          if (!block.content.trim()) return;
+          const label = block.label ? ` [${block.label}]` : "";
+          composed += `${separators[block.type] || "---"}${label}\n${block.content.trim()}\n\n`;
+        });
+
+        composed = composed.trim();
+        showModal(
+          "Composed Context",
+          `
+    <textarea class="modal-output" id="composedOutput" readonly>${escHtml(composed)}</textarea>
+  `,
+          [
+            {
+              label: "Copy to Clipboard",
+              accent: true,
+              action: () => {
+                copyText(composed);
+                toast("Copied to clipboard");
+                closeModalDirect();
+              },
+            },
+            { label: "Close", action: closeModalDirect },
+          ],
+        );
+      }
+
+      function buildOutput() {
+        if (state.outputBlocks.length === 0) {
+          toast("No output fragments to build");
+          return;
+        }
+
+        let built = "";
+        state.outputBlocks.forEach((block) => {
+          if (!block.content.trim()) return;
+          const label = block.label ? `[${block.label}] ` : "";
+          if (block.type === "code") {
+            built += `${label}\n\`\`\`\n${block.content.trim()}\n\`\`\`\n\n`;
+          } else {
+            built += `${label}\n${block.content.trim()}\n\n`;
+          }
+        });
+
+        built = built.trim();
+        showModal(
+          "Built Output",
+          `
+    <textarea class="modal-output" id="builtOutput" readonly>${escHtml(built)}</textarea>
+  `,
+          [
+            {
+              label: "Copy to Clipboard",
+              accent: true,
+              action: () => {
+                copyText(built);
+                toast("Copied to clipboard");
+                closeModalDirect();
+              },
+            },
+            { label: "Close", action: closeModalDirect },
+          ],
+        );
+      }
+
+      // ===== SNAPSHOTS =====
+      function takeSnapshot() {
+        const name = prompt(
+          "Snapshot name:",
+          `snap_${state.snapshots.length + 1}`,
+        );
+        if (!name) return;
+        state.snapshots.push({
+          name,
+          blocks: JSON.parse(JSON.stringify(state.outputBlocks)),
+          time: Date.now(),
+        });
+        save();
+        renderSnapshots();
+        toast("Snapshot saved: " + name);
+      }
+
+      function renderSnapshots() {
+        const bar = document.getElementById("snapshotBar");
+        if (state.snapshots.length === 0) {
+          bar.style.display = "none";
+          return;
+        }
+        bar.style.display = "flex";
+        bar.innerHTML =
+          '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);flex-shrink:0;">SNAPSHOTS</span>';
+        state.snapshots.forEach((snap, i) => {
+          const chip = document.createElement("span");
+          chip.className = "snapshot-chip";
+          chip.innerHTML = `${escHtml(snap.name)} <span class="snapshot-delete" onclick="event.stopPropagation();deleteSnapshot(${i})">✕</span>`;
+          chip.onclick = () => restoreSnapshot(i);
+          bar.appendChild(chip);
+        });
+      }
+
+      function restoreSnapshot(index) {
+        if (
+          !confirm(
+            "Restore this snapshot? Current output blocks will be replaced.",
+          )
+        )
+          return;
+        state.outputBlocks = JSON.parse(
+          JSON.stringify(state.snapshots[index].blocks),
+        );
+        save();
+        renderOutputBlocks();
+        toast("Restored: " + state.snapshots[index].name);
+      }
+
+      function deleteSnapshot(index) {
+        state.snapshots.splice(index, 1);
+        save();
+        renderSnapshots();
+      }
+
+      // ===== TEMPLATES =====
+      function saveTemplate() {
+        if (state.contextBlocks.length === 0) {
+          toast("No blocks to save as template");
+          return;
+        }
+        const name = prompt("Template name:");
+        if (!name) return;
+        state.templates.push({
+          name,
+          blocks: JSON.parse(JSON.stringify(state.contextBlocks)),
+          time: Date.now(),
+        });
+        save();
+        toast("Template saved: " + name);
+      }
+
+      function showTemplates() {
+        if (state.templates.length === 0) {
+          toast("No templates saved yet");
+          return;
+        }
+
+        let listHtml = '<div class="template-list">';
+        state.templates.forEach((t, i) => {
+          const blockCount = t.blocks.length;
+          const date = new Date(t.time).toLocaleDateString();
+          listHtml += `
+      <div class="template-item" onclick="loadTemplate(${i})">
+        <span class="template-name">${escHtml(t.name)}</span>
+        <span class="template-meta">${blockCount} blocks · ${date}
+          <span style="cursor:pointer;margin-left:8px;color:var(--danger)" onclick="event.stopPropagation();deleteTemplate(${i})">✕</span>
+        </span>
+      </div>`;
+        });
+        listHtml += "</div>";
+
+        showModal("Templates", listHtml, [
+          { label: "Close", action: closeModalDirect },
+        ]);
+      }
+
+      function loadTemplate(index) {
+        state.contextBlocks = JSON.parse(
+          JSON.stringify(state.templates[index].blocks),
+        );
+        // Regenerate IDs
+        state.contextBlocks.forEach((b) => (b.id = genId()));
+        save();
+        renderContextBlocks();
+        closeModalDirect();
+        toast("Loaded: " + state.templates[index].name);
+      }
+
+      function deleteTemplate(index) {
+        state.templates.splice(index, 1);
+        save();
+        closeModalDirect();
+        showTemplates();
+      }
+
+      // ===== IMPORT / EXPORT =====
+      function exportAll() {
+        const data = JSON.stringify(state, null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `loom_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast("Exported");
+      }
+
+      function importAll(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const imported = JSON.parse(e.target.result);
+            state = { ...state, ...imported };
+            document.getElementById("tokenBudget").value = state.tokenBudget;
+            save();
+            renderContextBlocks();
+            renderOutputBlocks();
+            renderSnapshots();
+            toast("Imported successfully");
+          } catch (err) {
+            toast("Import failed: invalid file");
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = "";
+      }
+
+      function clearAll() {
+        if (!confirm("本当に全部消すのん？ この操作は取り消せないん。")) return;
+        state.contextBlocks = [];
+        state.outputBlocks = [];
+        save();
+        renderContextBlocks();
+        renderOutputBlocks();
+        toast("Cleared all blocks");
+      }
+
+      // ===== MODAL =====
+      function showModal(title, bodyHtml, buttons) {
+        document.getElementById("modalTitle").textContent = title;
+        document.getElementById("modalBody").innerHTML = bodyHtml;
+        const actions = document.getElementById("modalActions");
+        actions.innerHTML = "";
+        (buttons || []).forEach((b) => {
+          const btn = document.createElement("button");
+          btn.className = "btn" + (b.accent ? " btn-accent" : "");
+          btn.textContent = b.label;
+          btn.onclick = b.action;
+          actions.appendChild(btn);
+        });
+        document.getElementById("modalOverlay").classList.add("active");
+      }
+
+      function closeModal(e) {
+        if (e.target === e.currentTarget) closeModalDirect();
+      }
+
+      function closeModalDirect() {
+        document.getElementById("modalOverlay").classList.remove("active");
+      }
+
+      // ===== TOAST =====
+      function toast(msg) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(el._timeout);
+        el._timeout = setTimeout(() => el.classList.remove("show"), 2000);
+      }
+
+      // ===== UTILS =====
+      function genId() {
+        return "b_" + Math.random().toString(36).slice(2, 9);
+      }
+
+      function escHtml(str) {
+        return (str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+      }
+
+      function copyText(text) {
+        navigator.clipboard.writeText(text).catch(() => {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        });
+      }
+
+      function focusLastTextarea(containerId) {
+        setTimeout(() => {
+          const textareas = document.querySelectorAll(
+            `#${containerId} .block-textarea`,
+          );
+          if (textareas.length) textareas[textareas.length - 1].focus();
+        }, 50);
+      }
+
+      // ===== DIVIDER RESIZE =====
+      (function () {
+        const divider = document.getElementById("divider");
+        const left = document.getElementById("panelLeft");
+        let dragging = false;
+
+        divider.addEventListener("mousedown", (e) => {
+          dragging = true;
+          divider.classList.add("dragging");
+          document.body.style.cursor = "col-resize";
+          document.body.style.userSelect = "none";
+        });
+
+        document.addEventListener("mousemove", (e) => {
+          if (!dragging) return;
+          const mainRect = document
+            .querySelector(".main")
+            .getBoundingClientRect();
+          const pct = ((e.clientX - mainRect.left) / mainRect.width) * 100;
+          if (pct > 20 && pct < 80) {
+            left.style.flex = "none";
+            left.style.width = pct + "%";
+          }
+        });
+
+        document.addEventListener("mouseup", () => {
+          dragging = false;
+          divider.classList.remove("dragging");
+          document.body.style.cursor = "";
+          document.body.style.userSelect = "";
+        });
+      })();
+
+      // ===== KEYBOARD SHORTCUTS =====
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModalDirect();
+      });
+
+      // ===== INIT =====
+      load();
+      renderContextBlocks();
+      renderOutputBlocks();
+      renderSnapshots();
+    </script>
+  </body>
+</html>
