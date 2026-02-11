@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shelf - AI Knowledge Clipper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+    <style>
+      :root {
+        /* Foundation - warm charcoal greys */
+        --da-ink: #1e1f25;
+        --da-charcoal: #282a32;
+        --da-graphite: #353842;
+        --da-slate: #4a4e5c;
+        --da-ash: #6b7085;
+        --da-stone: #9498ab;
+        --da-cloud: #c4c8d6;
+        --da-mist: #e2e4ec;
+        --da-frost: #f0f1f5;
+        --da-snow: #f8f9fb;
+
+        /* Accent - muted blue */
+        --da-secondary: #5b8fcc;
+        --da-secondary-hover: #4a7db8;
+        --da-accent-muted: #5b8fcc26;
+        --da-accent-glow: #5b8fcc12;
+
+        /* Semantic */
+        --da-success: #4aba8a;
+        --da-warning: #d4943a;
+        --da-error: #d45a5a;
+
+        /* Motion & shadow tokens */
+        --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+        --duration-fast: 100ms;
+        --duration-normal: 200ms;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+        /* App semantic tokens - light */
+        --app-text-primary: var(--da-ink);
+        --app-text-secondary: var(--da-slate);
+        --app-text-on-dark: var(--da-snow);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-snow);
+        --app-bg-secondary: var(--da-frost);
+        --app-bg-dark: var(--da-charcoal);
+        --app-border-default: var(--da-mist);
+        --app-border-focus: var(--da-secondary);
+        --app-border-hover: var(--da-cloud);
+        --app-toolbar-bg: var(--da-charcoal);
+        --app-toolbar-text: var(--da-snow);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-snow);
+        --app-editor-bg: var(--da-snow);
+        --app-editor-text: var(--da-ink);
+        --app-editor-placeholder: var(--da-ash);
+        --app-accent: var(--da-secondary);
+        --app-accent-hover: var(--da-secondary-hover);
+      }
+
+      :root[data-theme="dark"] {
+        --app-text-primary: var(--da-frost);
+        --app-text-secondary: var(--da-stone);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-charcoal);
+        --app-bg-secondary: var(--da-ink);
+        --app-bg-dark: var(--da-ink);
+        --app-border-default: var(--da-graphite);
+        --app-border-hover: var(--da-slate);
+        --app-toolbar-bg: var(--da-ink);
+        --app-toolbar-text: var(--da-frost);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-frost);
+        --app-editor-bg: var(--da-charcoal);
+        --app-editor-text: var(--da-frost);
+        --app-editor-placeholder: var(--da-ash);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 400;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--app-bg-primary);
+        color: var(--app-text-primary);
+      }
+
+      /* ===== Toolbar ===== */
+      .toolbar {
+        background-color: var(--app-toolbar-bg);
+        color: var(--app-toolbar-text);
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--app-toolbar-border);
+        box-shadow: inset 0 -2px 0 0 var(--da-secondary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        min-height: 48px;
+      }
+
+      .toolbar-title {
+        font-weight: 500;
+        font-size: 15px;
+        line-height: 1.4;
+        margin-right: auto;
+        color: var(--app-toolbar-text);
+        letter-spacing: 0.05em;
+      }
+
+      .toolbar-menu {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        padding: 2px;
+      }
+
+      .toolbar-button {
+        background: none;
+        border: 1px solid transparent;
+        padding: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        min-width: 34px;
+        min-height: 34px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .toolbar-button svg {
+        width: 17px;
+        height: 17px;
+        color: var(--da-cloud);
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .toolbar-button:hover {
+        background-color: var(--da-graphite);
+      }
+      .toolbar-button:hover svg {
+        color: var(--da-snow);
+      }
+      .toolbar-button:active {
+        transform: scale(0.93);
+      }
+      .toolbar-button.active {
+        background: var(--da-accent-muted);
+        border-color: var(--da-secondary);
+      }
+      .toolbar-button.active svg {
+        color: var(--da-snow);
+      }
+
+      .toolbar-button:focus-visible {
+        outline: 2px solid var(--da-secondary);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px var(--da-accent-muted);
+        border-radius: 6px;
+      }
+
+      .toolbar-search {
+        background: var(--da-graphite);
+        border: 1px solid var(--da-slate);
+        border-radius: 6px;
+        padding: 5px 10px 5px 30px;
+        font-size: 13px;
+        color: var(--da-snow);
+        outline: none;
+        width: 200px;
+        font-family: inherit;
+        transition: border-color var(--duration-normal) var(--ease-out-expo),
+                    box-shadow var(--duration-normal) var(--ease-out-expo);
+      }
+      .toolbar-search::placeholder {
+        color: var(--da-ash);
+      }
+      .toolbar-search:focus {
+        border-color: var(--da-secondary);
+        box-shadow: 0 0 0 3px var(--da-accent-muted);
+      }
+
+      .search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .search-wrapper svg {
+        position: absolute;
+        left: 8px;
+        width: 14px;
+        height: 14px;
+        color: var(--da-ash);
+        pointer-events: none;
+      }
+
+      /* ===== Toast ===== */
+      @keyframes toast-slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes toast-fade-out {
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(-8px); opacity: 0; }
+      }
+      .temp-message {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 10000;
+        pointer-events: none;
+        background-color: var(--da-charcoal);
+        color: var(--da-snow);
+        border: 1px solid var(--da-graphite);
+        box-shadow: var(--shadow-md);
+        animation: toast-slide-in 300ms var(--ease-out-expo);
+      }
+      .temp-message[role="status"] {
+        border-left: 3px solid var(--da-success);
+      }
+      .temp-message.toast-error[role="status"] {
+        border-left: 3px solid var(--da-error);
+      }
+      .temp-message.toast-out {
+        animation: toast-fade-out 300ms var(--ease-out-expo) forwards;
+      }
+
+      /* Theme toggle animation */
+      .theme-icon-spin svg {
+        animation: theme-spin 400ms var(--ease-out-expo);
+      }
+      @keyframes theme-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* ===== Shelf Container ===== */
+      .shelf-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* ===== Tag Sidebar ===== */
+      .tag-sidebar {
+        width: 220px;
+        min-width: 220px;
+        background: var(--app-bg-secondary);
+        border-right: 1px solid var(--app-border-default);
+        padding: 16px;
+        overflow-y: auto;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .tag-sidebar-header {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--app-text-muted);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .tag-clear-btn {
+        background: none;
+        border: none;
+        font-size: 11px;
+        color: var(--da-secondary);
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: inherit;
+        transition: background var(--duration-fast);
+      }
+      .tag-clear-btn:hover {
+        background: var(--da-accent-muted);
+      }
+      .tag-clear-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      .tag-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .tag-badge {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: var(--app-bg-primary);
+        color: var(--app-text-primary);
+        transition: all var(--duration-fast) var(--ease-out-expo);
+        user-select: none;
+      }
+      .tag-badge:hover {
+        border-color: var(--app-border-hover);
+      }
+      .tag-badge.active {
+        background: var(--da-accent-muted);
+        border-color: var(--da-secondary);
+        color: var(--da-secondary);
+        font-weight: 500;
+      }
+      .tag-badge-count {
+        font-size: 11px;
+        color: var(--app-text-muted);
+        background: var(--app-bg-secondary);
+        padding: 1px 6px;
+        border-radius: 10px;
+        min-width: 22px;
+        text-align: center;
+      }
+      .tag-badge.active .tag-badge-count {
+        background: var(--da-secondary);
+        color: var(--da-snow);
+      }
+
+      .tag-empty {
+        font-size: 12px;
+        color: var(--app-text-muted);
+        text-align: center;
+        padding: 12px 0;
+      }
+
+      /* ===== Clip Area ===== */
+      .clip-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+      }
+
+      .clip-stats {
+        font-size: 12px;
+        color: var(--app-text-muted);
+        display: flex;
+        gap: 16px;
+        flex-shrink: 0;
+      }
+
+      /* ===== Date Group ===== */
+      .date-group-header {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--app-text-muted);
+        padding: 4px 0;
+        border-bottom: 1px solid var(--app-border-default);
+        margin-top: 8px;
+      }
+
+      /* ===== Clip List - Grid ===== */
+      .clip-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 12px;
+      }
+      .clip-list .date-group-header {
+        grid-column: 1 / -1;
+      }
+
+      .clip-list.view-list {
+        grid-template-columns: 1fr;
+      }
+
+      /* ===== Clip Card ===== */
+      .clip-card {
+        background: var(--app-bg-primary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        cursor: pointer;
+        transition: border-color var(--duration-normal) var(--ease-out-expo),
+                    box-shadow var(--duration-normal) var(--ease-out-expo);
+      }
+      .clip-card:hover {
+        border-color: var(--app-border-hover);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .clip-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .clip-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--app-text-primary);
+        line-height: 1.4;
+        word-break: break-word;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .clip-card-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity var(--duration-fast);
+      }
+      .clip-card:hover .clip-card-actions {
+        opacity: 1;
+      }
+
+      .clip-card-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--app-text-muted);
+        transition: all var(--duration-fast);
+      }
+      .clip-card-btn:hover {
+        background: var(--app-bg-secondary);
+        color: var(--app-text-primary);
+      }
+      .clip-card-btn.delete-btn:hover {
+        color: var(--da-error);
+      }
+      .clip-card-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .clip-card-content {
+        font-size: 13px;
+        color: var(--app-text-secondary);
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+      }
+
+      .clip-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .clip-tag {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: var(--da-accent-glow);
+        color: var(--da-secondary);
+        border: 1px solid var(--da-accent-muted);
+      }
+
+      .clip-card-date {
+        font-size: 11px;
+        color: var(--app-text-muted);
+      }
+
+      /* List view card overrides */
+      .clip-list.view-list .clip-card {
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 16px;
+      }
+      .clip-list.view-list .clip-card-header {
+        flex: 0 0 200px;
+        min-width: 0;
+      }
+      .clip-list.view-list .clip-card-content {
+        flex: 1;
+        -webkit-line-clamp: 1;
+        min-width: 0;
+      }
+      .clip-list.view-list .clip-card-tags {
+        flex: 0 0 auto;
+        max-width: 200px;
+      }
+      .clip-list.view-list .clip-card-date {
+        flex-shrink: 0;
+      }
+      .clip-list.view-list .clip-card-actions {
+        opacity: 0;
+      }
+      .clip-list.view-list .clip-card:hover .clip-card-actions {
+        opacity: 1;
+      }
+
+      /* ===== Empty State ===== */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 60px 20px;
+        color: var(--app-text-muted);
+        text-align: center;
+      }
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        color: var(--da-cloud);
+      }
+      .empty-state-title {
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .empty-state-desc {
+        font-size: 13px;
+      }
+
+      /* ===== Modal ===== */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+
+      @keyframes modal-in {
+        from { transform: translateY(16px) scale(0.97); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+      }
+
+      .modal {
+        background: var(--app-bg-primary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 560px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-md);
+        animation: modal-in 250ms var(--ease-out-expo);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--app-border-default);
+      }
+
+      .modal-title {
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .modal-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        color: var(--app-text-muted);
+        display: flex;
+        align-items: center;
+        transition: all var(--duration-fast);
+      }
+      .modal-close-btn:hover {
+        background: var(--app-bg-secondary);
+        color: var(--app-text-primary);
+      }
+      .modal-close-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .modal-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--app-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .form-input {
+        background: var(--app-bg-secondary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 14px;
+        color: var(--app-text-primary);
+        font-family: inherit;
+        outline: none;
+        transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+      }
+      .form-input:focus {
+        border-color: var(--da-secondary);
+        box-shadow: 0 0 0 3px var(--da-accent-muted);
+      }
+      .form-input::placeholder {
+        color: var(--app-editor-placeholder);
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+        max-height: 300px;
+        line-height: 1.6;
+      }
+
+      .form-hint {
+        font-size: 11px;
+        color: var(--app-text-muted);
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 20px 16px;
+      }
+
+      .modal-btn {
+        padding: 7px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: inherit;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--app-border-default);
+        background: var(--app-bg-primary);
+        color: var(--app-text-primary);
+        transition: all var(--duration-fast);
+      }
+      .modal-btn:hover {
+        background: var(--app-bg-secondary);
+      }
+      .modal-btn-primary {
+        background: var(--da-secondary);
+        color: var(--da-snow);
+        border-color: var(--da-secondary);
+      }
+      .modal-btn-primary:hover {
+        background: var(--da-secondary-hover);
+      }
+
+      /* ===== Confirm Dialog ===== */
+      .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 6000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .confirm-overlay.open {
+        display: flex;
+      }
+      .confirm-box {
+        background: var(--app-bg-primary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 360px;
+        width: 100%;
+        box-shadow: var(--shadow-md);
+        animation: modal-in 200ms var(--ease-out-expo);
+        text-align: center;
+      }
+      .confirm-msg {
+        font-size: 14px;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .confirm-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      /* ===== Responsive ===== */
+      @media (max-width: 600px) {
+        .toolbar {
+          flex-wrap: wrap;
+        }
+        .toolbar-menu {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .toolbar-search {
+          width: 140px;
+        }
+        .tag-sidebar {
+          width: 100%;
+          min-width: 0;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overflow-y: hidden;
+          border-right: none;
+          border-bottom: 1px solid var(--app-border-default);
+          padding: 10px 12px;
+          gap: 6px;
+          align-items: center;
+        }
+        .tag-sidebar-header {
+          display: none;
+        }
+        .tag-list {
+          flex-direction: row;
+          flex-wrap: nowrap;
+          gap: 6px;
+        }
+        .tag-badge {
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .shelf-container {
+          flex-direction: column;
+        }
+        .clip-list {
+          grid-template-columns: 1fr;
+        }
+        .clip-list.view-list .clip-card {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .clip-list.view-list .clip-card-header {
+          flex: unset;
+        }
+        .clip-list.view-list .clip-card-content {
+          -webkit-line-clamp: 2;
+        }
+      }
+
+      /* Accessibility: reduced motion */
+      /* Tool navigation */
+      .toolbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 4px;
+      }
+      .toolbar-nav a {
+        color: var(--da-cloud);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 5px 10px;
+        border-radius: 6px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+        white-space: nowrap;
+      }
+      .toolbar-nav a:hover {
+        color: var(--da-snow);
+        background-color: var(--da-graphite);
+      }
+      .toolbar-nav a.nav-active {
+        color: var(--da-secondary);
+        background: var(--da-accent-muted);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* Hidden file input for import */
+      .hidden-input {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <span class="toolbar-title">Shelf</span>
+      <div class="toolbar-menu">
+        <div class="search-wrapper">
+          <i data-feather="search"></i>
+          <input type="text" class="toolbar-search" id="search-input" placeholder="検索... ( / )" aria-label="クリップ検索" />
+        </div>
+        <div class="btn-group" role="group" aria-label="クリップ操作">
+          <button class="toolbar-button" id="new-clip-btn" title="新規クリップ (Alt+N)" aria-label="新規クリップ作成">
+            <i data-feather="plus"></i>
+          </button>
+        </div>
+        <div class="btn-group" role="group" aria-label="表示切り替え">
+          <button class="toolbar-button active" id="view-grid-btn" title="グリッド表示" aria-label="グリッド表示">
+            <i data-feather="grid"></i>
+          </button>
+          <button class="toolbar-button" id="view-list-btn" title="リスト表示" aria-label="リスト表示">
+            <i data-feather="list"></i>
+          </button>
+        </div>
+        <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え">
+          <i data-feather="moon" id="theme-toggle-icon"></i>
+        </button>
+        <div class="btn-group" role="group" aria-label="データ操作">
+          <button class="toolbar-button" id="export-btn" title="エクスポート" aria-label="JSONエクスポート">
+            <i data-feather="download"></i>
+          </button>
+          <button class="toolbar-button" id="import-btn" title="インポート" aria-label="JSONインポート">
+            <i data-feather="upload"></i>
+          </button>
+          <input type="file" id="import-file-input" accept=".json,application/json" class="hidden-input" />
+        </div>
+        <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
+          <a href="index.html">HTML</a>
+          <a href="markdown_preview.html">MD</a>
+          <a href="loom.html">Loom</a>
+          <a href="shelf.html" class="nav-active">Shelf</a>
+          <a href="tangle.html">Tangle</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main container -->
+    <div class="shelf-container">
+      <aside class="tag-sidebar" id="tag-sidebar">
+        <div class="tag-sidebar-header">
+          <span>タグ</span>
+          <button class="tag-clear-btn" id="tag-clear-btn" disabled>クリア</button>
+        </div>
+        <div class="tag-list" id="tag-list"></div>
+      </aside>
+      <main class="clip-area" id="clip-area">
+        <div class="clip-stats" id="clip-stats"></div>
+        <div class="clip-list" id="clip-list"></div>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <i data-feather="bookmark"></i>
+          <div class="empty-state-title">クリップがありません</div>
+          <div class="empty-state-desc">「+」ボタンまたは Alt+N で最初のクリップを作成しましょう</div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Clip Modal -->
+    <div class="modal-overlay" id="clip-modal-overlay">
+      <div class="modal" id="clip-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
+        <div class="modal-header">
+          <span class="modal-title" id="modal-title-text">新規クリップ</span>
+          <button class="modal-close-btn" id="modal-close-btn" aria-label="閉じる">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="clip-title-input">タイトル</label>
+            <input type="text" class="form-input" id="clip-title-input" placeholder="クリップのタイトル" maxlength="200" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="clip-content-input">内容</label>
+            <textarea class="form-input form-textarea" id="clip-content-input" placeholder="クリップの内容を入力..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="clip-tags-input">タグ</label>
+            <input type="text" class="form-input" id="clip-tags-input" placeholder="タグをカンマ区切りで入力" />
+            <span class="form-hint">例: AI, プロンプト, メモ</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn" id="modal-cancel-btn">キャンセル</button>
+          <button class="modal-btn modal-btn-primary" id="modal-save-btn">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Dialog -->
+    <div class="confirm-overlay" id="confirm-overlay">
+      <div class="confirm-box" id="confirm-box">
+        <div class="confirm-msg" id="confirm-msg"></div>
+        <div class="confirm-actions">
+          <button class="modal-btn" id="confirm-cancel-btn">キャンセル</button>
+          <button class="modal-btn modal-btn-primary" id="confirm-ok-btn">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        'use strict';
+
+        // ===== Config =====
+        const CONFIG = {
+          storageKey: 'shelf_data',
+          backupKey: 'shelf_data_backup',
+          themeKey: 'shelfTheme',
+          viewKey: 'shelfView',
+          debounceDelay: 300,
+          searchDebounce: 200,
+          maxFileSize: 5 * 1024 * 1024,
+          maxClips: 1000,
+          maxTitleLen: 200,
+          maxContentLen: 50000,
+          maxTags: 20,
+        };
+
+        const CLIP_ALLOWED_KEYS = ['id', 'title', 'content', 'tags', 'createdAt', 'updatedAt'];
+
+        // ===== Utilities =====
+        const debounce = window._ ? _.debounce : function(fn, delay) {
+          let tid;
+          return function(...args) { clearTimeout(tid); tid = setTimeout(() => fn.apply(this, args), delay); };
+        };
+
+        function escHtml(str) {
+          return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function genId() {
+          return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+        }
+
+        // ===== DOM =====
+        const el = {
+          searchInput: document.getElementById('search-input'),
+          newClipBtn: document.getElementById('new-clip-btn'),
+          viewGridBtn: document.getElementById('view-grid-btn'),
+          viewListBtn: document.getElementById('view-list-btn'),
+          themeToggleBtn: document.getElementById('theme-toggle-btn'),
+          exportBtn: document.getElementById('export-btn'),
+          importBtn: document.getElementById('import-btn'),
+          importFileInput: document.getElementById('import-file-input'),
+          tagSidebar: document.getElementById('tag-sidebar'),
+          tagList: document.getElementById('tag-list'),
+          tagClearBtn: document.getElementById('tag-clear-btn'),
+          clipArea: document.getElementById('clip-area'),
+          clipStats: document.getElementById('clip-stats'),
+          clipList: document.getElementById('clip-list'),
+          emptyState: document.getElementById('empty-state'),
+          modalOverlay: document.getElementById('clip-modal-overlay'),
+          modal: document.getElementById('clip-modal'),
+          modalTitleText: document.getElementById('modal-title-text'),
+          modalCloseBtn: document.getElementById('modal-close-btn'),
+          clipTitleInput: document.getElementById('clip-title-input'),
+          clipContentInput: document.getElementById('clip-content-input'),
+          clipTagsInput: document.getElementById('clip-tags-input'),
+          modalCancelBtn: document.getElementById('modal-cancel-btn'),
+          modalSaveBtn: document.getElementById('modal-save-btn'),
+          confirmOverlay: document.getElementById('confirm-overlay'),
+          confirmMsg: document.getElementById('confirm-msg'),
+          confirmCancelBtn: document.getElementById('confirm-cancel-btn'),
+          confirmOkBtn: document.getElementById('confirm-ok-btn'),
+        };
+
+        // ===== State =====
+        let state = {
+          clips: [],
+          theme: 'light',
+          view: 'grid',
+          searchQuery: '',
+          activeTags: [],
+          editingClipId: null,
+        };
+
+        let confirmResolve = null;
+
+        // ===== Storage =====
+        function safeSetItem(key, value) {
+          try {
+            localStorage.setItem(key, value);
+          } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+              showToast('ストレージの容量が不足しています', 'error');
+            }
+          }
+        }
+
+        function loadData() {
+          try {
+            const raw = localStorage.getItem(CONFIG.storageKey);
+            if (raw) {
+              const data = JSON.parse(raw);
+              if (data && Array.isArray(data.clips)) {
+                state.clips = data.clips;
+                return;
+              }
+            }
+          } catch (error) {
+            // backup broken data
+            try {
+              const broken = localStorage.getItem(CONFIG.storageKey);
+              if (broken) {
+                localStorage.setItem(CONFIG.backupKey, broken);
+              }
+            } catch (_) { /* ignore */ }
+          }
+          state.clips = [];
+        }
+
+        function saveData() {
+          const data = JSON.stringify({ version: 1, clips: state.clips });
+          safeSetItem(CONFIG.storageKey, data);
+        }
+
+        const debouncedSave = debounce(saveData, CONFIG.debounceDelay);
+
+        // ===== Theme =====
+        function applyTheme(theme) {
+          state.theme = theme;
+          document.documentElement.setAttribute('data-theme', theme);
+          safeSetItem(CONFIG.themeKey, theme);
+          const btn = el.themeToggleBtn;
+          if (btn && typeof feather !== 'undefined') {
+            btn.classList.add('theme-icon-spin');
+            const oldIcon = btn.querySelector('svg, [data-feather]');
+            if (oldIcon) oldIcon.remove();
+            const newIcon = document.createElement('i');
+            newIcon.id = 'theme-toggle-icon';
+            newIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
+            btn.appendChild(newIcon);
+            feather.replace();
+            setTimeout(() => btn.classList.remove('theme-icon-spin'), 400);
+          }
+        }
+
+        function loadTheme() {
+          try {
+            const saved = localStorage.getItem(CONFIG.themeKey);
+            return saved === 'dark' ? 'dark' : 'light';
+          } catch (_) {
+            return 'light';
+          }
+        }
+
+        // ===== View Toggle =====
+        function setView(view) {
+          state.view = view;
+          safeSetItem(CONFIG.viewKey, view);
+          el.viewGridBtn.classList.toggle('active', view === 'grid');
+          el.viewListBtn.classList.toggle('active', view === 'list');
+          el.clipList.classList.toggle('view-list', view === 'list');
+        }
+
+        function loadView() {
+          try {
+            const saved = localStorage.getItem(CONFIG.viewKey);
+            return saved === 'list' ? 'list' : 'grid';
+          } catch (_) {
+            return 'grid';
+          }
+        }
+
+        // ===== Toast =====
+        function showToast(message, type) {
+          const existing = document.querySelector('.temp-message');
+          if (existing) existing.remove();
+          const div = document.createElement('div');
+          div.className = 'temp-message' + (type === 'error' ? ' toast-error' : '');
+          div.textContent = message;
+          div.setAttribute('role', 'status');
+          div.setAttribute('aria-live', 'polite');
+          document.body.appendChild(div);
+          setTimeout(() => {
+            div.classList.add('toast-out');
+            setTimeout(() => { if (div.parentNode) div.parentNode.removeChild(div); }, 300);
+          }, 2000);
+        }
+
+        // ===== Confirm Dialog =====
+        function showConfirm(message) {
+          return new Promise((resolve) => {
+            confirmResolve = resolve;
+            el.confirmMsg.textContent = message;
+            el.confirmOverlay.classList.add('open');
+          });
+        }
+
+        function closeConfirm(result) {
+          el.confirmOverlay.classList.remove('open');
+          if (confirmResolve) {
+            confirmResolve(result);
+            confirmResolve = null;
+          }
+        }
+
+        // ===== Date Helpers =====
+        function getDateGroup(dateStr) {
+          const now = new Date();
+          const d = new Date(dateStr);
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+          const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay());
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          if (d >= today) return '今日';
+          if (d >= yesterday) return '昨日';
+          if (d >= weekStart) return '今週';
+          if (d >= monthStart) return '今月';
+          return 'それ以前';
+        }
+
+        function formatDate(dateStr) {
+          const d = new Date(dateStr);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const h = String(d.getHours()).padStart(2, '0');
+          const min = String(d.getMinutes()).padStart(2, '0');
+          return y + '/' + m + '/' + day + ' ' + h + ':' + min;
+        }
+
+        // ===== Filtering =====
+        function getFilteredClips() {
+          let clips = state.clips;
+
+          // Tag filter (AND logic)
+          if (state.activeTags.length > 0) {
+            clips = clips.filter(c =>
+              state.activeTags.every(t => c.tags && c.tags.includes(t))
+            );
+          }
+
+          // Search filter
+          if (state.searchQuery.trim()) {
+            const q = state.searchQuery.trim().toLowerCase();
+            clips = clips.filter(c => {
+              const title = (c.title || '').toLowerCase();
+              const content = (c.content || '').toLowerCase();
+              const tags = (c.tags || []).join(' ').toLowerCase();
+              return title.includes(q) || content.includes(q) || tags.includes(q);
+            });
+          }
+
+          // Sort by updatedAt desc
+          clips = clips.slice().sort((a, b) => {
+            const da = new Date(b.updatedAt || b.createdAt);
+            const db = new Date(a.updatedAt || a.createdAt);
+            return da - db;
+          });
+
+          return clips;
+        }
+
+        function getAllTags() {
+          const map = {};
+          state.clips.forEach(c => {
+            if (c.tags) {
+              c.tags.forEach(t => { map[t] = (map[t] || 0) + 1; });
+            }
+          });
+          return Object.entries(map).sort((a, b) => b[1] - a[1]);
+        }
+
+        // ===== Rendering =====
+        function renderStats() {
+          const today = new Date();
+          const todayStr = today.toISOString().slice(0, 10);
+          const todayCount = state.clips.filter(c => (c.createdAt || '').slice(0, 10) === todayStr).length;
+          const totalCount = state.clips.length;
+          el.clipStats.textContent = '';
+          const s1 = document.createElement('span');
+          s1.textContent = '\u4ECA\u65E5 ' + todayCount + ' \u4EF6';
+          const s2 = document.createElement('span');
+          s2.textContent = '\u5408\u8A08 ' + totalCount + ' \u4EF6';
+          el.clipStats.appendChild(s1);
+          el.clipStats.appendChild(s2);
+        }
+
+        function renderTags() {
+          const tags = getAllTags();
+          el.tagList.innerHTML = '';
+
+          if (tags.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'tag-empty';
+            empty.textContent = 'タグなし';
+            el.tagList.appendChild(empty);
+            el.tagClearBtn.disabled = true;
+            return;
+          }
+
+          el.tagClearBtn.disabled = state.activeTags.length === 0;
+
+          tags.forEach(([tag, count]) => {
+            const badge = document.createElement('div');
+            badge.className = 'tag-badge';
+            if (state.activeTags.includes(tag)) badge.classList.add('active');
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = tag;
+
+            const countSpan = document.createElement('span');
+            countSpan.className = 'tag-badge-count';
+            countSpan.textContent = count;
+
+            badge.appendChild(nameSpan);
+            badge.appendChild(countSpan);
+
+            badge.addEventListener('click', () => {
+              const idx = state.activeTags.indexOf(tag);
+              if (idx >= 0) {
+                state.activeTags.splice(idx, 1);
+              } else {
+                state.activeTags.push(tag);
+              }
+              render();
+            });
+
+            el.tagList.appendChild(badge);
+          });
+        }
+
+        function createCardElement(clip) {
+          const card = document.createElement('div');
+          card.className = 'clip-card';
+          card.setAttribute('data-clip-id', clip.id);
+
+          // Header
+          const header = document.createElement('div');
+          header.className = 'clip-card-header';
+
+          const title = document.createElement('div');
+          title.className = 'clip-card-title';
+          title.textContent = clip.title || '(無題)';
+
+          const actions = document.createElement('div');
+          actions.className = 'clip-card-actions';
+
+          // Copy button
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'clip-card-btn';
+          copyBtn.title = 'コピー';
+          copyBtn.setAttribute('aria-label', '内容をコピー');
+          copyBtn.innerHTML = '<svg width="14" height="14"><use href=""/></svg>';
+          copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyClipContent(clip);
+          });
+
+          // Edit button
+          const editBtn = document.createElement('button');
+          editBtn.className = 'clip-card-btn';
+          editBtn.title = '編集';
+          editBtn.setAttribute('aria-label', '編集');
+          editBtn.innerHTML = '<svg width="14" height="14"><use href=""/></svg>';
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditModal(clip.id);
+          });
+
+          // Delete button
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'clip-card-btn delete-btn';
+          deleteBtn.title = '削除';
+          deleteBtn.setAttribute('aria-label', '削除');
+          deleteBtn.innerHTML = '<svg width="14" height="14"><use href=""/></svg>';
+          deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteClip(clip.id);
+          });
+
+          actions.appendChild(copyBtn);
+          actions.appendChild(editBtn);
+          actions.appendChild(deleteBtn);
+
+          header.appendChild(title);
+          header.appendChild(actions);
+
+          // Content
+          const content = document.createElement('div');
+          content.className = 'clip-card-content';
+          content.textContent = clip.content || '';
+
+          // Tags
+          const tagsDiv = document.createElement('div');
+          tagsDiv.className = 'clip-card-tags';
+          if (clip.tags && clip.tags.length > 0) {
+            clip.tags.forEach(t => {
+              const tagSpan = document.createElement('span');
+              tagSpan.className = 'clip-tag';
+              tagSpan.textContent = t;
+              tagsDiv.appendChild(tagSpan);
+            });
+          }
+
+          // Date
+          const dateDiv = document.createElement('div');
+          dateDiv.className = 'clip-card-date';
+          dateDiv.textContent = formatDate(clip.updatedAt || clip.createdAt);
+
+          card.appendChild(header);
+          card.appendChild(content);
+          if (clip.tags && clip.tags.length > 0) card.appendChild(tagsDiv);
+          card.appendChild(dateDiv);
+
+          // Click card -> edit
+          card.addEventListener('click', () => {
+            openEditModal(clip.id);
+          });
+
+          return card;
+        }
+
+        function renderClips() {
+          const clips = getFilteredClips();
+          el.clipList.innerHTML = '';
+
+          if (clips.length === 0) {
+            el.clipList.style.display = 'none';
+            el.emptyState.style.display = 'flex';
+            return;
+          }
+
+          el.clipList.style.display = '';
+          el.emptyState.style.display = 'none';
+
+          // Group by date
+          const groups = [];
+          const groupOrder = ['今日', '昨日', '今週', '今月', 'それ以前'];
+          const groupMap = {};
+
+          clips.forEach(clip => {
+            const group = getDateGroup(clip.updatedAt || clip.createdAt);
+            if (!groupMap[group]) {
+              groupMap[group] = [];
+            }
+            groupMap[group].push(clip);
+          });
+
+          groupOrder.forEach(groupName => {
+            if (!groupMap[groupName]) return;
+            const headerEl = document.createElement('div');
+            headerEl.className = 'date-group-header';
+            headerEl.textContent = groupName;
+            el.clipList.appendChild(headerEl);
+
+            groupMap[groupName].forEach(clip => {
+              const card = createCardElement(clip);
+              el.clipList.appendChild(card);
+            });
+          });
+
+          // Rebuild feather icons in cards
+          rebuildCardIcons();
+        }
+
+        function rebuildCardIcons() {
+          // Manually insert SVG for card buttons since feather.replace()
+          // would re-process all icons unnecessarily. We use inline SVGs.
+          el.clipList.querySelectorAll('.clip-card-btn').forEach(btn => {
+            const svgEl = btn.querySelector('svg');
+            if (!svgEl) return;
+            const title = btn.title;
+            if (title === 'コピー') {
+              svgEl.outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+            } else if (title === '編集') {
+              svgEl.outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+            } else if (title === '削除') {
+              svgEl.outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+            }
+          });
+        }
+
+        function render() {
+          renderStats();
+          renderTags();
+          renderClips();
+        }
+
+        // ===== Clipboard Copy =====
+        async function copyClipContent(clip) {
+          const text = clip.content || '';
+          if (!text.trim()) {
+            showToast('コピーする内容がありません', 'error');
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('コピーしました');
+          } catch (_) {
+            try {
+              const ta = document.createElement('textarea');
+              ta.value = text;
+              ta.style.position = 'fixed';
+              ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+              showToast('コピーしました');
+            } catch (__) {
+              showToast('コピーに失敗しました', 'error');
+            }
+          }
+        }
+
+        // ===== Modal =====
+        function openCreateModal() {
+          state.editingClipId = null;
+          el.modalTitleText.textContent = '新規クリップ';
+          el.clipTitleInput.value = '';
+          el.clipContentInput.value = '';
+          el.clipTagsInput.value = '';
+          el.modalOverlay.classList.add('open');
+          setTimeout(() => el.clipTitleInput.focus(), 100);
+        }
+
+        function openEditModal(clipId) {
+          const clip = state.clips.find(c => c.id === clipId);
+          if (!clip) return;
+          state.editingClipId = clipId;
+          el.modalTitleText.textContent = 'クリップを編集';
+          el.clipTitleInput.value = clip.title || '';
+          el.clipContentInput.value = clip.content || '';
+          el.clipTagsInput.value = (clip.tags || []).join(', ');
+          el.modalOverlay.classList.add('open');
+          setTimeout(() => el.clipTitleInput.focus(), 100);
+        }
+
+        function closeModal() {
+          el.modalOverlay.classList.remove('open');
+          state.editingClipId = null;
+        }
+
+        function saveModal() {
+          const title = el.clipTitleInput.value.trim();
+          const content = el.clipContentInput.value;
+          const tagsRaw = el.clipTagsInput.value;
+
+          if (!title && !content.trim()) {
+            showToast('タイトルまたは内容を入力してください', 'error');
+            return;
+          }
+
+          const tags = tagsRaw
+            .split(',')
+            .map(t => t.trim())
+            .filter(t => t.length > 0)
+            .slice(0, CONFIG.maxTags);
+
+          const now = new Date().toISOString();
+
+          if (state.editingClipId) {
+            // Edit existing
+            const clip = state.clips.find(c => c.id === state.editingClipId);
+            if (clip) {
+              clip.title = title.slice(0, CONFIG.maxTitleLen);
+              clip.content = content.slice(0, CONFIG.maxContentLen);
+              clip.tags = tags;
+              clip.updatedAt = now;
+              debouncedSave();
+              showToast('クリップを更新しました');
+            }
+          } else {
+            // Create new
+            if (state.clips.length >= CONFIG.maxClips) {
+              showToast('クリップ数の上限(' + CONFIG.maxClips + '件)に達しています', 'error');
+              return;
+            }
+            const newClip = {
+              id: genId(),
+              title: title.slice(0, CONFIG.maxTitleLen),
+              content: content.slice(0, CONFIG.maxContentLen),
+              tags: tags,
+              createdAt: now,
+              updatedAt: now,
+            };
+            state.clips.push(newClip);
+            saveData(); // immediate save for create
+            showToast('クリップを作成しました');
+          }
+
+          closeModal();
+          render();
+        }
+
+        // ===== Delete =====
+        async function deleteClip(clipId) {
+          const clip = state.clips.find(c => c.id === clipId);
+          if (!clip) return;
+          const name = clip.title || '(無題)';
+          const ok = await showConfirm('「' + name + '」を削除しますか？');
+          if (!ok) return;
+          state.clips = state.clips.filter(c => c.id !== clipId);
+          // Remove from activeTags if the deleted clip's tags are now orphaned
+          state.activeTags = state.activeTags.filter(t =>
+            state.clips.some(c => c.tags && c.tags.includes(t))
+          );
+          saveData(); // immediate save for delete
+          showToast('削除しました');
+          render();
+        }
+
+        // ===== Export =====
+        function exportData() {
+          const data = {
+            version: 1,
+            clips: state.clips,
+            exportedAt: new Date().toISOString(),
+          };
+          const json = JSON.stringify(data, null, 2);
+          const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'shelf_export_' + new Date().toISOString().slice(0, 10) + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('エクスポートしました');
+        }
+
+        // ===== Import =====
+        function triggerImport() {
+          el.importFileInput.value = '';
+          el.importFileInput.click();
+        }
+
+        async function handleImportFile(file) {
+          if (!file) return;
+
+          // File size check
+          if (file.size > CONFIG.maxFileSize) {
+            showToast('ファイルサイズが5MBを超えています', 'error');
+            return;
+          }
+
+          const text = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('read error'));
+            reader.readAsText(file);
+          }).catch(() => null);
+
+          if (text === null) {
+            showToast('ファイルの読み込みに失敗しました', 'error');
+            return;
+          }
+
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            showToast('JSONの解析に失敗しました', 'error');
+            return;
+          }
+
+          // Validate structure
+          if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            showToast('無効なデータ形式です', 'error');
+            return;
+          }
+          if (data.version !== 1) {
+            showToast('サポートされていないバージョンです', 'error');
+            return;
+          }
+          if (!Array.isArray(data.clips)) {
+            showToast('clipsフィールドが不正です', 'error');
+            return;
+          }
+          if (data.clips.length > CONFIG.maxClips) {
+            showToast('クリップ数が上限(' + CONFIG.maxClips + ')を超えています', 'error');
+            return;
+          }
+
+          // Validate & sanitize each clip
+          const sanitized = [];
+          for (let i = 0; i < data.clips.length; i++) {
+            const raw = data.clips[i];
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+              showToast('クリップ[' + i + ']が不正です', 'error');
+              return;
+            }
+
+            // Build plain object with allowed keys only (proto pollution protection)
+            const clip = {};
+            for (let k = 0; k < CLIP_ALLOWED_KEYS.length; k++) {
+              const key = CLIP_ALLOWED_KEYS[k];
+              if (Object.prototype.hasOwnProperty.call(raw, key)) {
+                clip[key] = raw[key];
+              }
+            }
+
+            // Type checks
+            if (typeof clip.id !== 'string') {
+              showToast('クリップ[' + i + ']のidが不正です', 'error');
+              return;
+            }
+            if (typeof clip.title !== 'string' || clip.title.length > CONFIG.maxTitleLen) {
+              clip.title = typeof clip.title === 'string' ? clip.title.slice(0, CONFIG.maxTitleLen) : '';
+            }
+            if (typeof clip.content !== 'string') {
+              clip.content = '';
+            } else if (clip.content.length > CONFIG.maxContentLen) {
+              clip.content = clip.content.slice(0, CONFIG.maxContentLen);
+            }
+            if (!Array.isArray(clip.tags)) {
+              clip.tags = [];
+            } else {
+              clip.tags = clip.tags
+                .filter(t => typeof t === 'string')
+                .slice(0, CONFIG.maxTags);
+            }
+            if (typeof clip.createdAt !== 'string') {
+              clip.createdAt = new Date().toISOString();
+            }
+            if (typeof clip.updatedAt !== 'string') {
+              clip.updatedAt = clip.createdAt;
+            }
+
+            sanitized.push(clip);
+          }
+
+          // Ask merge or replace
+          const mergeOrReplace = await showImportChoice(sanitized.length);
+
+          if (mergeOrReplace === null) return; // cancelled
+
+          if (mergeOrReplace === 'replace') {
+            state.clips = sanitized;
+          } else {
+            // Merge: add only clips with new IDs
+            const existingIds = new Set(state.clips.map(c => c.id));
+            let addedCount = 0;
+            sanitized.forEach(c => {
+              if (!existingIds.has(c.id) && state.clips.length < CONFIG.maxClips) {
+                state.clips.push(c);
+                addedCount++;
+              }
+            });
+            showToast(addedCount + '件のクリップを追加しました');
+          }
+
+          state.activeTags = [];
+          saveData();
+          render();
+          if (mergeOrReplace === 'replace') {
+            showToast(sanitized.length + '件のクリップをインポートしました');
+          }
+        }
+
+        function showImportChoice(count) {
+          return new Promise((resolve) => {
+            confirmResolve = null;
+            el.confirmMsg.textContent = '';
+
+            const msgEl = el.confirmMsg;
+            msgEl.textContent = count + '件のクリップをインポートします。既存データと統合しますか、置き換えますか？';
+
+            // Reconfigure buttons for 3 choices
+            const actionsEl = el.confirmBox.querySelector('.confirm-actions');
+            actionsEl.innerHTML = '';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'modal-btn';
+            cancelBtn.textContent = 'キャンセル';
+            cancelBtn.addEventListener('click', () => {
+              el.confirmOverlay.classList.remove('open');
+              restoreConfirmActions();
+              resolve(null);
+            });
+
+            const mergeBtn = document.createElement('button');
+            mergeBtn.className = 'modal-btn modal-btn-primary';
+            mergeBtn.textContent = '統合';
+            mergeBtn.addEventListener('click', () => {
+              el.confirmOverlay.classList.remove('open');
+              restoreConfirmActions();
+              resolve('merge');
+            });
+
+            const replaceBtn = document.createElement('button');
+            replaceBtn.className = 'modal-btn';
+            replaceBtn.style.borderColor = 'var(--da-warning)';
+            replaceBtn.style.color = 'var(--da-warning)';
+            replaceBtn.textContent = '置換';
+            replaceBtn.addEventListener('click', () => {
+              el.confirmOverlay.classList.remove('open');
+              restoreConfirmActions();
+              resolve('replace');
+            });
+
+            actionsEl.appendChild(cancelBtn);
+            actionsEl.appendChild(mergeBtn);
+            actionsEl.appendChild(replaceBtn);
+
+            el.confirmOverlay.classList.add('open');
+          });
+        }
+
+        function restoreConfirmActions() {
+          const actionsEl = el.confirmBox.querySelector('.confirm-actions');
+          actionsEl.innerHTML = '';
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'modal-btn';
+          cancelBtn.id = 'confirm-cancel-btn';
+          cancelBtn.textContent = 'キャンセル';
+          cancelBtn.addEventListener('click', () => closeConfirm(false));
+
+          const okBtn = document.createElement('button');
+          okBtn.className = 'modal-btn modal-btn-primary';
+          okBtn.id = 'confirm-ok-btn';
+          okBtn.textContent = 'OK';
+          okBtn.addEventListener('click', () => closeConfirm(true));
+
+          actionsEl.appendChild(cancelBtn);
+          actionsEl.appendChild(okBtn);
+
+          el.confirmCancelBtn = cancelBtn;
+          el.confirmOkBtn = okBtn;
+        }
+
+        // ===== Search =====
+        const debouncedSearch = debounce(() => {
+          state.searchQuery = el.searchInput.value;
+          renderClips();
+        }, CONFIG.searchDebounce);
+
+        // ===== Keyboard =====
+        function handleKeydown(e) {
+          // Escape: close modal or clear search
+          if (e.key === 'Escape') {
+            if (el.modalOverlay.classList.contains('open')) {
+              closeModal();
+              return;
+            }
+            if (el.confirmOverlay.classList.contains('open')) {
+              closeConfirm(false);
+              return;
+            }
+            if (el.searchInput.value) {
+              el.searchInput.value = '';
+              state.searchQuery = '';
+              renderClips();
+              el.searchInput.blur();
+              return;
+            }
+          }
+
+          // Alt+N: new clip
+          if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+            e.preventDefault();
+            openCreateModal();
+            return;
+          }
+
+          // /: focus search (when not in input)
+          if (e.key === '/' && !isInputFocused()) {
+            e.preventDefault();
+            el.searchInput.focus();
+            return;
+          }
+        }
+
+        function isInputFocused() {
+          const active = document.activeElement;
+          if (!active) return false;
+          const tag = active.tagName;
+          return tag === 'INPUT' || tag === 'TEXTAREA' || active.isContentEditable;
+        }
+
+        // ===== Event Bindings =====
+        function bindEvents() {
+          el.newClipBtn.addEventListener('click', openCreateModal);
+          el.viewGridBtn.addEventListener('click', () => setView('grid'));
+          el.viewListBtn.addEventListener('click', () => setView('list'));
+          el.themeToggleBtn.addEventListener('click', () => {
+            applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+          });
+          el.exportBtn.addEventListener('click', exportData);
+          el.importBtn.addEventListener('click', triggerImport);
+          el.importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleImportFile(file);
+          });
+          el.tagClearBtn.addEventListener('click', () => {
+            state.activeTags = [];
+            render();
+          });
+          el.searchInput.addEventListener('input', debouncedSearch);
+
+          // Modal
+          el.modalCloseBtn.addEventListener('click', closeModal);
+          el.modalCancelBtn.addEventListener('click', closeModal);
+          el.modalSaveBtn.addEventListener('click', saveModal);
+          el.modalOverlay.addEventListener('click', (e) => {
+            if (e.target === el.modalOverlay) closeModal();
+          });
+
+          // Confirm
+          el.confirmCancelBtn.addEventListener('click', () => closeConfirm(false));
+          el.confirmOkBtn.addEventListener('click', () => closeConfirm(true));
+          el.confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === el.confirmOverlay) closeConfirm(false);
+          });
+
+          // Keyboard
+          document.addEventListener('keydown', handleKeydown);
+
+          // Enter to save in modal
+          el.clipTitleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); saveModal(); }
+          });
+          el.clipTagsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); saveModal(); }
+          });
+        }
+
+        // ===== Initialize =====
+        function init() {
+          loadData();
+          applyTheme(loadTheme());
+          setView(loadView());
+          bindEvents();
+          render();
+
+          if (typeof feather !== 'undefined') {
+            feather.replace();
+          }
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

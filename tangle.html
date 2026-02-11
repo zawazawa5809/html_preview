@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tangle - Thought Outliner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+    <style>
+      :root {
+        /* Foundation - warm charcoal greys */
+        --da-ink: #1e1f25;
+        --da-charcoal: #282a32;
+        --da-graphite: #353842;
+        --da-slate: #4a4e5c;
+        --da-ash: #6b7085;
+        --da-stone: #9498ab;
+        --da-cloud: #c4c8d6;
+        --da-mist: #e2e4ec;
+        --da-frost: #f0f1f5;
+        --da-snow: #f8f9fb;
+
+        /* Accent - muted blue */
+        --da-secondary: #5b8fcc;
+        --da-secondary-hover: #4a7db8;
+        --da-accent-muted: #5b8fcc26;
+        --da-accent-glow: #5b8fcc12;
+
+        /* Semantic */
+        --da-success: #4aba8a;
+        --da-warning: #d4943a;
+        --da-error: #d45a5a;
+
+        /* Motion & shadow tokens */
+        --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+        --duration-fast: 100ms;
+        --duration-normal: 200ms;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+        /* App semantic tokens - light */
+        --app-text-primary: var(--da-ink);
+        --app-text-secondary: var(--da-slate);
+        --app-text-on-dark: var(--da-snow);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-snow);
+        --app-bg-secondary: var(--da-frost);
+        --app-bg-dark: var(--da-charcoal);
+        --app-border-default: var(--da-mist);
+        --app-border-focus: var(--da-secondary);
+        --app-border-hover: var(--da-cloud);
+        --app-toolbar-bg: var(--da-charcoal);
+        --app-toolbar-text: var(--da-snow);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-snow);
+        --app-editor-bg: var(--da-snow);
+        --app-editor-text: var(--da-ink);
+        --app-editor-placeholder: var(--da-ash);
+        --app-accent: var(--da-secondary);
+        --app-accent-hover: var(--da-secondary-hover);
+      }
+
+      :root[data-theme="dark"] {
+        --app-text-primary: var(--da-frost);
+        --app-text-secondary: var(--da-stone);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-charcoal);
+        --app-bg-secondary: var(--da-ink);
+        --app-bg-dark: var(--da-ink);
+        --app-border-default: var(--da-graphite);
+        --app-border-hover: var(--da-slate);
+        --app-toolbar-bg: var(--da-ink);
+        --app-toolbar-text: var(--da-frost);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-frost);
+        --app-editor-bg: var(--da-charcoal);
+        --app-editor-text: var(--da-frost);
+        --app-editor-placeholder: var(--da-ash);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 400;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--app-bg-primary);
+        color: var(--app-text-primary);
+      }
+
+      /* ===== Toolbar (exact copy from index.html) ===== */
+      .toolbar {
+        background-color: var(--app-toolbar-bg);
+        color: var(--app-toolbar-text);
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--app-toolbar-border);
+        box-shadow: inset 0 -2px 0 0 var(--da-secondary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        min-height: 48px;
+      }
+
+      .toolbar-title {
+        font-weight: 500;
+        font-size: 15px;
+        line-height: 1.4;
+        margin-right: auto;
+        color: var(--app-toolbar-text);
+        letter-spacing: 0.05em;
+      }
+
+      .toolbar-menu {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        padding: 2px;
+      }
+
+      .toolbar-button {
+        background: none;
+        border: 1px solid transparent;
+        padding: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        min-width: 34px;
+        min-height: 34px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .toolbar-button svg {
+        width: 17px;
+        height: 17px;
+        color: var(--da-cloud);
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .toolbar-button:hover {
+        background-color: var(--da-graphite);
+      }
+      .toolbar-button:hover svg {
+        color: var(--da-snow);
+      }
+      .toolbar-button:active {
+        transform: scale(0.93);
+      }
+      .toolbar-button.active {
+        background: var(--da-accent-muted);
+        border-color: var(--da-secondary);
+      }
+      .toolbar-button.active svg {
+        color: var(--da-snow);
+      }
+
+      .toolbar-button:focus-visible {
+        outline: 2px solid var(--da-secondary);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px var(--da-accent-muted);
+        border-radius: 6px;
+      }
+
+      /* ===== Toolbar select & extra elements ===== */
+      .toolbar-select {
+        background: var(--da-graphite);
+        color: var(--da-cloud);
+        border: 1px solid var(--da-slate);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 13px;
+        font-family: inherit;
+        cursor: pointer;
+        min-height: 34px;
+        max-width: 180px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+      .toolbar-select:hover {
+        border-color: var(--da-cloud);
+      }
+      .toolbar-select:focus-visible {
+        outline: 2px solid var(--da-secondary);
+        outline-offset: 2px;
+      }
+
+      .focus-indicator {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--da-warning);
+        padding: 2px 8px;
+        background: rgba(212, 148, 58, 0.15);
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+      .focus-indicator.visible {
+        display: flex;
+      }
+
+      .export-wrapper {
+        position: relative;
+      }
+      .export-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 4px;
+        background: var(--da-charcoal);
+        border: 1px solid var(--da-graphite);
+        border-radius: 8px;
+        box-shadow: var(--shadow-md);
+        z-index: 1000;
+        min-width: 160px;
+        overflow: hidden;
+      }
+      .export-dropdown.open {
+        display: block;
+      }
+      .export-dropdown button {
+        display: block;
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 8px 16px;
+        color: var(--da-cloud);
+        font-size: 13px;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: left;
+        transition: background var(--duration-fast);
+      }
+      .export-dropdown button:hover {
+        background: var(--da-graphite);
+        color: var(--da-snow);
+      }
+
+      @media (max-width: 600px) {
+        .toolbar {
+          flex-wrap: wrap;
+        }
+        .toolbar-menu {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+      }
+
+      /* ===== Toast notifications ===== */
+      @keyframes toast-slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes toast-fade-out {
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(-8px); opacity: 0; }
+      }
+      .temp-message {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 10000;
+        pointer-events: none;
+        background-color: var(--da-charcoal);
+        color: var(--da-snow);
+        border: 1px solid var(--da-graphite);
+        box-shadow: var(--shadow-md);
+        animation: toast-slide-in 300ms var(--ease-out-expo);
+      }
+      .temp-message[role="status"] {
+        border-left: 3px solid var(--da-success);
+      }
+      .temp-message.toast-error[role="status"] {
+        border-left: 3px solid var(--da-error);
+      }
+      .temp-message.toast-out {
+        animation: toast-fade-out 300ms var(--ease-out-expo) forwards;
+      }
+
+      /* ===== Theme toggle animation ===== */
+      .theme-icon-spin svg {
+        animation: theme-spin 400ms var(--ease-out-expo);
+      }
+      @keyframes theme-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* ===== Tangle container ===== */
+      .tangle-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* ===== Focus breadcrumb ===== */
+      .focus-breadcrumb {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 16px;
+        background: var(--app-bg-secondary);
+        border-bottom: 1px solid var(--app-border-default);
+        font-size: 13px;
+        color: var(--app-text-secondary);
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .focus-breadcrumb.visible {
+        display: flex;
+      }
+      .focus-breadcrumb .crumb {
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background var(--duration-fast);
+        color: var(--app-text-secondary);
+        text-decoration: none;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .focus-breadcrumb .crumb:hover {
+        background: var(--da-accent-muted);
+        color: var(--app-accent);
+      }
+      .focus-breadcrumb .crumb-sep {
+        color: var(--app-text-muted);
+        user-select: none;
+      }
+
+      /* ===== Outline area ===== */
+      .outline-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+      }
+      .outline-list {
+        min-height: 100%;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 64px 24px;
+        color: var(--app-text-muted);
+        font-size: 14px;
+        text-align: center;
+        gap: 12px;
+        user-select: none;
+      }
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        color: var(--da-stone);
+        opacity: 0.5;
+      }
+
+      /* ===== Outline node ===== */
+      .outline-node {
+        transition: background var(--duration-fast);
+      }
+      .outline-node.drag-over-before {
+        box-shadow: inset 0 2px 0 0 var(--da-secondary);
+      }
+      .outline-node.drag-over-after {
+        box-shadow: inset 0 -2px 0 0 var(--da-secondary);
+      }
+      .outline-node.drag-over-inside {
+        background: var(--da-accent-muted);
+        border-radius: 4px;
+      }
+      .outline-node.dragging {
+        opacity: 0.4;
+      }
+
+      .node-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 2px 12px 2px 0;
+        min-height: 32px;
+        cursor: default;
+      }
+
+      .node-toggle {
+        width: 20px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+        color: var(--app-text-muted);
+        font-size: 12px;
+        user-select: none;
+        border-radius: 4px;
+        transition: all var(--duration-fast);
+      }
+      .node-toggle:hover {
+        background: var(--da-accent-muted);
+        color: var(--app-text-primary);
+      }
+      .node-toggle.leaf {
+        cursor: default;
+        color: transparent;
+      }
+      .node-toggle.leaf:hover {
+        background: none;
+        color: transparent;
+      }
+
+      .node-drag-handle {
+        width: 16px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: grab;
+        color: var(--app-text-muted);
+        opacity: 0.3;
+        transition: opacity var(--duration-fast);
+      }
+      .node-row:hover .node-drag-handle {
+        opacity: 0.7;
+      }
+      .node-drag-handle:active {
+        cursor: grabbing;
+      }
+      .node-drag-handle svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .node-text {
+        flex: 1;
+        min-width: 0;
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 3px 6px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--app-text-primary);
+        outline: none;
+        transition: border-color var(--duration-fast), background var(--duration-fast);
+      }
+      .node-text:focus {
+        border-color: var(--app-border-focus);
+        background: var(--app-bg-secondary);
+      }
+      .node-text::placeholder {
+        color: var(--app-editor-placeholder);
+        font-style: italic;
+      }
+
+      .node-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity var(--duration-fast);
+      }
+      .node-row:hover .node-actions,
+      .node-row:focus-within .node-actions {
+        opacity: 1;
+      }
+
+      .node-action-btn {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--app-text-muted);
+        transition: all var(--duration-fast);
+      }
+      .node-action-btn:hover {
+        background: var(--da-accent-muted);
+        color: var(--app-text-primary);
+      }
+      .node-action-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .node-action-btn.ai-active {
+        color: var(--da-secondary);
+      }
+
+      /* ===== AI Response ===== */
+      .ai-response-container {
+        display: none;
+        margin: 0 12px 4px 0;
+      }
+      .ai-response-container.open {
+        display: block;
+      }
+      .ai-response-textarea {
+        width: 100%;
+        min-height: 60px;
+        max-height: 300px;
+        background: var(--app-bg-secondary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-family: inherit;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--app-text-primary);
+        resize: vertical;
+        outline: none;
+        transition: border-color var(--duration-fast);
+      }
+      .ai-response-textarea:focus {
+        border-color: var(--app-border-focus);
+      }
+      .ai-response-textarea::placeholder {
+        color: var(--app-editor-placeholder);
+        font-style: italic;
+      }
+
+      /* ===== Modal ===== */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 5000;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal-box {
+        background: var(--app-bg-primary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        padding: 24px;
+        min-width: 320px;
+        max-width: 90vw;
+      }
+      .modal-title {
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 16px;
+        color: var(--app-text-primary);
+      }
+      .modal-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--app-border-default);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 14px;
+        background: var(--app-bg-secondary);
+        color: var(--app-text-primary);
+        outline: none;
+        margin-bottom: 16px;
+        transition: border-color var(--duration-fast);
+      }
+      .modal-input:focus {
+        border-color: var(--app-border-focus);
+      }
+      .modal-text {
+        font-size: 14px;
+        color: var(--app-text-secondary);
+        margin-bottom: 16px;
+        line-height: 1.6;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .modal-btn {
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid var(--app-border-default);
+        background: var(--app-bg-secondary);
+        color: var(--app-text-primary);
+        transition: all var(--duration-fast);
+      }
+      .modal-btn:hover {
+        background: var(--app-border-hover);
+      }
+      .modal-btn.primary {
+        background: var(--da-secondary);
+        color: var(--da-snow);
+        border-color: var(--da-secondary);
+      }
+      .modal-btn.primary:hover {
+        background: var(--da-secondary-hover);
+      }
+      .modal-btn.danger {
+        background: var(--da-error);
+        color: var(--da-snow);
+        border-color: var(--da-error);
+      }
+      .modal-btn.danger:hover {
+        opacity: 0.9;
+      }
+
+      /* ===== Hidden file input ===== */
+      #import-file-input {
+        display: none;
+      }
+
+      /* ===== Accessibility: reduced motion ===== */
+      /* Tool navigation */
+      .toolbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 4px;
+      }
+      .toolbar-nav a {
+        color: var(--da-cloud);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 5px 10px;
+        border-radius: 6px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+        white-space: nowrap;
+      }
+      .toolbar-nav a:hover {
+        color: var(--da-snow);
+        background-color: var(--da-graphite);
+      }
+      .toolbar-nav a.nav-active {
+        color: var(--da-secondary);
+        background: var(--da-accent-muted);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <span class="toolbar-title">Tangle</span>
+      <div class="toolbar-menu">
+        <div class="btn-group" role="group" aria-label="アウトライン操作">
+          <select class="toolbar-select" id="outline-select" title="アウトライン切り替え" aria-label="アウトライン切り替え"></select>
+          <button class="toolbar-button" id="new-outline-btn" title="新規アウトライン" aria-label="新規アウトライン">
+            <i data-feather="file-plus"></i>
+          </button>
+          <button class="toolbar-button" id="rename-outline-btn" title="アウトライン名変更" aria-label="アウトライン名変更">
+            <i data-feather="edit-3"></i>
+          </button>
+          <button class="toolbar-button" id="delete-outline-btn" title="アウトライン削除" aria-label="アウトライン削除">
+            <i data-feather="trash-2"></i>
+          </button>
+        </div>
+        <div class="btn-group" role="group" aria-label="ノード操作">
+          <button class="toolbar-button" id="add-root-btn" title="ルートノード追加" aria-label="ルートノード追加">
+            <i data-feather="plus"></i>
+          </button>
+          <button class="toolbar-button" id="expand-all-btn" title="すべて展開" aria-label="すべて展開">
+            <i data-feather="chevrons-down"></i>
+          </button>
+          <button class="toolbar-button" id="collapse-all-btn" title="すべて折りたたみ" aria-label="すべて折りたたみ">
+            <i data-feather="chevrons-up"></i>
+          </button>
+        </div>
+        <span class="focus-indicator" id="focus-indicator">
+          <i data-feather="crosshair"></i>
+          <span>フォーカス中</span>
+        </span>
+        <div class="btn-group" role="group" aria-label="インポート/エクスポート">
+          <div class="export-wrapper">
+            <button class="toolbar-button" id="export-btn" title="エクスポート" aria-label="エクスポート">
+              <i data-feather="download"></i>
+            </button>
+            <div class="export-dropdown" id="export-dropdown">
+              <button id="export-md-btn">Markdown</button>
+              <button id="export-text-btn">Plain Text</button>
+              <button id="export-json-btn">JSON</button>
+            </div>
+          </div>
+          <button class="toolbar-button" id="import-btn" title="JSONインポート" aria-label="JSONインポート">
+            <i data-feather="upload"></i>
+          </button>
+          <input type="file" id="import-file-input" accept=".json,application/json" />
+        </div>
+        <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え">
+          <i data-feather="moon" id="theme-toggle-icon"></i>
+        </button>
+        <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
+          <a href="index.html">HTML</a>
+          <a href="markdown_preview.html">MD</a>
+          <a href="loom.html">Loom</a>
+          <a href="shelf.html">Shelf</a>
+          <a href="tangle.html" class="nav-active">Tangle</a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="tangle-container">
+      <div class="focus-breadcrumb" id="focus-breadcrumb"></div>
+      <div class="outline-area" id="outline-area">
+        <div class="outline-list" id="outline-list"></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-box" id="modal-box">
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-text" id="modal-text"></div>
+        <input class="modal-input" id="modal-input" type="text" style="display:none" />
+        <div class="modal-actions" id="modal-actions"></div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        'use strict';
+
+        // ===== Config =====
+        const CONFIG = {
+          dataKey: 'tangle_data',
+          themeKey: 'tangleTheme',
+          backupKey: 'tangle_data_backup',
+          debounceDelay: 300,
+          maxFileSize: 5 * 1024 * 1024,
+          maxOutlines: 50,
+          maxTotalNodes: 5000,
+          maxDepth: 20,
+          maxTextLength: 10000,
+          maxAiLength: 50000,
+        };
+
+        // ===== Utilities =====
+        const debounce = window._ ? _.debounce : (fn, d) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), d); }; };
+
+        const genId = () => 'n_' + Math.random().toString(36).slice(2, 9);
+
+        const escHtml = (str) =>
+          (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+        // ===== Tree helpers (pure, recursive) =====
+        const findNode = (nodes, id) => {
+          for (const n of nodes) {
+            if (n.id === id) return n;
+            const found = findNode(n.children, id);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const findParent = (nodes, id, parent = null) => {
+          for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === id) return { parent, siblings: nodes, index: i };
+            const found = findParent(nodes[i].children, id, nodes[i]);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const removeNode = (nodes, id) => {
+          for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === id) return nodes.splice(i, 1)[0];
+            const found = removeNode(nodes[i].children, id);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const insertAfter = (nodes, afterId, newNode) => {
+          for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === afterId) {
+              nodes.splice(i + 1, 0, newNode);
+              return true;
+            }
+            if (insertAfter(nodes[i].children, afterId, newNode)) return true;
+          }
+          return false;
+        };
+
+        const insertAsChild = (nodes, parentId, newNode) => {
+          for (const n of nodes) {
+            if (n.id === parentId) {
+              n.children.push(newNode);
+              return true;
+            }
+            if (insertAsChild(n.children, parentId, newNode)) return true;
+          }
+          return false;
+        };
+
+        const indentNode = (nodes, id) => {
+          const info = findParent(nodes, id);
+          if (!info || info.index === 0) return false;
+          const prev = info.siblings[info.index - 1];
+          const node = info.siblings.splice(info.index, 1)[0];
+          prev.children.push(node);
+          prev.collapsed = false;
+          return true;
+        };
+
+        const outdentNode = (nodes, id) => {
+          const info = findParent(nodes, id);
+          if (!info || !info.parent) return false;
+          const parentInfo = findParent(nodes, info.parent.id);
+          if (!parentInfo) return false;
+          const node = info.siblings.splice(info.index, 1)[0];
+          const parentIdx = parentInfo.siblings.indexOf(info.parent);
+          parentInfo.siblings.splice(parentIdx + 1, 0, node);
+          return true;
+        };
+
+        const moveNodeUp = (nodes, id) => {
+          const info = findParent(nodes, id);
+          if (!info || info.index === 0) return false;
+          const temp = info.siblings[info.index];
+          info.siblings[info.index] = info.siblings[info.index - 1];
+          info.siblings[info.index - 1] = temp;
+          return true;
+        };
+
+        const moveNodeDown = (nodes, id) => {
+          const info = findParent(nodes, id);
+          if (!info || info.index >= info.siblings.length - 1) return false;
+          const temp = info.siblings[info.index];
+          info.siblings[info.index] = info.siblings[info.index + 1];
+          info.siblings[info.index + 1] = temp;
+          return true;
+        };
+
+        const isDescendant = (nodes, ancestorId, targetId) => {
+          const ancestor = findNode(nodes, ancestorId);
+          if (!ancestor) return false;
+          const check = (children) => {
+            for (const c of children) {
+              if (c.id === targetId) return true;
+              if (check(c.children)) return true;
+            }
+            return false;
+          };
+          return check(ancestor.children);
+        };
+
+        const flattenNodes = (nodes, depth = 0, focusId = null) => {
+          const result = [];
+          const source = focusId ? (() => { const n = findNode(nodes, focusId); return n ? n.children : []; })() : nodes;
+          const walk = (list, d) => {
+            for (const n of list) {
+              result.push({ node: n, depth: d });
+              if (!n.collapsed && n.children.length > 0) {
+                walk(n.children, d + 1);
+              }
+            }
+          };
+          walk(source, depth);
+          return result;
+        };
+
+        const countAllNodes = (nodes) => {
+          let c = 0;
+          const walk = (list) => { for (const n of list) { c++; walk(n.children); } };
+          walk(nodes);
+          return c;
+        };
+
+        const getMaxDepth = (nodes, d = 0) => {
+          let max = d;
+          for (const n of nodes) {
+            const cd = getMaxDepth(n.children, d + 1);
+            if (cd > max) max = cd;
+          }
+          return max;
+        };
+
+        const getPathToNode = (nodes, id, path = []) => {
+          for (const n of nodes) {
+            if (n.id === id) return [...path, n];
+            const found = getPathToNode(n.children, id, [...path, n]);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const setAllCollapsed = (nodes, collapsed) => {
+          for (const n of nodes) {
+            if (n.children.length > 0) n.collapsed = collapsed;
+            setAllCollapsed(n.children, collapsed);
+          }
+        };
+
+        const setAllAiCollapsed = (nodes, collapsed) => {
+          for (const n of nodes) {
+            n.aiCollapsed = collapsed;
+            setAllAiCollapsed(n.children, collapsed);
+          }
+        };
+
+        // ===== DOM refs =====
+        const els = {
+          outlineSelect: document.getElementById('outline-select'),
+          newOutlineBtn: document.getElementById('new-outline-btn'),
+          renameOutlineBtn: document.getElementById('rename-outline-btn'),
+          deleteOutlineBtn: document.getElementById('delete-outline-btn'),
+          addRootBtn: document.getElementById('add-root-btn'),
+          expandAllBtn: document.getElementById('expand-all-btn'),
+          collapseAllBtn: document.getElementById('collapse-all-btn'),
+          focusIndicator: document.getElementById('focus-indicator'),
+          exportBtn: document.getElementById('export-btn'),
+          exportDropdown: document.getElementById('export-dropdown'),
+          exportMdBtn: document.getElementById('export-md-btn'),
+          exportTextBtn: document.getElementById('export-text-btn'),
+          exportJsonBtn: document.getElementById('export-json-btn'),
+          importBtn: document.getElementById('import-btn'),
+          importFileInput: document.getElementById('import-file-input'),
+          themeToggleBtn: document.getElementById('theme-toggle-btn'),
+          focusBreadcrumb: document.getElementById('focus-breadcrumb'),
+          outlineArea: document.getElementById('outline-area'),
+          outlineList: document.getElementById('outline-list'),
+          modalOverlay: document.getElementById('modal-overlay'),
+          modalBox: document.getElementById('modal-box'),
+          modalTitle: document.getElementById('modal-title'),
+          modalText: document.getElementById('modal-text'),
+          modalInput: document.getElementById('modal-input'),
+          modalActions: document.getElementById('modal-actions'),
+        };
+
+        // ===== State =====
+        let state = {
+          outlines: [],
+          currentId: null,
+          focusNodeId: null,
+          theme: 'light',
+          modalOpen: false,
+          dragNodeId: null,
+        };
+
+        // ===== Data access =====
+        const currentOutline = () => state.outlines.find(o => o.id === state.currentId) || null;
+        const currentNodes = () => { const o = currentOutline(); return o ? o.nodes : []; };
+
+        // ===== Persistence =====
+        const saveData = () => {
+          try {
+            localStorage.setItem(CONFIG.dataKey, JSON.stringify({
+              version: 1,
+              outlines: state.outlines,
+              currentId: state.currentId,
+            }));
+          } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+              showToast('ストレージ容量が不足しています', 'error');
+            }
+          }
+        };
+        const debouncedSave = debounce(saveData, CONFIG.debounceDelay);
+
+        const saveImmediate = () => {
+          saveData();
+        };
+
+        const loadData = () => {
+          try {
+            const raw = localStorage.getItem(CONFIG.dataKey);
+            if (!raw) return initDefault();
+            const data = JSON.parse(raw);
+            if (!data || !Array.isArray(data.outlines)) throw new Error('Invalid data');
+            state.outlines = data.outlines;
+            state.currentId = data.currentId || (data.outlines[0] ? data.outlines[0].id : null);
+          } catch (e) {
+            console.error('[Tangle] Load error:', e);
+            try {
+              const raw = localStorage.getItem(CONFIG.dataKey);
+              if (raw) localStorage.setItem(CONFIG.backupKey, raw);
+            } catch (_) {}
+            initDefault();
+          }
+        };
+
+        const initDefault = () => {
+          const id = genId();
+          state.outlines = [{ id, name: 'Outline 1', nodes: [] }];
+          state.currentId = id;
+          saveImmediate();
+        };
+
+        // ===== Theme =====
+        const loadTheme = () => {
+          try {
+            const t = localStorage.getItem(CONFIG.themeKey);
+            state.theme = t === 'dark' ? 'dark' : 'light';
+          } catch (_) {
+            state.theme = 'light';
+          }
+          applyTheme(state.theme);
+        };
+
+        const applyTheme = (theme) => {
+          state.theme = theme;
+          document.documentElement.setAttribute('data-theme', theme);
+          try { localStorage.setItem(CONFIG.themeKey, theme); } catch (_) {}
+          const btn = els.themeToggleBtn;
+          if (btn && typeof feather !== 'undefined') {
+            btn.classList.add('theme-icon-spin');
+            const old = btn.querySelector('svg, [data-feather]');
+            if (old) old.remove();
+            const icon = document.createElement('i');
+            icon.id = 'theme-toggle-icon';
+            icon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
+            btn.appendChild(icon);
+            feather.replace();
+            setTimeout(() => btn.classList.remove('theme-icon-spin'), 400);
+          }
+        };
+
+        // ===== Toast =====
+        const showToast = (msg, type = 'success') => {
+          const existing = document.querySelector('.temp-message');
+          if (existing) existing.remove();
+          const div = document.createElement('div');
+          div.className = 'temp-message' + (type === 'error' ? ' toast-error' : '');
+          div.textContent = msg;
+          div.setAttribute('role', 'status');
+          div.setAttribute('aria-live', 'polite');
+          document.body.appendChild(div);
+          setTimeout(() => {
+            div.classList.add('toast-out');
+            setTimeout(() => { if (div.parentNode) div.parentNode.removeChild(div); }, 300);
+          }, 2000);
+        };
+
+        // ===== Modal =====
+        const openModal = ({ title, text, inputValue, inputPlaceholder, buttons }) => {
+          state.modalOpen = true;
+          els.modalTitle.textContent = title || '';
+          els.modalText.textContent = text || '';
+          els.modalText.style.display = text ? '' : 'none';
+          if (inputValue !== undefined) {
+            els.modalInput.style.display = '';
+            els.modalInput.value = inputValue;
+            els.modalInput.placeholder = inputPlaceholder || '';
+          } else {
+            els.modalInput.style.display = 'none';
+          }
+          els.modalActions.innerHTML = '';
+          (buttons || []).forEach(b => {
+            const btn = document.createElement('button');
+            btn.className = 'modal-btn' + (b.cls ? ' ' + b.cls : '');
+            btn.textContent = b.label;
+            btn.addEventListener('click', () => {
+              closeModal();
+              if (b.action) b.action(els.modalInput.value);
+            });
+            els.modalActions.appendChild(btn);
+          });
+          els.modalOverlay.classList.add('open');
+          if (inputValue !== undefined) {
+            setTimeout(() => { els.modalInput.focus(); els.modalInput.select(); }, 50);
+          }
+        };
+
+        const closeModal = () => {
+          state.modalOpen = false;
+          els.modalOverlay.classList.remove('open');
+        };
+
+        // ===== Outline management =====
+        const uniqueName = (base) => {
+          const names = new Set(state.outlines.map(o => o.name));
+          if (!names.has(base)) return base;
+          let i = 2;
+          while (names.has(base + ' (' + i + ')')) i++;
+          return base + ' (' + i + ')';
+        };
+
+        const populateSelect = () => {
+          els.outlineSelect.innerHTML = '';
+          state.outlines.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.id;
+            opt.textContent = o.name;
+            if (o.id === state.currentId) opt.selected = true;
+            els.outlineSelect.appendChild(opt);
+          });
+        };
+
+        const switchOutline = (id) => {
+          state.currentId = id;
+          state.focusNodeId = null;
+          saveImmediate();
+          populateSelect();
+          render();
+        };
+
+        const createOutline = (name) => {
+          const id = genId();
+          const safeName = uniqueName(name.trim() || 'Untitled');
+          state.outlines.push({ id, name: safeName, nodes: [] });
+          state.currentId = id;
+          state.focusNodeId = null;
+          saveImmediate();
+          populateSelect();
+          render();
+          showToast('アウトライン「' + safeName + '」を作成しました');
+        };
+
+        const renameOutline = (newName) => {
+          const o = currentOutline();
+          if (!o) return;
+          const safeName = newName.trim();
+          if (!safeName) return;
+          const finalName = safeName === o.name ? safeName : uniqueName(safeName);
+          o.name = finalName;
+          saveImmediate();
+          populateSelect();
+          showToast('名前を「' + finalName + '」に変更しました');
+        };
+
+        const deleteOutline = () => {
+          const idx = state.outlines.findIndex(o => o.id === state.currentId);
+          if (idx < 0) return;
+          state.outlines.splice(idx, 1);
+          state.focusNodeId = null;
+          if (state.outlines.length === 0) {
+            initDefault();
+          } else {
+            state.currentId = state.outlines[Math.min(idx, state.outlines.length - 1)].id;
+          }
+          saveImmediate();
+          populateSelect();
+          render();
+          showToast('アウトラインを削除しました');
+        };
+
+        // ===== Rendering =====
+        const render = () => {
+          const outline = currentOutline();
+          if (!outline) {
+            els.outlineList.innerHTML = '';
+            renderEmpty();
+            renderBreadcrumb();
+            return;
+          }
+
+          const nodes = outline.nodes;
+
+          // Validate focusNodeId
+          if (state.focusNodeId && !findNode(nodes, state.focusNodeId)) {
+            state.focusNodeId = null;
+          }
+
+          const flat = state.focusNodeId
+            ? flattenNodes(nodes, 0, state.focusNodeId)
+            : flattenNodes(nodes, 0);
+
+          els.outlineList.innerHTML = '';
+
+          if (flat.length === 0 && !state.focusNodeId) {
+            renderEmpty();
+          } else if (flat.length === 0 && state.focusNodeId) {
+            // Focus on a leaf node with no children
+            const focusNode = findNode(nodes, state.focusNodeId);
+            if (focusNode) {
+              renderEmpty('このノードにはまだ子ノードがありません');
+            }
+          } else {
+            flat.forEach(({ node, depth }) => {
+              els.outlineList.appendChild(createNodeEl(node, depth));
+            });
+          }
+
+          renderBreadcrumb();
+          updateFocusIndicator();
+
+          if (typeof feather !== 'undefined') feather.replace();
+        };
+
+        const renderEmpty = (msg) => {
+          const div = document.createElement('div');
+          div.className = 'empty-state';
+          const icon = document.createElement('i');
+          icon.setAttribute('data-feather', 'file-text');
+          div.appendChild(icon);
+          const p = document.createElement('p');
+          p.textContent = msg || 'ノードがありません。「+」ボタンでノードを追加してください。';
+          div.appendChild(p);
+          els.outlineList.appendChild(div);
+        };
+
+        const createNodeEl = (node, depth) => {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'outline-node';
+          wrapper.setAttribute('data-id', node.id);
+          wrapper.style.paddingLeft = (depth * 24 + 12) + 'px';
+
+          // Row
+          const row = document.createElement('div');
+          row.className = 'node-row';
+          row.draggable = true;
+
+          // Toggle
+          const toggle = document.createElement('span');
+          toggle.className = 'node-toggle' + (node.children.length === 0 ? ' leaf' : '');
+          toggle.textContent = node.children.length === 0 ? '' : (node.collapsed ? '\u25B8' : '\u25BE');
+          toggle.addEventListener('click', (e) => {
+            if (node.children.length === 0) return;
+            node.collapsed = !node.collapsed;
+            debouncedSave();
+            render();
+          });
+          toggle.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            if (node.children.length > 0) {
+              enterFocus(node.id);
+            }
+          });
+
+          // Drag handle
+          const dragHandle = document.createElement('span');
+          dragHandle.className = 'node-drag-handle';
+          const gripIcon = document.createElement('i');
+          gripIcon.setAttribute('data-feather', 'more-vertical');
+          dragHandle.appendChild(gripIcon);
+
+          // Text input
+          const input = document.createElement('input');
+          input.className = 'node-text';
+          input.type = 'text';
+          input.value = node.text;
+          input.placeholder = '思考を入力...';
+          input.addEventListener('input', () => {
+            node.text = input.value;
+            debouncedSave();
+          });
+          input.addEventListener('keydown', handleNodeKeydown.bind(null, node));
+
+          // Actions
+          const actions = document.createElement('div');
+          actions.className = 'node-actions';
+
+          const aiBtn = document.createElement('button');
+          aiBtn.className = 'node-action-btn' + (node.aiResponse ? ' ai-active' : '');
+          aiBtn.title = 'AI応答の表示/非表示';
+          const aiIcon = document.createElement('i');
+          aiIcon.setAttribute('data-feather', 'message-square');
+          aiBtn.appendChild(aiIcon);
+          aiBtn.addEventListener('click', () => {
+            node.aiCollapsed = !node.aiCollapsed;
+            debouncedSave();
+            render();
+            // Focus the textarea if opening
+            if (!node.aiCollapsed) {
+              setTimeout(() => {
+                const ta = wrapper.querySelector('.ai-response-textarea');
+                if (ta) ta.focus();
+              }, 50);
+            }
+          });
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'node-action-btn';
+          delBtn.title = 'ノード削除';
+          const delIcon = document.createElement('i');
+          delIcon.setAttribute('data-feather', 'x');
+          delBtn.appendChild(delIcon);
+          delBtn.addEventListener('click', () => deleteNode(node.id));
+
+          actions.appendChild(aiBtn);
+          actions.appendChild(delBtn);
+
+          row.appendChild(toggle);
+          row.appendChild(dragHandle);
+          row.appendChild(input);
+          row.appendChild(actions);
+          wrapper.appendChild(row);
+
+          // AI response
+          const aiContainer = document.createElement('div');
+          aiContainer.className = 'ai-response-container' + (!node.aiCollapsed ? ' open' : '');
+          aiContainer.style.paddingLeft = (20 + 16 + 4) + 'px'; // toggle + handle widths + gap
+
+          const aiTextarea = document.createElement('textarea');
+          aiTextarea.className = 'ai-response-textarea';
+          aiTextarea.value = node.aiResponse || '';
+          aiTextarea.placeholder = 'AI応答を入力...';
+          aiTextarea.addEventListener('input', () => {
+            node.aiResponse = aiTextarea.value;
+            debouncedSave();
+          });
+
+          aiContainer.appendChild(aiTextarea);
+          wrapper.appendChild(aiContainer);
+
+          // Drag events
+          setupDrag(wrapper, row, node);
+
+          return wrapper;
+        };
+
+        // ===== Focus mode =====
+        const enterFocus = (nodeId) => {
+          state.focusNodeId = nodeId;
+          render();
+        };
+
+        const exitFocus = () => {
+          state.focusNodeId = null;
+          render();
+        };
+
+        const renderBreadcrumb = () => {
+          const bc = els.focusBreadcrumb;
+          bc.innerHTML = '';
+          if (!state.focusNodeId) {
+            bc.classList.remove('visible');
+            return;
+          }
+          const outline = currentOutline();
+          if (!outline) return;
+          const path = getPathToNode(outline.nodes, state.focusNodeId);
+          if (!path) {
+            state.focusNodeId = null;
+            bc.classList.remove('visible');
+            return;
+          }
+
+          bc.classList.add('visible');
+
+          // Root crumb
+          const rootCrumb = document.createElement('span');
+          rootCrumb.className = 'crumb';
+          rootCrumb.textContent = 'Root';
+          rootCrumb.addEventListener('click', exitFocus);
+          bc.appendChild(rootCrumb);
+
+          path.forEach((n, i) => {
+            const sep = document.createElement('span');
+            sep.className = 'crumb-sep';
+            sep.textContent = '>';
+            bc.appendChild(sep);
+
+            const crumb = document.createElement('span');
+            crumb.className = 'crumb';
+            crumb.textContent = n.text || '(empty)';
+            if (i < path.length - 1) {
+              crumb.addEventListener('click', () => enterFocus(n.id));
+            }
+            bc.appendChild(crumb);
+          });
+        };
+
+        const updateFocusIndicator = () => {
+          els.focusIndicator.classList.toggle('visible', !!state.focusNodeId);
+        };
+
+        // ===== Node CRUD =====
+        const makeNode = (text = '') => ({
+          id: genId(),
+          text,
+          aiResponse: '',
+          collapsed: false,
+          aiCollapsed: true,
+          children: [],
+        });
+
+        const addRootNode = () => {
+          const outline = currentOutline();
+          if (!outline) return;
+          if (state.focusNodeId) {
+            // Add child to focused node
+            const focusNode = findNode(outline.nodes, state.focusNodeId);
+            if (focusNode) {
+              const nn = makeNode();
+              focusNode.children.push(nn);
+              focusNode.collapsed = false;
+              saveImmediate();
+              render();
+              focusNodeInput(nn.id);
+              return;
+            }
+          }
+          const nn = makeNode();
+          outline.nodes.push(nn);
+          saveImmediate();
+          render();
+          focusNodeInput(nn.id);
+        };
+
+        const addSiblingAfter = (nodeId) => {
+          const outline = currentOutline();
+          if (!outline) return null;
+          const nn = makeNode();
+          // If in focus mode, check if node is direct child of focus
+          if (state.focusNodeId) {
+            const focusNode = findNode(outline.nodes, state.focusNodeId);
+            if (focusNode) {
+              const idx = focusNode.children.findIndex(c => c.id === nodeId);
+              if (idx >= 0) {
+                focusNode.children.splice(idx + 1, 0, nn);
+                saveImmediate();
+                render();
+                focusNodeInput(nn.id);
+                return nn;
+              }
+            }
+          }
+          if (insertAfter(outline.nodes, nodeId, nn)) {
+            saveImmediate();
+            render();
+            focusNodeInput(nn.id);
+            return nn;
+          }
+          return null;
+        };
+
+        const addChildNode = (parentId) => {
+          const outline = currentOutline();
+          if (!outline) return null;
+          const nn = makeNode();
+          const parent = findNode(outline.nodes, parentId);
+          if (parent) {
+            parent.children.push(nn);
+            parent.collapsed = false;
+            saveImmediate();
+            render();
+            focusNodeInput(nn.id);
+            return nn;
+          }
+          return null;
+        };
+
+        const deleteNode = (nodeId) => {
+          const outline = currentOutline();
+          if (!outline) return;
+          const node = findNode(outline.nodes, nodeId);
+          if (!node) return;
+
+          if (node.children.length > 0) {
+            // Move children to parent
+            const info = findParent(outline.nodes, nodeId);
+            if (info) {
+              const removed = info.siblings.splice(info.index, 1)[0];
+              // Insert children where node was
+              for (let i = removed.children.length - 1; i >= 0; i--) {
+                info.siblings.splice(info.index, 0, removed.children[i]);
+              }
+            }
+          } else {
+            removeNode(outline.nodes, nodeId);
+          }
+
+          // If we deleted the focus node, exit focus
+          if (state.focusNodeId === nodeId) {
+            state.focusNodeId = null;
+          }
+
+          saveImmediate();
+          render();
+        };
+
+        const focusNodeInput = (nodeId) => {
+          setTimeout(() => {
+            const el = els.outlineList.querySelector(`.outline-node[data-id="${nodeId}"] .node-text`);
+            if (el) el.focus();
+          }, 30);
+        };
+
+        // ===== Keyboard handling =====
+        const handleNodeKeydown = (node, e) => {
+          if (state.modalOpen) return;
+
+          if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+            e.preventDefault();
+            addSiblingAfter(node.id);
+          } else if (e.key === 'Enter' && e.ctrlKey && e.shiftKey) {
+            e.preventDefault();
+            addChildNode(node.id);
+          } else if (e.key === 'Tab' && !e.shiftKey) {
+            e.preventDefault();
+            const outline = currentOutline();
+            if (outline && indentNode(outline.nodes, node.id)) {
+              saveImmediate();
+              render();
+              focusNodeInput(node.id);
+            }
+          } else if (e.key === 'Tab' && e.shiftKey) {
+            e.preventDefault();
+            const outline = currentOutline();
+            if (outline && outdentNode(outline.nodes, node.id)) {
+              saveImmediate();
+              render();
+              focusNodeInput(node.id);
+            }
+          } else if (e.key === 'Delete' && e.ctrlKey) {
+            e.preventDefault();
+            deleteNode(node.id);
+          } else if (e.key === 'ArrowUp' && e.altKey) {
+            e.preventDefault();
+            const outline = currentOutline();
+            if (outline && moveNodeUp(outline.nodes, node.id)) {
+              saveImmediate();
+              render();
+              focusNodeInput(node.id);
+            }
+          } else if (e.key === 'ArrowDown' && e.altKey) {
+            e.preventDefault();
+            const outline = currentOutline();
+            if (outline && moveNodeDown(outline.nodes, node.id)) {
+              saveImmediate();
+              render();
+              focusNodeInput(node.id);
+            }
+          }
+        };
+
+        // ===== Drag & Drop =====
+        const setupDrag = (wrapper, row, node) => {
+          row.addEventListener('dragstart', (e) => {
+            state.dragNodeId = node.id;
+            wrapper.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', node.id);
+          });
+
+          row.addEventListener('dragend', () => {
+            state.dragNodeId = null;
+            wrapper.classList.remove('dragging');
+            clearDropIndicators();
+          });
+
+          wrapper.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!state.dragNodeId || state.dragNodeId === node.id) return;
+            const outline = currentOutline();
+            if (!outline) return;
+            if (isDescendant(outline.nodes, state.dragNodeId, node.id)) return;
+
+            e.dataTransfer.dropEffect = 'move';
+            const rect = wrapper.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const third = rect.height / 3;
+
+            clearDropIndicators();
+            if (y < third) {
+              wrapper.classList.add('drag-over-before');
+            } else if (y > third * 2) {
+              wrapper.classList.add('drag-over-after');
+            } else {
+              wrapper.classList.add('drag-over-inside');
+            }
+          });
+
+          wrapper.addEventListener('dragleave', () => {
+            wrapper.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-inside');
+          });
+
+          wrapper.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const dragId = state.dragNodeId;
+            if (!dragId || dragId === node.id) return;
+
+            const outline = currentOutline();
+            if (!outline) return;
+            if (isDescendant(outline.nodes, dragId, node.id)) return;
+
+            const rect = wrapper.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const third = rect.height / 3;
+            let position;
+            if (y < third) position = 'before';
+            else if (y > third * 2) position = 'after';
+            else position = 'inside';
+
+            performMove(outline.nodes, dragId, node.id, position);
+            clearDropIndicators();
+            state.dragNodeId = null;
+          });
+        };
+
+        const performMove = (nodes, dragId, targetId, position) => {
+          const dragNode = removeNode(nodes, dragId);
+          if (!dragNode) return;
+
+          if (position === 'inside') {
+            const target = findNode(nodes, targetId);
+            if (target) {
+              target.children.push(dragNode);
+              target.collapsed = false;
+            } else {
+              // Revert: push to root
+              nodes.push(dragNode);
+            }
+          } else if (position === 'before') {
+            const info = findParent(nodes, targetId);
+            if (info) {
+              info.siblings.splice(info.index, 0, dragNode);
+            } else {
+              nodes.unshift(dragNode);
+            }
+          } else {
+            // after
+            const info = findParent(nodes, targetId);
+            if (info) {
+              info.siblings.splice(info.index + 1, 0, dragNode);
+            } else {
+              nodes.push(dragNode);
+            }
+          }
+
+          saveImmediate();
+          render();
+        };
+
+        const clearDropIndicators = () => {
+          document.querySelectorAll('.drag-over-before, .drag-over-after, .drag-over-inside').forEach(el => {
+            el.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-inside');
+          });
+        };
+
+        // ===== Expand/Collapse all =====
+        const expandAll = () => {
+          const outline = currentOutline();
+          if (!outline) return;
+          setAllCollapsed(outline.nodes, false);
+          debouncedSave();
+          render();
+        };
+
+        const collapseAll = () => {
+          const outline = currentOutline();
+          if (!outline) return;
+          setAllCollapsed(outline.nodes, true);
+          debouncedSave();
+          render();
+        };
+
+        // ===== Export =====
+        const exportMarkdown = () => {
+          const outline = currentOutline();
+          if (!outline) return;
+          const lines = [];
+          const walk = (nodes, level) => {
+            for (const n of nodes) {
+              const prefix = '#'.repeat(Math.min(level, 6));
+              lines.push(prefix + ' ' + (n.text || '(empty)'));
+              if (n.aiResponse) {
+                lines.push('');
+                n.aiResponse.split('\n').forEach(l => lines.push('> ' + l));
+              }
+              lines.push('');
+              if (n.children.length > 0) walk(n.children, level + 1);
+            }
+          };
+          walk(outline.nodes, 1);
+          downloadFile(outline.name + '.md', lines.join('\n'), 'text/markdown;charset=utf-8');
+          showToast('Markdownをエクスポートしました');
+        };
+
+        const exportPlainText = () => {
+          const outline = currentOutline();
+          if (!outline) return;
+          const lines = [];
+          const walk = (nodes, indent) => {
+            for (const n of nodes) {
+              lines.push(' '.repeat(indent) + (n.text || '(empty)'));
+              if (n.aiResponse) {
+                n.aiResponse.split('\n').forEach(l => {
+                  lines.push(' '.repeat(indent + 2) + l);
+                });
+              }
+              if (n.children.length > 0) walk(n.children, indent + 2);
+            }
+          };
+          walk(outline.nodes, 0);
+          downloadFile(outline.name + '.txt', lines.join('\n'), 'text/plain;charset=utf-8');
+          showToast('テキストをエクスポートしました');
+        };
+
+        const exportJson = () => {
+          const data = {
+            version: 1,
+            outlines: state.outlines,
+            exportedAt: new Date().toISOString(),
+          };
+          downloadFile('tangle_export.json', JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+          showToast('JSONをエクスポートしました');
+        };
+
+        const downloadFile = (name, content, type) => {
+          const blob = new Blob([content], { type });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+        };
+
+        // ===== Import =====
+        const importJson = (file) => {
+          if (!file) return;
+          if (file.size > CONFIG.maxFileSize) {
+            showToast('ファイルサイズが5MBを超えています', 'error');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = JSON.parse(e.target.result);
+              validateImport(data);
+              state.outlines = data.outlines;
+              state.currentId = data.outlines[0] ? data.outlines[0].id : null;
+              state.focusNodeId = null;
+              saveImmediate();
+              populateSelect();
+              render();
+              showToast('インポートしました');
+            } catch (err) {
+              showToast('インポートエラー: ' + err.message, 'error');
+            }
+          };
+          reader.onerror = () => showToast('ファイル読み込みに失敗しました', 'error');
+          reader.readAsText(file);
+        };
+
+        const validateImport = (data) => {
+          if (!data || typeof data !== 'object') throw new Error('無効なデータ形式');
+          if (!Array.isArray(data.outlines)) throw new Error('outlinesが配列ではありません');
+          if (data.outlines.length > CONFIG.maxOutlines) throw new Error('アウトライン数が上限(' + CONFIG.maxOutlines + ')を超えています');
+
+          const allowedOutlineKeys = new Set(['id', 'name', 'nodes']);
+          const allowedNodeKeys = new Set(['id', 'text', 'aiResponse', 'collapsed', 'aiCollapsed', 'children']);
+          const ids = new Set();
+          let totalNodes = 0;
+
+          const sanitizeNode = (node, depth) => {
+            if (!node || typeof node !== 'object') throw new Error('無効なノード');
+            if (depth > CONFIG.maxDepth) throw new Error('ネスト深度が上限(' + CONFIG.maxDepth + ')を超えています');
+
+            if (typeof node.id !== 'string' || !node.id) throw new Error('ノードIDが無効');
+            if (ids.has(node.id)) throw new Error('重複ID: ' + node.id);
+            ids.add(node.id);
+            totalNodes++;
+            if (totalNodes > CONFIG.maxTotalNodes) throw new Error('ノード数が上限(' + CONFIG.maxTotalNodes + ')を超えています');
+
+            const text = typeof node.text === 'string' ? node.text : '';
+            if (text.length > CONFIG.maxTextLength) throw new Error('テキストが長すぎます');
+            const aiResponse = typeof node.aiResponse === 'string' ? node.aiResponse : '';
+            if (aiResponse.length > CONFIG.maxAiLength) throw new Error('AI応答が長すぎます');
+
+            const sanitized = {
+              id: node.id,
+              text: text,
+              aiResponse: aiResponse,
+              collapsed: !!node.collapsed,
+              aiCollapsed: node.aiCollapsed !== false,
+              children: [],
+            };
+
+            if (Array.isArray(node.children)) {
+              sanitized.children = node.children.map(c => sanitizeNode(c, depth + 1));
+            }
+
+            return sanitized;
+          };
+
+          data.outlines = data.outlines.map(o => {
+            if (!o || typeof o !== 'object') throw new Error('無効なアウトライン');
+            return {
+              id: typeof o.id === 'string' ? o.id : genId(),
+              name: typeof o.name === 'string' ? o.name : 'Untitled',
+              nodes: Array.isArray(o.nodes) ? o.nodes.map(n => sanitizeNode(n, 0)) : [],
+            };
+          });
+        };
+
+        // ===== Export dropdown =====
+        let exportOpen = false;
+        const toggleExportDropdown = () => {
+          exportOpen = !exportOpen;
+          els.exportDropdown.classList.toggle('open', exportOpen);
+        };
+        const closeExportDropdown = () => {
+          exportOpen = false;
+          els.exportDropdown.classList.remove('open');
+        };
+
+        // ===== Global keyboard =====
+        const handleGlobalKeydown = (e) => {
+          if (e.key === 'Escape') {
+            if (state.modalOpen) {
+              closeModal();
+              return;
+            }
+            if (exportOpen) {
+              closeExportDropdown();
+              return;
+            }
+            if (state.focusNodeId) {
+              exitFocus();
+              return;
+            }
+          }
+        };
+
+        // ===== Event bindings =====
+        const bindEvents = () => {
+          // Outline management
+          els.outlineSelect.addEventListener('change', (e) => switchOutline(e.target.value));
+          els.outlineSelect.addEventListener('dblclick', () => {
+            const o = currentOutline();
+            if (!o) return;
+            openModal({
+              title: 'アウトライン名を変更',
+              inputValue: o.name,
+              inputPlaceholder: 'アウトライン名',
+              buttons: [
+                { label: 'キャンセル' },
+                { label: '変更', cls: 'primary', action: (val) => renameOutline(val) },
+              ],
+            });
+          });
+
+          els.newOutlineBtn.addEventListener('click', () => {
+            openModal({
+              title: '新規アウトライン',
+              inputValue: '',
+              inputPlaceholder: 'アウトライン名',
+              buttons: [
+                { label: 'キャンセル' },
+                { label: '作成', cls: 'primary', action: (val) => createOutline(val || 'Untitled') },
+              ],
+            });
+          });
+
+          els.renameOutlineBtn.addEventListener('click', () => {
+            const o = currentOutline();
+            if (!o) return;
+            openModal({
+              title: 'アウトライン名を変更',
+              inputValue: o.name,
+              inputPlaceholder: 'アウトライン名',
+              buttons: [
+                { label: 'キャンセル' },
+                { label: '変更', cls: 'primary', action: (val) => renameOutline(val) },
+              ],
+            });
+          });
+
+          els.deleteOutlineBtn.addEventListener('click', () => {
+            const o = currentOutline();
+            if (!o) return;
+            openModal({
+              title: 'アウトラインを削除',
+              text: '「' + o.name + '」を削除しますか？この操作は取り消せません。',
+              buttons: [
+                { label: 'キャンセル' },
+                { label: '削除', cls: 'danger', action: () => deleteOutline() },
+              ],
+            });
+          });
+
+          // Node operations
+          els.addRootBtn.addEventListener('click', addRootNode);
+          els.expandAllBtn.addEventListener('click', expandAll);
+          els.collapseAllBtn.addEventListener('click', collapseAll);
+
+          // Export
+          els.exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleExportDropdown();
+          });
+          els.exportMdBtn.addEventListener('click', () => { closeExportDropdown(); exportMarkdown(); });
+          els.exportTextBtn.addEventListener('click', () => { closeExportDropdown(); exportPlainText(); });
+          els.exportJsonBtn.addEventListener('click', () => { closeExportDropdown(); exportJson(); });
+
+          // Import
+          els.importBtn.addEventListener('click', () => els.importFileInput.click());
+          els.importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            importJson(file);
+            e.target.value = '';
+          });
+
+          // Theme
+          els.themeToggleBtn.addEventListener('click', () => {
+            applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+          });
+
+          // Close dropdown on outside click
+          document.addEventListener('click', (e) => {
+            if (exportOpen && !els.exportBtn.contains(e.target) && !els.exportDropdown.contains(e.target)) {
+              closeExportDropdown();
+            }
+          });
+
+          // Modal enter key
+          els.modalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const primaryBtn = els.modalActions.querySelector('.modal-btn.primary');
+              if (primaryBtn) primaryBtn.click();
+            }
+          });
+
+          // Modal overlay click to close
+          els.modalOverlay.addEventListener('click', (e) => {
+            if (e.target === els.modalOverlay) closeModal();
+          });
+
+          // Global keyboard
+          document.addEventListener('keydown', handleGlobalKeydown);
+
+          // Drag on outline area for root-level drop
+          els.outlineArea.addEventListener('dragover', (e) => {
+            if (!state.dragNodeId) return;
+            const target = e.target.closest('.outline-node');
+            if (target) return; // Handled by node
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          });
+
+          els.outlineArea.addEventListener('drop', (e) => {
+            if (!state.dragNodeId) return;
+            const target = e.target.closest('.outline-node');
+            if (target) return;
+            e.preventDefault();
+            const outline = currentOutline();
+            if (!outline) return;
+            const dragNode = removeNode(outline.nodes, state.dragNodeId);
+            if (dragNode) {
+              outline.nodes.push(dragNode);
+              saveImmediate();
+              render();
+            }
+            state.dragNodeId = null;
+          });
+
+          // Toolbar keyboard
+          [els.newOutlineBtn, els.renameOutlineBtn, els.deleteOutlineBtn,
+           els.addRootBtn, els.expandAllBtn, els.collapseAllBtn,
+           els.exportBtn, els.importBtn, els.themeToggleBtn].forEach(btn => {
+            btn.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                btn.click();
+              }
+            });
+          });
+        };
+
+        // ===== Init =====
+        const init = () => {
+          loadTheme();
+          loadData();
+          populateSelect();
+          bindEvents();
+          render();
+          if (typeof feather !== 'undefined') feather.replace();
+        };
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

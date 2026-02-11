@@ -468,6 +468,32 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
         to { transform: rotate(360deg); }
       }
 
+      /* Tool navigation */
+      .toolbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 4px;
+      }
+      .toolbar-nav a {
+        color: var(--da-cloud);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 5px 10px;
+        border-radius: 6px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+        white-space: nowrap;
+      }
+      .toolbar-nav a:hover {
+        color: var(--da-snow);
+        background-color: var(--da-graphite);
+      }
+      .toolbar-nav a.nav-active {
+        color: var(--da-secondary);
+        background: var(--da-accent-muted);
+      }
+
       /* Accessibility: reduced motion */
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
@@ -524,6 +550,13 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
               <i data-feather="download"></i>
             </button>
           </div>
+          <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
+            <a href="index.html" class="nav-active">HTML</a>
+            <a href="markdown_preview.html">MD</a>
+            <a href="loom.html">Loom</a>
+            <a href="shelf.html">Shelf</a>
+            <a href="tangle.html">Tangle</a>
+          </nav>
         </div>
       </div>
 

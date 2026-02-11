@@ -882,6 +882,32 @@
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
 
+      /* ===== TOOL NAVIGATION ===== */
+      .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 16px;
+      }
+      .header-nav a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        padding: 5px 10px;
+        border-radius: var(--radius);
+        transition: all var(--transition);
+        white-space: nowrap;
+      }
+      .header-nav a:hover {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+      }
+      .header-nav a.nav-active {
+        color: var(--accent-instruction);
+        background: var(--accent-instruction-bg);
+      }
+
       /* ===== FOCUS VISIBLE ===== */
       :focus-visible {
         outline: 2px solid var(--accent-instruction);
@@ -919,6 +945,13 @@
     <div class="header">
       <div class="header-left">
         <div class="logo">LOOM<span>AI Output Workbench</span></div>
+        <nav class="header-nav" role="navigation" aria-label="ツール切り替え">
+          <a href="index.html">HTML</a>
+          <a href="markdown_preview.html">MD</a>
+          <a href="loom.html" class="nav-active">Loom</a>
+          <a href="shelf.html">Shelf</a>
+          <a href="tangle.html">Tangle</a>
+        </nav>
       </div>
       <div class="header-actions">
         <button class="btn" id="themeToggleBtn" aria-label="テーマ切替">☀ Light</button>
