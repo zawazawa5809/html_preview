@@ -1447,7 +1447,10 @@
         reader.onload = (e) => {
           try {
             const imported = JSON.parse(e.target.result);
-            state = { ...state, ...imported };
+            const allowedKeys = ["contextBlocks", "outputBlocks", "templates", "snapshots", "tokenBudget"];
+            allowedKeys.forEach((key) => {
+              if (key in imported) state[key] = imported[key];
+            });
             document.getElementById("tokenBudget").value = state.tokenBudget;
             saveImmediate();
             renderContextBlocks();
