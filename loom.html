@@ -925,10 +925,21 @@
       let dragState = { panel: null, dragIndex: null };
 
       // ===== PERSISTENCE =====
-      function save() {
+      let _saveTimer = null;
+      function _commitSave() {
         state.tokenBudget =
           parseInt(document.getElementById("tokenBudget").value) || 8000;
         localStorage.setItem("loom_state", JSON.stringify(state));
+      }
+
+      function save() {
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(_commitSave, 300);
+      }
+
+      function saveImmediate() {
+        clearTimeout(_saveTimer);
+        _commitSave();
       }
 
       function load() {
@@ -1089,7 +1100,7 @@
               panel === "context" ? state.contextBlocks : state.outputBlocks;
             const [moved] = blocks.splice(dragState.dragIndex, 1);
             blocks.splice(index, 0, moved);
-            save();
+            saveImmediate();
             panel === "context" ? renderContextBlocks() : renderOutputBlocks();
           }
         });
@@ -1106,7 +1117,7 @@
           collapsed: false,
           id: genId(),
         });
-        save();
+        saveImmediate();
         renderContextBlocks();
         focusLastTextarea("contextBlocks");
       }
@@ -1119,7 +1130,7 @@
           collapsed: false,
           id: genId(),
         });
-        save();
+        saveImmediate();
         renderOutputBlocks();
         focusLastTextarea("outputBlocks");
       }
@@ -1152,7 +1163,7 @@
         const blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
         blocks.splice(index, 1);
-        save();
+        saveImmediate();
         panel === "context" ? renderContextBlocks() : renderOutputBlocks();
       }
 
@@ -1165,7 +1176,7 @@
           label: blocks[index].label + " (copy)",
         };
         blocks.splice(index + 1, 0, copy);
-        save();
+        saveImmediate();
         panel === "context" ? renderContextBlocks() : renderOutputBlocks();
       }
 
@@ -1173,7 +1184,7 @@
         const blocks =
           panel === "context" ? state.contextBlocks : state.outputBlocks;
         blocks[index].collapsed = !blocks[index].collapsed;
-        save();
+        saveImmediate();
         panel === "context" ? renderContextBlocks() : renderOutputBlocks();
       }
 
@@ -1200,7 +1211,7 @@
           block.type = typeMap[block.type] || "reference";
         }
         to.push(block);
-        save();
+        saveImmediate();
         renderContextBlocks();
         renderOutputBlocks();
         toast("Moved to " + (panel === "context" ? "Output" : "Context"));
@@ -1215,7 +1226,7 @@
         const types = panel === "context" ? contextTypes : outputTypes;
         const current = types.indexOf(blocks[index].type);
         blocks[index].type = types[(current + 1) % types.length];
-        save();
+        saveImmediate();
         panel === "context" ? renderContextBlocks() : renderOutputBlocks();
       }
 
@@ -1311,7 +1322,7 @@
           blocks: JSON.parse(JSON.stringify(state.outputBlocks)),
           time: Date.now(),
         });
-        save();
+        saveImmediate();
         renderSnapshots();
         toast("Snapshot saved: " + name);
       }
@@ -1344,14 +1355,14 @@
         state.outputBlocks = JSON.parse(
           JSON.stringify(state.snapshots[index].blocks),
         );
-        save();
+        saveImmediate();
         renderOutputBlocks();
         toast("Restored: " + state.snapshots[index].name);
       }
 
       function deleteSnapshot(index) {
         state.snapshots.splice(index, 1);
-        save();
+        saveImmediate();
         renderSnapshots();
       }
 
@@ -1368,7 +1379,7 @@
           blocks: JSON.parse(JSON.stringify(state.contextBlocks)),
           time: Date.now(),
         });
-        save();
+        saveImmediate();
         toast("Template saved: " + name);
       }
 
@@ -1403,7 +1414,7 @@
         );
         // Regenerate IDs
         state.contextBlocks.forEach((b) => (b.id = genId()));
-        save();
+        saveImmediate();
         renderContextBlocks();
         closeModalDirect();
         toast("Loaded: " + state.templates[index].name);
@@ -1411,7 +1422,7 @@
 
       function deleteTemplate(index) {
         state.templates.splice(index, 1);
-        save();
+        saveImmediate();
         closeModalDirect();
         showTemplates();
       }
@@ -1438,7 +1449,7 @@
             const imported = JSON.parse(e.target.result);
             state = { ...state, ...imported };
             document.getElementById("tokenBudget").value = state.tokenBudget;
-            save();
+            saveImmediate();
             renderContextBlocks();
             renderOutputBlocks();
             renderSnapshots();
@@ -1455,7 +1466,7 @@
         if (!confirm("本当に全部消すのん？ この操作は取り消せないん。")) return;
         state.contextBlocks = [];
         state.outputBlocks = [];
-        save();
+        saveImmediate();
         renderContextBlocks();
         renderOutputBlocks();
         toast("Cleared all blocks");
