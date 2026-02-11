@@ -986,18 +986,20 @@
       }
 
       // ===== RENDER =====
+      // Cache empty-state elements so they survive innerHTML = ""
+      const contextEmptyEl = document.getElementById("contextEmpty");
+      const outputEmptyEl = document.getElementById("outputEmpty");
+
       function renderContextBlocks() {
         const container = document.getElementById("contextBlocks");
-        const empty = document.getElementById("contextEmpty");
+        container.innerHTML = "";
         if (state.contextBlocks.length === 0) {
-          container.innerHTML = "";
-          container.appendChild(empty);
-          empty.style.display = "flex";
+          contextEmptyEl.style.display = "flex";
+          container.appendChild(contextEmptyEl);
           updateTokenBar();
           return;
         }
-        empty.style.display = "none";
-        container.innerHTML = "";
+        contextEmptyEl.style.display = "none";
         state.contextBlocks.forEach((block, i) => {
           container.appendChild(createBlockElement(block, i, "context"));
         });
@@ -1006,16 +1008,14 @@
 
       function renderOutputBlocks() {
         const container = document.getElementById("outputBlocks");
-        const empty = document.getElementById("outputEmpty");
+        container.innerHTML = "";
         if (state.outputBlocks.length === 0) {
-          container.innerHTML = "";
-          container.appendChild(empty);
-          empty.style.display = "flex";
+          outputEmptyEl.style.display = "flex";
+          container.appendChild(outputEmptyEl);
           updateOutputStats();
           return;
         }
-        empty.style.display = "none";
-        container.innerHTML = "";
+        outputEmptyEl.style.display = "none";
         state.outputBlocks.forEach((block, i) => {
           container.appendChild(createBlockElement(block, i, "output"));
         });
