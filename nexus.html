@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus - Cross-Domain Workspace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <style>
+      :root {
+        --da-ink: #1e1f25;
+        --da-charcoal: #282a32;
+        --da-graphite: #353842;
+        --da-slate: #4a4e5c;
+        --da-ash: #6b7085;
+        --da-stone: #9498ab;
+        --da-cloud: #c4c8d6;
+        --da-mist: #e2e4ec;
+        --da-frost: #f0f1f5;
+        --da-snow: #f8f9fb;
+        --da-secondary: #5b8fcc;
+        --da-secondary-hover: #4a7db8;
+        --da-accent-muted: #5b8fcc26;
+        --da-accent-glow: #5b8fcc12;
+        --da-success: #4aba8a;
+        --da-warning: #d4943a;
+        --da-error: #d45a5a;
+        --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+        --duration-fast: 100ms;
+        --duration-normal: 200ms;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+        --app-text-primary: var(--da-ink);
+        --app-text-secondary: var(--da-slate);
+        --app-text-on-dark: var(--da-snow);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-snow);
+        --app-bg-secondary: var(--da-frost);
+        --app-bg-dark: var(--da-charcoal);
+        --app-border-default: var(--da-mist);
+        --app-border-focus: var(--da-secondary);
+        --app-border-hover: var(--da-cloud);
+        --app-toolbar-bg: var(--da-charcoal);
+        --app-toolbar-text: var(--da-snow);
+        --app-toolbar-border: var(--da-graphite);
+        --app-editor-bg: var(--da-snow);
+        --app-editor-text: var(--da-ink);
+        --app-editor-placeholder: var(--da-ash);
+        --app-accent: var(--da-secondary);
+        --app-accent-hover: var(--da-secondary-hover);
+      }
+      :root[data-theme="dark"] {
+        --app-text-primary: var(--da-frost);
+        --app-text-secondary: var(--da-stone);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-charcoal);
+        --app-bg-secondary: var(--da-ink);
+        --app-bg-dark: var(--da-ink);
+        --app-border-default: var(--da-graphite);
+        --app-border-hover: var(--da-slate);
+        --app-toolbar-bg: var(--da-ink);
+        --app-toolbar-text: var(--da-frost);
+        --app-toolbar-border: var(--da-graphite);
+        --app-editor-bg: var(--da-charcoal);
+        --app-editor-text: var(--da-frost);
+        --app-editor-placeholder: var(--da-ash);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        font-size: 16px; line-height: 1.5; font-weight: 400;
+        height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+        background-color: var(--app-bg-primary); color: var(--app-text-primary);
+      }
+
+      /* ===== Toolbar ===== */
+      .toolbar {
+        background-color: var(--app-toolbar-bg); color: var(--app-toolbar-text);
+        padding: 8px 16px; border-bottom: 1px solid var(--app-toolbar-border);
+        box-shadow: inset 0 -2px 0 0 var(--da-secondary);
+        display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 48px;
+      }
+      .toolbar-title {
+        font-weight: 500; font-size: 15px; line-height: 1.4;
+        margin-right: auto; color: var(--app-toolbar-text); letter-spacing: 0.05em;
+      }
+      .toolbar-menu { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .btn-group {
+        display: flex; gap: 2px; background: rgba(255,255,255,0.04);
+        border-radius: 8px; padding: 2px;
+      }
+      .toolbar-button {
+        background: none; border: 1px solid transparent; padding: 6px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 6px; min-width: 34px; min-height: 34px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+      .toolbar-button svg { width: 17px; height: 17px; color: var(--da-cloud); transition: all var(--duration-normal) var(--ease-out-expo); }
+      .toolbar-button:hover { background-color: var(--da-graphite); }
+      .toolbar-button:hover svg { color: var(--da-snow); }
+      .toolbar-button:active { transform: scale(0.93); }
+      .toolbar-button.active { background: var(--da-accent-muted); border-color: var(--da-secondary); }
+      .toolbar-button.active svg { color: var(--da-snow); }
+      .toolbar-button:focus-visible { outline: 2px solid var(--da-secondary); outline-offset: 2px; box-shadow: 0 0 0 4px var(--da-accent-muted); }
+      .toolbar-search {
+        background: var(--da-graphite); border: 1px solid var(--da-slate); border-radius: 6px;
+        padding: 5px 10px 5px 30px; font-size: 13px; color: var(--da-snow); outline: none;
+        width: 180px; font-family: inherit;
+        transition: border-color var(--duration-normal) var(--ease-out-expo), box-shadow var(--duration-normal) var(--ease-out-expo);
+      }
+      .toolbar-search::placeholder { color: var(--da-ash); }
+      .toolbar-search:focus { border-color: var(--da-secondary); box-shadow: 0 0 0 3px var(--da-accent-muted); }
+      .search-wrapper { position: relative; display: flex; align-items: center; }
+      .search-wrapper svg { position: absolute; left: 8px; width: 14px; height: 14px; color: var(--da-ash); pointer-events: none; }
+      .toolbar-nav { display: flex; align-items: center; gap: 2px; margin-left: 4px; }
+      .toolbar-nav a {
+        color: var(--da-cloud); text-decoration: none; font-size: 12px; padding: 4px 8px;
+        border-radius: 4px; transition: all var(--duration-normal) var(--ease-out-expo); white-space: nowrap;
+      }
+      .toolbar-nav a:hover { color: var(--da-snow); background-color: var(--da-graphite); }
+      .toolbar-nav a.nav-active { color: var(--da-secondary); background: var(--da-accent-muted); }
+
+      /* ===== Toast ===== */
+      @keyframes toast-slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes toast-fade-out { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-8px); opacity: 0; } }
+      .temp-message {
+        position: fixed; top: 60px; right: 20px; padding: 10px 16px; border-radius: 8px;
+        font-size: 13px; z-index: 10000; pointer-events: none;
+        background-color: var(--da-charcoal); color: var(--da-snow);
+        border: 1px solid var(--da-graphite); box-shadow: var(--shadow-md);
+        animation: toast-slide-in 300ms var(--ease-out-expo);
+      }
+      .temp-message[role="status"] { border-left: 3px solid var(--da-success); }
+      .temp-message.toast-warning[role="status"] { border-left: 3px solid var(--da-warning); }
+      .temp-message.toast-error[role="status"] { border-left: 3px solid var(--da-error); }
+      .temp-message.toast-out { animation: toast-fade-out 300ms var(--ease-out-expo) forwards; }
+      .theme-icon-spin svg { animation: theme-spin 400ms var(--ease-out-expo); }
+      @keyframes theme-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+      /* ===== Workspace Grid ===== */
+      .nexus-workspace {
+        flex: 1; display: grid; gap: 6px; padding: 6px;
+        overflow: hidden; min-height: 0;
+      }
+      .resize-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 500; cursor: col-resize;
+      }
+
+      /* ===== Domain Pane ===== */
+      .domain-pane {
+        background: var(--app-bg-primary); border: 1px solid var(--app-border-default);
+        border-radius: 8px; display: flex; flex-direction: column;
+        overflow: hidden; min-width: 0; min-height: 0;
+        transition: box-shadow var(--duration-normal) var(--ease-out-expo);
+      }
+      .domain-pane:hover { box-shadow: var(--shadow-sm); }
+      .domain-pane.drag-over { box-shadow: 0 0 0 2px var(--da-secondary); }
+      .domain-pane-header {
+        display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+        border-bottom: 1px solid var(--app-border-default); flex-shrink: 0;
+      }
+      .domain-color-bar { width: 4px; height: 24px; border-radius: 2px; flex-shrink: 0; }
+      .domain-name {
+        font-weight: 600; font-size: 14px; flex: 1; min-width: 0;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        cursor: default;
+      }
+      .domain-count {
+        font-size: 11px; color: var(--app-text-muted);
+        background: var(--app-bg-secondary); padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+      }
+      .domain-actions { display: flex; gap: 2px; flex-shrink: 0; }
+      .pane-btn {
+        background: none; border: none; cursor: pointer; padding: 5px; border-radius: 4px;
+        display: flex; align-items: center; color: var(--app-text-muted);
+        transition: all var(--duration-fast) var(--ease-out-expo);
+      }
+      .pane-btn:hover { background: var(--app-bg-secondary); color: var(--app-text-primary); }
+      .pane-btn svg { width: 16px; height: 16px; }
+      .pane-btn-label { font-size: 11px; }
+
+      /* ===== Summary Area ===== */
+      .domain-summary-area {
+        border-bottom: 1px solid var(--app-border-default); flex-shrink: 0;
+      }
+      .summary-toggle {
+        display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+        cursor: pointer; font-size: 11px; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.05em; color: var(--app-text-muted); background: none; border: none;
+        width: 100%; text-align: left;
+        transition: background var(--duration-fast) var(--ease-out-expo);
+      }
+      .summary-toggle:hover { background: var(--app-bg-secondary); }
+      .summary-toggle svg { width: 12px; height: 12px; transition: transform var(--duration-fast); }
+      .summary-toggle.collapsed svg { transform: rotate(-90deg); }
+      .summary-content {
+        padding: 8px 12px; font-size: 13px; line-height: 1.6;
+        max-height: 200px; overflow-y: auto;
+      }
+      .summary-content.hidden { display: none; }
+      .summary-edit-area { padding: 8px 12px; }
+      .summary-edit-area textarea {
+        width: 100%; min-height: 80px; padding: 8px; font-size: 13px; font-family: inherit;
+        border: 1px solid var(--app-border-default); border-radius: 6px; resize: vertical;
+        background: var(--app-editor-bg); color: var(--app-editor-text); outline: none;
+      }
+      .summary-edit-area textarea:focus { border-color: var(--app-border-focus); }
+      .summary-edit-btns { display: flex; gap: 4px; margin-top: 4px; justify-content: flex-end; }
+
+      /* ===== Quick Add ===== */
+      .domain-quick-add {
+        padding: 6px 12px; border-bottom: 1px solid var(--app-border-default); flex-shrink: 0;
+      }
+      .quick-add-input {
+        width: 100%; padding: 6px 10px; font-size: 13px; font-family: inherit;
+        border: 1px solid var(--app-border-default); border-radius: 6px;
+        background: var(--app-bg-secondary); color: var(--app-text-primary); outline: none;
+        transition: border-color var(--duration-fast);
+      }
+      .quick-add-input::placeholder { color: var(--app-editor-placeholder); }
+      .quick-add-input:focus { border-color: var(--app-border-focus); background: var(--app-editor-bg); }
+
+      /* ===== Entry List ===== */
+      .domain-entries { flex: 1; overflow-y: auto; padding: 4px; }
+      .memo-entry {
+        border: 1px solid var(--app-border-default); border-radius: 6px; margin-bottom: 4px;
+        background: var(--app-bg-primary);
+        transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+      }
+      .memo-entry:hover { border-color: var(--app-border-hover); }
+      .memo-entry.dragging { opacity: 0.4; }
+      .memo-header {
+        display: flex; align-items: center; gap: 6px; padding: 6px 8px; cursor: pointer;
+      }
+      .drag-handle {
+        cursor: grab; color: var(--app-text-muted); display: flex; padding: 2px;
+        flex-shrink: 0; opacity: 0.5;
+      }
+      .drag-handle:hover { opacity: 1; }
+      .drag-handle svg { width: 12px; height: 12px; }
+      .memo-title {
+        flex: 1; font-size: 13px; font-weight: 500; min-width: 0;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .memo-title.untitled { color: var(--app-text-muted); font-style: italic; }
+      .memo-time { font-size: 10px; color: var(--app-text-muted); flex-shrink: 0; white-space: nowrap; }
+      .memo-entry-actions { display: flex; gap: 4px; flex-shrink: 0; }
+      .entry-action-btn {
+        font-size: 11px; padding: 3px 8px; border-radius: 4px; gap: 4px;
+        display: inline-flex; align-items: center; background: none; border: 1px solid transparent;
+        color: var(--app-text-muted); cursor: pointer; font-family: inherit;
+        transition: all var(--duration-fast) var(--ease-out-expo);
+      }
+      .entry-action-btn svg { width: 12px; height: 12px; }
+      .entry-action-btn:hover { background: var(--app-bg-secondary); color: var(--app-text-primary); border-color: var(--app-border-default); }
+      .entry-action-danger:hover { background: var(--da-error); color: #fff; border-color: var(--da-error); }
+      .memo-entry .entry-action-btn { opacity: 0.6; transition: opacity var(--duration-fast), background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast); }
+      .memo-entry:hover .entry-action-btn { opacity: 1; }
+      .memo-body { padding: 0 8px 8px 26px; cursor: text; }
+      .memo-body.hidden { display: none; }
+
+      /* ===== Memo Content (Markdown) ===== */
+      .memo-content {
+        font-size: 13px; line-height: 1.6; color: var(--app-text-primary);
+        word-break: break-word; overflow-wrap: break-word;
+      }
+      .memo-content p { margin-bottom: 8px; }
+      .memo-content p:last-child { margin-bottom: 0; }
+      .memo-content h1, .memo-content h2, .memo-content h3,
+      .memo-content h4, .memo-content h5, .memo-content h6 {
+        margin: 12px 0 6px; font-weight: 600; line-height: 1.3;
+      }
+      .memo-content h1 { font-size: 18px; } .memo-content h2 { font-size: 16px; }
+      .memo-content h3 { font-size: 15px; } .memo-content h4 { font-size: 14px; }
+      .memo-content h5 { font-size: 13px; } .memo-content h6 { font-size: 12px; }
+      .memo-content ul, .memo-content ol { padding-left: 20px; margin-bottom: 8px; }
+      .memo-content li { margin-bottom: 2px; }
+      .memo-content code {
+        background: var(--app-bg-secondary); padding: 2px 5px; border-radius: 3px;
+        font-size: 12px; font-family: "Consolas", "Monaco", monospace;
+      }
+      .memo-content pre {
+        background: var(--app-bg-secondary); padding: 10px; border-radius: 6px;
+        margin-bottom: 8px; overflow-x: auto;
+      }
+      .memo-content pre code { background: none; padding: 0; }
+      .memo-content blockquote {
+        border-left: 3px solid var(--da-secondary); padding: 4px 12px;
+        margin: 8px 0; color: var(--app-text-secondary);
+      }
+      .memo-content a { color: var(--da-secondary); text-decoration: underline; }
+      .memo-content a:hover { color: var(--da-secondary-hover); }
+      .memo-content hr { border: none; border-top: 1px solid var(--app-border-default); margin: 12px 0; }
+      .memo-content table { border-collapse: collapse; width: 100%; margin-bottom: 8px; font-size: 12px; }
+      .memo-content th, .memo-content td { border: 1px solid var(--app-border-default); padding: 4px 8px; text-align: left; }
+      .memo-content th { background: var(--app-bg-secondary); font-weight: 600; }
+      .memo-content del { text-decoration: line-through; color: var(--app-text-muted); }
+      .memo-content:empty::before {
+        content: "ダブルクリックで編集..."; color: var(--app-text-muted); font-style: italic;
+      }
+
+      /* ===== Memo Tags ===== */
+      .memo-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+      .memo-tag {
+        font-size: 10px; padding: 2px 8px; border-radius: 10px; cursor: pointer;
+        background: var(--da-accent-muted); color: var(--da-secondary);
+        border: 1px solid transparent;
+        transition: all var(--duration-fast);
+      }
+      .memo-tag:hover { border-color: var(--da-secondary); }
+      .memo-tag.active-tag { background: var(--da-secondary); color: var(--da-snow); }
+
+      /* ===== Inline Edit ===== */
+      .edit-area { padding: 0 8px 8px 26px; }
+      .edit-field {
+        width: 100%; padding: 6px 8px; font-size: 13px; font-family: inherit;
+        border: 1px solid var(--app-border-default); border-radius: 6px;
+        background: var(--app-editor-bg); color: var(--app-editor-text); outline: none;
+        margin-bottom: 6px;
+      }
+      .edit-field:focus { border-color: var(--app-border-focus); }
+      .edit-textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+      .edit-controls { display: flex; gap: 4px; justify-content: flex-end; }
+
+      /* ===== Drop Indicator ===== */
+      .drop-indicator {
+        height: 3px; background: var(--da-secondary); border-radius: 2px;
+        margin: 2px 4px; transition: opacity var(--duration-fast);
+      }
+
+      /* ===== Modals ===== */
+      .modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 1000;
+        align-items: center; justify-content: center;
+      }
+      .modal-overlay.open { display: flex; }
+      .modal {
+        background: var(--app-bg-primary); border-radius: 12px;
+        box-shadow: var(--shadow-md); width: 480px; max-width: 90vw; max-height: 85vh;
+        display: flex; flex-direction: column; overflow: hidden;
+        border: 1px solid var(--app-border-default);
+      }
+      .modal-sm { width: 380px; }
+      .modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; border-bottom: 1px solid var(--app-border-default); flex-shrink: 0;
+      }
+      .modal-title { font-size: 16px; font-weight: 600; }
+      .modal-close-btn {
+        background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px;
+        display: flex; color: var(--app-text-muted);
+      }
+      .modal-close-btn:hover { background: var(--app-bg-secondary); color: var(--app-text-primary); }
+      .modal-close-btn svg { width: 18px; height: 18px; }
+      .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+      .modal-footer {
+        padding: 12px 20px; border-top: 1px solid var(--app-border-default);
+        display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+      }
+      .form-group { margin-bottom: 16px; }
+      .form-group:last-child { margin-bottom: 0; }
+      .form-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--app-text-secondary); }
+      .form-input {
+        width: 100%; padding: 8px 12px; font-size: 14px; font-family: inherit;
+        border: 1px solid var(--app-border-default); border-radius: 6px;
+        background: var(--app-editor-bg); color: var(--app-editor-text); outline: none;
+      }
+      .form-input:focus { border-color: var(--app-border-focus); box-shadow: 0 0 0 3px var(--da-accent-muted); }
+      .form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+      select.form-input { cursor: pointer; }
+
+      /* ===== Buttons ===== */
+      .btn {
+        padding: 8px 16px; font-size: 13px; font-weight: 500; font-family: inherit;
+        border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+        transition: all var(--duration-fast); display: inline-flex; align-items: center; gap: 4px;
+      }
+      .btn-primary { background: var(--da-secondary); color: #fff; }
+      .btn-primary:hover { background: var(--da-secondary-hover); }
+      .btn-secondary { background: var(--app-bg-secondary); color: var(--app-text-primary); border-color: var(--app-border-default); }
+      .btn-secondary:hover { background: var(--app-border-default); }
+      .btn-danger { background: var(--da-error); color: #fff; }
+      .btn-danger:hover { background: #c04a4a; }
+      .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+      /* ===== Color Picker ===== */
+      .color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+      .color-swatch {
+        width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+        border: 3px solid transparent; transition: all var(--duration-fast);
+      }
+      .color-swatch:hover { transform: scale(1.15); }
+      .color-swatch.selected { border-color: var(--app-text-primary); box-shadow: var(--shadow-sm); }
+
+      /* ===== CDN Error Banner ===== */
+      .cdn-error-banner {
+        background: var(--da-warning); color: #fff; padding: 8px 16px; font-size: 13px;
+        text-align: center; flex-shrink: 0;
+      }
+
+      /* ===== Active Tag Filter Bar ===== */
+      .active-filter-bar {
+        padding: 4px 6px; background: var(--app-bg-secondary);
+        border-bottom: 1px solid var(--app-border-default);
+        display: flex; align-items: center; gap: 4px; flex-shrink: 0; flex-wrap: wrap;
+      }
+      .active-filter-bar.hidden { display: none; }
+      .filter-label { font-size: 11px; color: var(--app-text-muted); margin-right: 4px; }
+      .filter-clear-btn {
+        background: none; border: none; cursor: pointer; font-size: 11px;
+        color: var(--da-secondary); margin-left: auto; padding: 2px 6px;
+      }
+      .filter-clear-btn:hover { text-decoration: underline; }
+
+      /* ===== Scrollbar ===== */
+      .domain-entries::-webkit-scrollbar, .summary-content::-webkit-scrollbar { width: 6px; }
+      .domain-entries::-webkit-scrollbar-track, .summary-content::-webkit-scrollbar-track { background: transparent; }
+      .domain-entries::-webkit-scrollbar-thumb, .summary-content::-webkit-scrollbar-thumb { background: var(--da-ash); border-radius: 3px; }
+      .domain-entries::-webkit-scrollbar-thumb:hover, .summary-content::-webkit-scrollbar-thumb:hover { background: var(--da-stone); }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+      }
+      /* ===== Layout Domain Picker ===== */
+      .layout-domain-picker {
+        position: absolute; top: 100%; left: 0; z-index: 600;
+        background: var(--app-bg-primary); border: 1px solid var(--app-border-default);
+        border-radius: 8px; box-shadow: var(--shadow-md); min-width: 180px;
+        padding: 4px; margin-top: 4px;
+      }
+      .layout-domain-picker-item {
+        display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+        border-radius: 6px; cursor: pointer; font-size: 13px;
+        color: var(--app-text-primary); border: none; background: none;
+        width: 100%; text-align: left; font-family: inherit;
+        transition: background var(--duration-fast);
+      }
+      .layout-domain-picker-item:hover { background: var(--app-bg-secondary); }
+      .layout-domain-picker-dot {
+        width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      }
+      .edit-move-label { font-size: 12px; font-weight: 600; color: var(--app-text-secondary); margin-bottom: 4px; }
+      .hidden-input { display: none; }
+      i[data-feather] {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        font-style: normal;
+        text-align: center;
+        line-height: 1;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <span class="toolbar-title">Nexus</span>
+      <div class="toolbar-menu">
+        <div class="search-wrapper">
+          <i data-feather="search">🔍</i>
+          <input type="text" class="toolbar-search" id="global-search" placeholder="検索... ( / )" aria-label="グローバル検索" />
+        </div>
+        <div class="btn-group" role="group" aria-label="レイアウト切替">
+          <button class="toolbar-button" id="layout-grid-btn" title="グリッド (Alt+Shift+1)"><i data-feather="grid">⊞</i></button>
+          <button class="toolbar-button" id="layout-horizontal-btn" title="横並び (Alt+Shift+2)"><i data-feather="columns">▥</i></button>
+          <button class="toolbar-button" id="layout-focus-btn" title="フォーカス (Alt+Shift+3)"><i data-feather="sidebar">◧</i></button>
+          <button class="toolbar-button" id="layout-single-btn" title="シングル (Alt+Shift+4)"><i data-feather="square">□</i></button>
+        </div>
+        <div class="btn-group" role="group" aria-label="操作">
+          <button class="toolbar-button" id="add-domain-btn" title="ドメイン追加"><i data-feather="plus-circle">⊕</i></button>
+          <button class="toolbar-button" id="expand-all-btn" title="すべて展開"><i data-feather="chevrons-down">⇊</i></button>
+          <button class="toolbar-button" id="collapse-all-btn" title="すべて折りたたみ"><i data-feather="chevrons-up">⇈</i></button>
+        </div>
+        <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え"><i data-feather="moon" id="theme-icon">☽</i></button>
+        <div class="btn-group" role="group" aria-label="データ操作">
+          <button class="toolbar-button" id="export-json-btn" title="JSONエクスポート"><i data-feather="download">↓</i></button>
+          <button class="toolbar-button" id="export-md-btn" title="Markdownエクスポート"><i data-feather="file-text">📄</i></button>
+          <button class="toolbar-button" id="import-btn" title="インポート"><i data-feather="upload">↑</i></button>
+        </div>
+        <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
+          <a href="index.html">HTML</a>
+          <a href="markdown_preview.html">MD</a>
+          <a href="loom.html">Loom</a>
+          <a href="shelf.html">Shelf</a>
+          <a href="tangle.html">Tangle</a>
+          <a href="nexus.html" class="nav-active">Nexus</a>
+        </nav>
+      </div>
+    </div>
+
+    <div id="cdn-error-banner" class="cdn-error-banner" style="display:none"></div>
+    <div id="active-filter-bar" class="active-filter-bar hidden"></div>
+    <div class="nexus-workspace" id="workspace"></div>
+    <div class="resize-overlay" id="resize-overlay"></div>
+
+    <!-- Quick Capture Modal -->
+    <div class="modal-overlay" id="quick-capture-overlay">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="qc-modal-title">
+        <div class="modal-header">
+          <span class="modal-title" id="qc-modal-title">クイックキャプチャ</span>
+          <button class="modal-close-btn" id="qc-close-btn" aria-label="閉じる"><i data-feather="x">✕</i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="qc-domain-select">ドメイン</label>
+            <select class="form-input" id="qc-domain-select"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="qc-title-input">タイトル</label>
+            <input type="text" class="form-input" id="qc-title-input" placeholder="タイトル" maxlength="200" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="qc-content-input">内容 (Markdown)</label>
+            <textarea class="form-input form-textarea" id="qc-content-input" placeholder="メモ内容..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="qc-tags-input">タグ (カンマ区切り)</label>
+            <input type="text" class="form-input" id="qc-tags-input" placeholder="設計, API, ..." />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="qc-cancel-btn">キャンセル</button>
+          <button class="btn btn-primary" id="qc-save-btn">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Domain Settings Modal -->
+    <div class="modal-overlay" id="domain-settings-overlay">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ds-modal-title">
+        <div class="modal-header">
+          <span class="modal-title" id="ds-modal-title">ドメイン設定</span>
+          <button class="modal-close-btn" id="ds-close-btn" aria-label="閉じる"><i data-feather="x">✕</i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="ds-name-input">ドメイン名</label>
+            <input type="text" class="form-input" id="ds-name-input" placeholder="ドメイン名" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">カラー</label>
+            <div class="color-picker" id="ds-color-picker"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger btn-sm" id="ds-delete-btn" style="margin-right:auto">削除</button>
+          <button class="btn btn-secondary" id="ds-cancel-btn">キャンセル</button>
+          <button class="btn btn-primary" id="ds-save-btn">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirm-overlay">
+      <div class="modal modal-sm" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <span class="modal-title" id="confirm-title">確認</span>
+        </div>
+        <div class="modal-body"><p id="confirm-message"></p></div>
+        <div class="modal-footer" id="confirm-footer"></div>
+      </div>
+    </div>
+
+    <input type="file" id="import-file-input" accept=".json,application/json" class="hidden-input" />
+
+    <script>
+    (function() {
+      'use strict';
+      // ===== Config =====
+      const CONFIG = {
+        storageKey: 'nexus_data', backupKey: 'nexus_data_backup', themeKey: 'nexusTheme',
+        debounceDelay: 300, searchDebounceDelay: 200,
+        minDomains: 2, maxDomains: 8,
+        maxEntriesPerDomain: 500, maxTotalEntries: 2000,
+        maxTitleLen: 200, maxContentLen: 50000, maxSummaryLen: 50000,
+        maxTags: 20, maxTagLen: 50, maxFileSize: 5 * 1024 * 1024,
+        domainColors: ['#5b8fcc','#4aaa9a','#c7a04e','#c76b7e','#8b6fc0','#5aab6b','#c78856','#4a9ec7'],
+        defaultDomains: ['アプリ','インフラ','PMO','マイグレーション'],
+      };
+      const DOMAIN_ALLOWED_KEYS = ['id','name','color','summary','summaryCollapsed','entries'];
+      const ENTRY_ALLOWED_KEYS = ['id','title','content','tags','createdAt','updatedAt','collapsed'];
+
+      // ===== CDN Checks =====
+      const hasMarked = typeof window.marked !== 'undefined';
+      const hasDOMPurify = typeof window.DOMPurify !== 'undefined';
+      const hasFeather = typeof window.feather !== 'undefined';
+      function safeReplaceIcons(root) {
+        try { if (hasFeather) feather.replace(root ? { root: root } : undefined); } catch(_) {}
+      }
+      const canRenderMarkdown = hasMarked && hasDOMPurify;
+      const debounce = window._ ? _.debounce : function(fn, delay) {
+        let tid; return function(...a) { clearTimeout(tid); tid = setTimeout(() => fn.apply(this, a), delay); };
+      };
+      const SANITIZE_CONFIG = canRenderMarkdown ? {
+        ALLOWED_TAGS: ['p','h1','h2','h3','h4','h5','h6','ul','ol','li','strong','em','code','pre','blockquote','a','br','hr','table','thead','tbody','tr','th','td','del'],
+        ALLOWED_ATTR: ['href','src','alt','title','class','target'],
+        ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+        ADD_ATTR: ['target'],
+      } : null;
+
+      // ===== Utilities =====
+      function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
+      function formatDate(iso) {
+        try { const d = new Date(iso); if (isNaN(d.getTime())) return '';
+          return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+        } catch(_) { return ''; }
+      }
+      function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+      function renderMarkdown(text) {
+        if (!canRenderMarkdown || !text) return text ? '<p>' + escHtml(text) + '</p>' : '';
+        try {
+          const raw = marked.parse(text, { breaks: true, gfm: true });
+          let html = DOMPurify.sanitize(raw, SANITIZE_CONFIG);
+          const tmp = document.createElement('div'); tmp.innerHTML = html;
+          tmp.querySelectorAll('a').forEach(a => {
+            const h = a.getAttribute('href') || '';
+            if (/^https?:\/\//i.test(h)) a.setAttribute('target', '_blank');
+            else a.removeAttribute('target');
+            a.setAttribute('rel', 'noopener noreferrer');
+          });
+          return tmp.innerHTML;
+        } catch(_) { return '<p>' + escHtml(text) + '</p>'; }
+      }
+
+      // ===== DOM Refs =====
+      const el = {
+        workspace: document.getElementById('workspace'),
+        resizeOverlay: document.getElementById('resize-overlay'),
+        globalSearch: document.getElementById('global-search'),
+        themeBtn: document.getElementById('theme-toggle-btn'),
+        themeIcon: document.getElementById('theme-icon'),
+        cdnBanner: document.getElementById('cdn-error-banner'),
+        filterBar: document.getElementById('active-filter-bar'),
+        importFileInput: document.getElementById('import-file-input'),
+        // Quick capture
+        qcOverlay: document.getElementById('quick-capture-overlay'),
+        qcDomainSelect: document.getElementById('qc-domain-select'),
+        qcTitle: document.getElementById('qc-title-input'),
+        qcContent: document.getElementById('qc-content-input'),
+        qcTags: document.getElementById('qc-tags-input'),
+        // Domain settings
+        dsOverlay: document.getElementById('domain-settings-overlay'),
+        dsName: document.getElementById('ds-name-input'),
+        dsColorPicker: document.getElementById('ds-color-picker'),
+        // Confirm
+        confirmOverlay: document.getElementById('confirm-overlay'),
+        confirmTitle: document.getElementById('confirm-title'),
+        confirmMessage: document.getElementById('confirm-message'),
+        confirmFooter: document.getElementById('confirm-footer'),
+        // Layout buttons
+        layoutBtns: {
+          grid: document.getElementById('layout-grid-btn'),
+          horizontal: document.getElementById('layout-horizontal-btn'),
+          focus: document.getElementById('layout-focus-btn'),
+          single: document.getElementById('layout-single-btn'),
+        },
+      };
+
+      // ===== State =====
+      const state = {
+        data: null, theme: 'light',
+        editingEntry: null, // { domainId, entryId }
+        editingSummary: null, // domainId
+        activeTag: null, searchQuery: '',
+        dragging: false, confirmResolve: null,
+        dsDomainId: null, // domain being edited in settings modal
+      };
+
+      // ===== Storage =====
+      function createDefaultState() {
+        return {
+          version: 1,
+          domains: CONFIG.defaultDomains.map((name, i) => ({
+            id: genId(), name, color: CONFIG.domainColors[i], summary: '', summaryCollapsed: false, entries: [],
+          })),
+          layout: 'grid', focusDomainId: null, gridSizes: null,
+        };
+      }
+
+      function validateData(data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+        if (!Array.isArray(data.domains)) return false;
+        if (data.domains.length < CONFIG.minDomains || data.domains.length > CONFIG.maxDomains) return false;
+        let totalEntries = 0;
+        for (const d of data.domains) {
+          if (!d || typeof d !== 'object') return false;
+          if (typeof d.id !== 'string' || typeof d.name !== 'string') return false;
+          if (typeof d.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(d.color)) return false;
+          if (d.summary == null) d.summary = '';
+          if (typeof d.summary !== 'string' || d.summary.length > CONFIG.maxSummaryLen) return false;
+          if (d.summaryCollapsed == null) d.summaryCollapsed = false;
+          if (typeof d.summaryCollapsed !== 'boolean') d.summaryCollapsed = false;
+          if (!Array.isArray(d.entries)) return false;
+          if (d.entries.length > CONFIG.maxEntriesPerDomain) return false;
+          for (const e of d.entries) {
+            if (!e || typeof e !== 'object') return false;
+            if (typeof e.id !== 'string') return false;
+            if (e.title == null) e.title = '';
+            if (typeof e.title !== 'string') return false;
+            if (e.title.length > CONFIG.maxTitleLen) e.title = e.title.slice(0, CONFIG.maxTitleLen);
+            if (e.content == null) e.content = '';
+            if (typeof e.content !== 'string') return false;
+            if (e.content.length > CONFIG.maxContentLen) e.content = e.content.slice(0, CONFIG.maxContentLen);
+            if (!Array.isArray(e.tags)) e.tags = [];
+            e.tags = e.tags.filter(t => typeof t === 'string' && t.length <= CONFIG.maxTagLen).slice(0, CONFIG.maxTags);
+            if (typeof e.createdAt !== 'string' || isNaN(new Date(e.createdAt).getTime())) e.createdAt = new Date().toISOString();
+            if (typeof e.updatedAt !== 'string' || isNaN(new Date(e.updatedAt).getTime())) e.updatedAt = e.createdAt;
+            if (e.collapsed == null) e.collapsed = false;
+            if (typeof e.collapsed !== 'boolean') e.collapsed = false;
+          }
+          totalEntries += d.entries.length;
+        }
+        if (totalEntries > CONFIG.maxTotalEntries) return false;
+        // Normalize layout
+        if (!['grid','horizontal','focus','single'].includes(data.layout)) data.layout = 'grid';
+        return true;
+      }
+
+      function loadData() {
+        const raw = localStorage.getItem(CONFIG.storageKey);
+        if (raw) {
+          try {
+            const data = JSON.parse(raw);
+            if (validateData(data)) return data;
+          } catch(_) {}
+          // Main data corrupt, try backup
+          const backup = localStorage.getItem(CONFIG.backupKey);
+          if (backup) {
+            try {
+              const bd = JSON.parse(backup);
+              if (validateData(bd)) { showToast('データを自動復元しました', 'warning'); return bd; }
+            } catch(_) {}
+          }
+          showToast('データ破損により初期化しました', 'error');
+        }
+        return createDefaultState();
+      }
+
+      function safeSetItem(key, value) {
+        try { localStorage.setItem(key, value); return true; }
+        catch(e) {
+          if (e.name === 'QuotaExceededError') showToast('保存容量超過。不要なメモを削除してください', 'error');
+          return false;
+        }
+      }
+      function saveData() { safeSetItem(CONFIG.storageKey, JSON.stringify(state.data)); }
+      const debouncedSave = debounce(saveData, CONFIG.debounceDelay);
+
+      // ===== Theme =====
+      function applyTheme(theme) {
+        state.theme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        safeSetItem(CONFIG.themeKey, theme);
+        const iconName = theme === 'dark' ? 'sun' : 'moon';
+        el.themeIcon.setAttribute('data-feather', iconName);
+        el.themeIcon.textContent = iconName === 'sun' ? '☀' : '☽';
+        safeReplaceIcons();
+        el.themeBtn.classList.add('theme-icon-spin');
+        setTimeout(() => el.themeBtn.classList.remove('theme-icon-spin'), 400);
+      }
+      function loadTheme() {
+        return localStorage.getItem(CONFIG.themeKey) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      // ===== Toast =====
+      function showToast(msg, type) {
+        const old = document.querySelector('.temp-message'); if (old) old.remove();
+        const div = document.createElement('div');
+        div.className = 'temp-message' + (type === 'error' ? ' toast-error' : type === 'warning' ? ' toast-warning' : '');
+        div.setAttribute('role', 'status'); div.textContent = msg;
+        document.body.appendChild(div);
+        setTimeout(() => { div.classList.add('toast-out'); setTimeout(() => div.remove(), 300); }, 2500);
+      }
+
+      // ===== Layout =====
+      function applyLayout(layout, keepSizes) {
+        state.data.layout = layout;
+        if (!keepSizes) state.data.gridSizes = null;
+        // Update toolbar buttons
+        Object.entries(el.layoutBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === layout));
+        debouncedSave();
+        renderWorkspace();
+      }
+
+      function setGridTemplate() {
+        const ws = el.workspace;
+        const n = state.data.domains.length;
+        const layout = state.data.layout;
+        const gs = state.data.gridSizes;
+        if (layout === 'single') {
+          ws.style.gridTemplateColumns = '1fr';
+          ws.style.gridTemplateRows = '1fr';
+        } else if (layout === 'horizontal') {
+          ws.style.gridTemplateColumns = gs?.cols || 'repeat(' + n + ', 1fr)';
+          ws.style.gridTemplateRows = gs?.rows || '1fr';
+        } else if (layout === 'focus') {
+          const others = state.data.domains.filter(d => d.id !== getFocusDomainId());
+          if (n <= 2) {
+            ws.style.gridTemplateColumns = gs?.cols || '1fr 1fr';
+            ws.style.gridTemplateRows = gs?.rows || '1fr';
+          } else {
+            ws.style.gridTemplateColumns = gs?.cols || '1fr 1fr';
+            ws.style.gridTemplateRows = gs?.rows || 'repeat(' + others.length + ', 1fr)';
+          }
+        } else { // grid
+          const cols = Math.ceil(n / 2);
+          const rows = n > cols ? 2 : 1;
+          ws.style.gridTemplateColumns = gs?.cols || 'repeat(' + cols + ', 1fr)';
+          ws.style.gridTemplateRows = gs?.rows || (rows === 2 ? '1fr 1fr' : '1fr');
+        }
+      }
+
+      function getFocusDomainId() {
+        const fid = state.data.focusDomainId;
+        if (fid && state.data.domains.some(d => d.id === fid)) return fid;
+        return state.data.domains[0]?.id || null;
+      }
+
+      // ===== Gutter Resize =====
+      let gutterState = null;
+      function setupGutterResize() {
+        const ws = el.workspace;
+        function getTrackSizes() {
+          const cs = getComputedStyle(ws);
+          return {
+            cols: cs.gridTemplateColumns.split(' ').map(parseFloat),
+            rows: cs.gridTemplateRows.split(' ').map(parseFloat),
+          };
+        }
+        function gapCenters(sizes, gap) {
+          const c = []; let pos = 0;
+          for (let i = 0; i < sizes.length - 1; i++) { pos += sizes[i]; c.push({ center: pos + gap/2, index: i }); pos += gap; }
+          return c;
+        }
+        function findGap(mousePos, centers, threshold) {
+          for (const g of centers) { if (Math.abs(mousePos - g.center) <= threshold) return g; }
+          return null;
+        }
+        ws.onmousemove = function(e) {
+          if (gutterState) return;
+          const rect = ws.getBoundingClientRect();
+          const { cols, rows } = getTrackSizes();
+          const ch = findGap(e.clientX - rect.left, gapCenters(cols, 6), 7);
+          const rh = findGap(e.clientY - rect.top, gapCenters(rows, 6), 7);
+          ws.style.cursor = ch && !rh ? 'col-resize' : rh && !ch ? 'row-resize' : '';
+        };
+        ws.onmousedown = function(e) {
+          if (e.target !== ws && !e.target.classList.contains('nexus-workspace')) return;
+          const rect = ws.getBoundingClientRect();
+          const { cols, rows } = getTrackSizes();
+          const ch = findGap(e.clientX - rect.left, gapCenters(cols, 6), 7);
+          const rh = findGap(e.clientY - rect.top, gapCenters(rows, 6), 7);
+          if (!ch && !rh) return;
+          const type = ch ? 'col' : 'row';
+          const idx = ch ? ch.index : rh.index;
+          const sizes = ch ? [...cols] : [...rows];
+          gutterState = { type, index: idx, sizes, startMouse: type === 'col' ? e.clientX : e.clientY };
+          el.resizeOverlay.style.display = 'block';
+          el.resizeOverlay.style.cursor = type === 'col' ? 'col-resize' : 'row-resize';
+          e.preventDefault();
+        };
+      }
+      document.addEventListener('mousemove', function(e) {
+        if (!gutterState) return;
+        const { type, index, sizes, startMouse } = gutterState;
+        const delta = (type === 'col' ? e.clientX : e.clientY) - startMouse;
+        const ns = [...sizes]; const min = 80;
+        let a = sizes[index] + delta, b = sizes[index + 1] - delta;
+        if (a < min) { a = min; b = sizes[index] + sizes[index + 1] - min; }
+        if (b < min) { b = min; a = sizes[index] + sizes[index + 1] - min; }
+        ns[index] = a; ns[index + 1] = b;
+        const total = ns.reduce((s, v) => s + v, 0);
+        const fr = ns.map(s => (s / total * ns.length).toFixed(4) + 'fr').join(' ');
+        if (type === 'col') el.workspace.style.gridTemplateColumns = fr;
+        else el.workspace.style.gridTemplateRows = fr;
+      });
+      document.addEventListener('mouseup', function() {
+        if (!gutterState) return;
+        el.resizeOverlay.style.display = 'none';
+        state.data.gridSizes = {
+          cols: el.workspace.style.gridTemplateColumns, rows: el.workspace.style.gridTemplateRows,
+        };
+        gutterState = null; debouncedSave();
+      });
+
+      // ===== Domain CRUD =====
+      function addDomain(name, color) {
+        if (state.data.domains.length >= CONFIG.maxDomains) { showToast('ドメイン数の上限(' + CONFIG.maxDomains + ')に達しています', 'error'); return; }
+        state.data.domains.push({ id: genId(), name: name.slice(0, 100), color, summary: '', summaryCollapsed: false, entries: [] });
+        saveData(); renderWorkspace();
+      }
+      function updateDomain(id, name, color) {
+        const d = state.data.domains.find(d => d.id === id); if (!d) return;
+        d.name = name.slice(0, 100); d.color = color;
+        saveData(); renderWorkspace();
+      }
+      function deleteDomain(id) {
+        if (state.data.domains.length <= CONFIG.minDomains) { showToast('ドメインは最低' + CONFIG.minDomains + 'つ必要です', 'error'); return; }
+        state.data.domains = state.data.domains.filter(d => d.id !== id);
+        if (state.data.focusDomainId === id) state.data.focusDomainId = null;
+        saveData(); renderWorkspace();
+      }
+
+      // ===== Entry CRUD =====
+      function countAllEntries() { return state.data.domains.reduce((s, d) => s + d.entries.length, 0); }
+      function addEntry(domainId, title, content, tags, skipRender) {
+        const d = state.data.domains.find(d => d.id === domainId); if (!d) return null;
+        if (d.entries.length >= CONFIG.maxEntriesPerDomain) { showToast('ドメイン内エントリ上限に達しています', 'error'); return null; }
+        if (countAllEntries() >= CONFIG.maxTotalEntries) { showToast('エントリ総数の上限に達しています', 'error'); return null; }
+        const now = new Date().toISOString();
+        const entryId = genId();
+        d.entries.unshift({ id: entryId, title: (title||'').slice(0, CONFIG.maxTitleLen), content: (content||'').slice(0, CONFIG.maxContentLen), tags: (tags||[]).slice(0, CONFIG.maxTags), createdAt: now, updatedAt: now, collapsed: false });
+        if (!skipRender) { saveData(); renderWorkspace(); }
+        return entryId;
+      }
+      function updateEntry(domainId, entryId, updates) {
+        const d = state.data.domains.find(d => d.id === domainId); if (!d) return;
+        const e = d.entries.find(e => e.id === entryId); if (!e) return;
+        if (updates.title != null) e.title = updates.title.slice(0, CONFIG.maxTitleLen);
+        if (updates.content != null) e.content = updates.content.slice(0, CONFIG.maxContentLen);
+        if (updates.tags != null) e.tags = updates.tags.slice(0, CONFIG.maxTags);
+        if (updates.collapsed != null) e.collapsed = updates.collapsed;
+        e.updatedAt = new Date().toISOString();
+        debouncedSave(); renderWorkspace();
+      }
+      function deleteEntry(domainId, entryId) {
+        const d = state.data.domains.find(d => d.id === domainId); if (!d) return;
+        d.entries = d.entries.filter(e => e.id !== entryId);
+        saveData(); renderWorkspace();
+      }
+      function moveEntryToDomain(entryId, fromDomainId, toDomainId, insertIndex) {
+        if (fromDomainId === toDomainId && insertIndex == null) return;
+        const from = state.data.domains.find(d => d.id === fromDomainId);
+        const to = state.data.domains.find(d => d.id === toDomainId);
+        if (!from || !to) return;
+        const idx = from.entries.findIndex(e => e.id === entryId); if (idx < 0) return;
+        const [entry] = from.entries.splice(idx, 1);
+        if (insertIndex != null) to.entries.splice(insertIndex, 0, entry);
+        else to.entries.unshift(entry);
+        saveData(); renderWorkspace();
+      }
+
+      // ===== Edit Mode Save (atomic update + optional move) =====
+      function saveEditedEntry(domainId, entryId, updates, targetDomainId) {
+        const domain = state.data.domains.find(d => d.id === domainId);
+        if (!domain) return;
+        const entry = domain.entries.find(e => e.id === entryId);
+        if (!entry) return;
+        const needsMove = targetDomainId && targetDomainId !== domainId;
+        let targetDomain = null;
+        if (needsMove) {
+          targetDomain = state.data.domains.find(d => d.id === targetDomainId);
+          if (!targetDomain) return;
+        }
+        entry.title = (updates.title || '').slice(0, CONFIG.maxTitleLen);
+        entry.content = (updates.content || '').slice(0, CONFIG.maxContentLen);
+        entry.tags = (updates.tags || []).slice(0, CONFIG.maxTags);
+        entry.updatedAt = new Date().toISOString();
+        if (needsMove) {
+          domain.entries = domain.entries.filter(e => e.id !== entryId);
+          targetDomain.entries.unshift(entry);
+        }
+        state.editingEntry = null;
+        saveData();
+        renderWorkspace();
+      }
+
+      // ===== Summary =====
+      function updateSummary(domainId, text) {
+        const d = state.data.domains.find(d => d.id === domainId); if (!d) return;
+        d.summary = (text || '').slice(0, CONFIG.maxSummaryLen);
+        debouncedSave();
+      }
+
+      // ===== Search =====
+      const debouncedSearch = debounce(function(query) {
+        state.searchQuery = query.toLowerCase().trim();
+        renderWorkspace();
+      }, CONFIG.searchDebounceDelay);
+
+      function entryMatchesFilter(entry) {
+        const q = state.searchQuery;
+        const tag = state.activeTag;
+        if (q) {
+          const haystack = ((entry.title||'') + ' ' + (entry.content||'') + ' ' + (entry.tags||[]).join(' ')).toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        if (tag && !(entry.tags||[]).includes(tag)) return false;
+        return true;
+      }
+
+      // ===== Rendering =====
+      function renderWorkspace() {
+        const ws = el.workspace;
+        ws.innerHTML = '';
+        const domains = state.data.domains;
+        const layout = state.data.layout;
+        const n = domains.length;
+        if (layout === 'single') {
+          const fid = getFocusDomainId();
+          const dom = domains.find(d => d.id === fid) || domains[0];
+          if (dom) ws.appendChild(renderPane(dom));
+        } else if (layout === 'focus') {
+          const fid = getFocusDomainId();
+          const focusDom = domains.find(d => d.id === fid) || domains[0];
+          const others = domains.filter(d => d.id !== focusDom.id);
+          const fp = renderPane(focusDom);
+          if (n > 2) { fp.style.gridColumn = '1'; fp.style.gridRow = '1 / ' + (others.length + 1); }
+          ws.appendChild(fp);
+          others.forEach((d, i) => {
+            const p = renderPane(d);
+            if (n > 2) { p.style.gridColumn = '2'; p.style.gridRow = String(i + 1); }
+            ws.appendChild(p);
+          });
+        } else {
+          domains.forEach(d => ws.appendChild(renderPane(d)));
+        }
+        setGridTemplate();
+        safeReplaceIcons();
+        renderFilterBar();
+      }
+
+      function renderPane(domain) {
+        const pane = document.createElement('div');
+        pane.className = 'domain-pane'; pane.dataset.domainId = domain.id;
+        // Header
+        const header = document.createElement('div'); header.className = 'domain-pane-header';
+        const colorBar = document.createElement('div'); colorBar.className = 'domain-color-bar';
+        colorBar.style.backgroundColor = domain.color;
+        const nameEl = document.createElement('div'); nameEl.className = 'domain-name';
+        nameEl.textContent = domain.name;
+        const filteredEntries = domain.entries.filter(entryMatchesFilter);
+        const count = document.createElement('span'); count.className = 'domain-count';
+        count.textContent = filteredEntries.length + '/' + domain.entries.length;
+        const actions = document.createElement('div'); actions.className = 'domain-actions';
+        actions.innerHTML = '<button class="pane-btn pane-focus-btn" title="フォーカス"><i data-feather="maximize-2">⤢</i></button>'
+          + '<button class="pane-btn pane-settings-btn" title="ドメイン設定"><i data-feather="settings">⚙</i></button>'
+          + '<button class="pane-btn pane-add-btn" title="エントリ追加"><i data-feather="plus">+</i> <span class="pane-btn-label">追加</span></button>';
+        actions.querySelector('.pane-focus-btn').addEventListener('click', () => {
+          state.data.focusDomainId = domain.id; debouncedSave();
+          if (state.data.layout !== 'focus' && state.data.layout !== 'single') applyLayout('focus');
+          else renderWorkspace();
+        });
+        actions.querySelector('.pane-settings-btn').addEventListener('click', () => openDomainSettings(domain.id));
+        actions.querySelector('.pane-add-btn').addEventListener('click', () => {
+          const newEntryId = addEntry(domain.id, '', '', [], true);
+          if (newEntryId) {
+            state.editingEntry = { domainId: domain.id, entryId: newEntryId };
+            saveData(); renderWorkspace();
+          }
+        });
+        header.append(colorBar, nameEl, count, actions);
+        pane.appendChild(header);
+
+        // Summary area
+        const summaryArea = document.createElement('div'); summaryArea.className = 'domain-summary-area';
+        if (state.editingSummary === domain.id) {
+          const editArea = document.createElement('div'); editArea.className = 'summary-edit-area';
+          const ta = document.createElement('textarea'); ta.value = domain.summary;
+          ta.placeholder = 'AI要約をMarkdownで入力...';
+          const btns = document.createElement('div'); btns.className = 'summary-edit-btns';
+          btns.innerHTML = '<button class="btn btn-sm btn-secondary">キャンセル</button><button class="btn btn-sm btn-primary">保存</button>';
+          btns.children[0].addEventListener('click', () => { state.editingSummary = null; renderWorkspace(); });
+          btns.children[1].addEventListener('click', () => { updateSummary(domain.id, ta.value); state.editingSummary = null; renderWorkspace(); });
+          editArea.append(ta, btns); summaryArea.appendChild(editArea);
+        } else {
+          const toggle = document.createElement('button'); toggle.className = 'summary-toggle' + (domain.summaryCollapsed ? ' collapsed' : '');
+          toggle.innerHTML = '<i data-feather="chevron-down">▼</i><span>AI Summary</span>';
+          const editBtn = document.createElement('button');
+          editBtn.className = 'pane-btn'; editBtn.style.marginLeft = 'auto';
+          editBtn.innerHTML = '<i data-feather="edit-2">✎</i>'; editBtn.title = '要約編集';
+          editBtn.addEventListener('click', (e) => { e.stopPropagation(); state.editingSummary = domain.id; renderWorkspace(); });
+          toggle.appendChild(editBtn);
+          toggle.addEventListener('click', (e) => {
+            if (e.target.closest('.pane-btn')) return;
+            domain.summaryCollapsed = !domain.summaryCollapsed; debouncedSave(); renderWorkspace();
+          });
+          summaryArea.appendChild(toggle);
+          if (!domain.summaryCollapsed) {
+            const content = document.createElement('div'); content.className = 'summary-content memo-content';
+            content.innerHTML = domain.summary ? renderMarkdown(domain.summary) : '<em style="color:var(--app-text-muted);font-size:12px">要約なし</em>';
+            summaryArea.appendChild(content);
+          }
+        }
+        pane.appendChild(summaryArea);
+
+        // Quick add
+        const quickAdd = document.createElement('div'); quickAdd.className = 'domain-quick-add';
+        const qaInput = document.createElement('input'); qaInput.className = 'quick-add-input';
+        qaInput.type = 'text'; qaInput.placeholder = '新規メモ... (Enter)'; qaInput.maxLength = CONFIG.maxTitleLen;
+        qaInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && qaInput.value.trim()) {
+            addEntry(domain.id, qaInput.value.trim(), '', []);
+            // renderWorkspace後に新しいinputにフォーカスを戻す
+            const newPane = el.workspace.querySelector('[data-domain-id="' + domain.id + '"]');
+            if (newPane) {
+              const newInput = newPane.querySelector('.quick-add-input');
+              if (newInput) newInput.focus();
+            }
+          }
+        });
+        quickAdd.appendChild(qaInput); pane.appendChild(quickAdd);
+
+        // Entry list
+        const entriesDiv = document.createElement('div'); entriesDiv.className = 'domain-entries';
+        filteredEntries.forEach((entry, i) => entriesDiv.appendChild(renderEntry(entry, domain)));
+        if (filteredEntries.length === 0) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'padding:20px;text-align:center;color:var(--app-text-muted);font-size:12px;';
+          empty.textContent = state.searchQuery || state.activeTag ? '一致するメモなし' : 'メモなし';
+          entriesDiv.appendChild(empty);
+        }
+        pane.appendChild(entriesDiv);
+
+        // Drag & drop events
+        pane.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; pane.classList.add('drag-over'); });
+        pane.addEventListener('dragleave', (e) => { if (!pane.contains(e.relatedTarget)) pane.classList.remove('drag-over'); });
+        pane.addEventListener('drop', (e) => {
+          e.preventDefault(); pane.classList.remove('drag-over');
+          try {
+            const d = JSON.parse(e.dataTransfer.getData('text/plain'));
+            if (!d || typeof d.entryId !== 'string' || typeof d.domainId !== 'string') return;
+            // Find drop index
+            let dropIdx = 0;
+            const target = e.target.closest('.memo-entry');
+            if (target) {
+              const entries = entriesDiv.querySelectorAll('.memo-entry');
+              const arr = Array.from(entries);
+              const targetIdx = arr.indexOf(target);
+              const rect = target.getBoundingClientRect();
+              dropIdx = e.clientY < rect.top + rect.height / 2 ? targetIdx : targetIdx + 1;
+            }
+            if (d.domainId === domain.id) {
+              // Reorder within same domain
+              const dom = state.data.domains.find(dd => dd.id === domain.id);
+              if (dom) {
+                const ei = dom.entries.findIndex(ee => ee.id === d.entryId);
+                if (ei >= 0) {
+                  const [entry] = dom.entries.splice(ei, 1);
+                  const adjustedIdx = ei < dropIdx ? dropIdx - 1 : dropIdx;
+                  dom.entries.splice(adjustedIdx, 0, entry);
+                  saveData(); renderWorkspace();
+                }
+              }
+            } else {
+              moveEntryToDomain(d.entryId, d.domainId, domain.id, dropIdx);
+            }
+          } catch(_) {}
+        });
+        return pane;
+      }
+
+      function renderEntry(entry, domain) {
+        const isEditing = state.editingEntry && state.editingEntry.entryId === entry.id;
+        const div = document.createElement('div');
+        div.className = 'memo-entry' + (entry.collapsed && !isEditing ? ' collapsed' : '');
+        div.dataset.entryId = entry.id; div.draggable = true;
+        div.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ entryId: entry.id, domainId: domain.id }));
+          e.dataTransfer.effectAllowed = 'move'; div.classList.add('dragging'); state.dragging = true;
+        });
+        div.addEventListener('dragend', () => { div.classList.remove('dragging'); state.dragging = false; });
+
+        // Header
+        const header = document.createElement('div'); header.className = 'memo-header';
+        header.innerHTML = '<span class="drag-handle"><i data-feather="grip-vertical">⋮</i></span>';
+        const titleEl = document.createElement('span');
+        titleEl.className = 'memo-title' + (!entry.title ? ' untitled' : '');
+        titleEl.textContent = entry.title || '無題';
+        const timeEl = document.createElement('span'); timeEl.className = 'memo-time';
+        timeEl.textContent = formatDate(entry.updatedAt);
+        const actionsEl = document.createElement('span'); actionsEl.className = 'memo-entry-actions';
+        if (!isEditing) {
+          actionsEl.innerHTML = '<button class="entry-action-btn memo-edit-btn" title="編集"><i data-feather="edit-2">✎</i> 編集</button>'
+            + '<button class="entry-action-btn entry-action-danger memo-delete-btn" title="削除"><i data-feather="trash-2">✕</i> 削除</button>';
+          actionsEl.querySelector('.memo-edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.editingEntry = { domainId: domain.id, entryId: entry.id }; renderWorkspace();
+          });
+          actionsEl.querySelector('.memo-delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            showConfirm('このメモを削除しますか？').then(ok => { if (ok) deleteEntry(domain.id, entry.id); });
+          });
+        }
+        header.append(titleEl, timeEl, actionsEl);
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('.pane-btn') || e.target.closest('.drag-handle')) return;
+          if (isEditing) return;
+          updateEntry(domain.id, entry.id, { collapsed: !entry.collapsed });
+        });
+        div.appendChild(header);
+
+        if (isEditing) {
+          // Edit mode
+          const editArea = document.createElement('div'); editArea.className = 'edit-area';
+          const titleInput = document.createElement('input'); titleInput.className = 'edit-field';
+          titleInput.type = 'text'; titleInput.value = entry.title; titleInput.placeholder = 'タイトル'; titleInput.maxLength = CONFIG.maxTitleLen;
+          const contentTa = document.createElement('textarea'); contentTa.className = 'edit-field edit-textarea';
+          contentTa.value = entry.content; contentTa.placeholder = '内容 (Markdown)';
+          const tagsInput = document.createElement('input'); tagsInput.className = 'edit-field';
+          tagsInput.type = 'text'; tagsInput.value = (entry.tags||[]).join(', '); tagsInput.placeholder = 'タグ (カンマ区切り)';
+          // Domain move select
+          const moveLabel = document.createElement('div'); moveLabel.className = 'edit-move-label'; moveLabel.textContent = '移動先ドメイン';
+          const moveSelect = document.createElement('select'); moveSelect.className = 'edit-field';
+          state.data.domains.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id; opt.textContent = d.name;
+            if (d.id === domain.id) opt.selected = true;
+            moveSelect.appendChild(opt);
+          });
+          const controls = document.createElement('div'); controls.className = 'edit-controls';
+          controls.innerHTML = '<button class="btn btn-sm btn-secondary">キャンセル</button><button class="btn btn-sm btn-primary">保存</button>';
+          controls.children[0].addEventListener('click', () => { state.editingEntry = null; renderWorkspace(); });
+          controls.children[1].addEventListener('click', () => {
+            const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t).map(t => t.slice(0, CONFIG.maxTagLen));
+            saveEditedEntry(domain.id, entry.id, { title: titleInput.value.trim(), content: contentTa.value, tags }, moveSelect.value);
+          });
+          contentTa.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { controls.children[1].click(); e.preventDefault(); }
+            if (e.key === 'Escape') { controls.children[0].click(); e.preventDefault(); }
+          });
+          editArea.append(titleInput, contentTa, tagsInput, moveLabel, moveSelect, controls);
+          div.appendChild(editArea);
+          setTimeout(() => contentTa.focus(), 0);
+        } else if (!entry.collapsed) {
+          // View mode
+          const body = document.createElement('div'); body.className = 'memo-body';
+          body.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            state.editingEntry = { domainId: domain.id, entryId: entry.id };
+            renderWorkspace();
+          });
+          const content = document.createElement('div'); content.className = 'memo-content';
+          content.innerHTML = renderMarkdown(entry.content);
+          body.appendChild(content);
+          if (entry.tags && entry.tags.length) {
+            const tagsDiv = document.createElement('div'); tagsDiv.className = 'memo-tags';
+            entry.tags.forEach(t => {
+              const tag = document.createElement('span');
+              tag.className = 'memo-tag' + (state.activeTag === t ? ' active-tag' : '');
+              tag.textContent = t;
+              tag.addEventListener('click', (e) => {
+                e.stopPropagation();
+                state.activeTag = state.activeTag === t ? null : t;
+                renderWorkspace();
+              });
+              tagsDiv.appendChild(tag);
+            });
+            body.appendChild(tagsDiv);
+          }
+          div.appendChild(body);
+        }
+        return div;
+      }
+
+      // ===== Filter Bar =====
+      function renderFilterBar() {
+        const bar = el.filterBar;
+        if (!state.activeTag && !state.searchQuery) { bar.classList.add('hidden'); return; }
+        bar.classList.remove('hidden');
+        bar.innerHTML = '<span class="filter-label">フィルタ:</span>';
+        if (state.searchQuery) {
+          const badge = document.createElement('span'); badge.className = 'memo-tag';
+          badge.textContent = '検索: ' + state.searchQuery;
+          bar.appendChild(badge);
+        }
+        if (state.activeTag) {
+          const badge = document.createElement('span'); badge.className = 'memo-tag active-tag';
+          badge.textContent = state.activeTag;
+          bar.appendChild(badge);
+        }
+        const clearBtn = document.createElement('button'); clearBtn.className = 'filter-clear-btn';
+        clearBtn.textContent = 'クリア';
+        clearBtn.addEventListener('click', () => {
+          state.activeTag = null; state.searchQuery = ''; el.globalSearch.value = '';
+          renderWorkspace();
+        });
+        bar.appendChild(clearBtn);
+      }
+
+      // ===== Confirm Modal =====
+      function showConfirm(msg) {
+        return new Promise(resolve => {
+          state.confirmResolve = resolve;
+          el.confirmTitle.textContent = '確認';
+          el.confirmMessage.textContent = msg;
+          el.confirmFooter.innerHTML = '<button class="btn btn-secondary" id="confirm-no">キャンセル</button><button class="btn btn-danger" id="confirm-yes">削除</button>';
+          el.confirmFooter.querySelector('#confirm-no').addEventListener('click', () => { closeConfirm(false); });
+          el.confirmFooter.querySelector('#confirm-yes').addEventListener('click', () => { closeConfirm(true); });
+          el.confirmOverlay.classList.add('open');
+          safeReplaceIcons();
+        });
+      }
+      function showChoice(title, msg, options) {
+        return new Promise(resolve => {
+          state.confirmResolve = resolve;
+          el.confirmTitle.textContent = title;
+          el.confirmMessage.textContent = msg;
+          el.confirmFooter.innerHTML = '';
+          options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn ' + (opt.cls || 'btn-secondary');
+            btn.textContent = opt.label;
+            btn.addEventListener('click', () => closeConfirm(opt.value));
+            el.confirmFooter.appendChild(btn);
+          });
+          el.confirmOverlay.classList.add('open');
+        });
+      }
+      function closeConfirm(val) {
+        el.confirmOverlay.classList.remove('open');
+        if (state.confirmResolve) { const r = state.confirmResolve; state.confirmResolve = null; r(val); }
+      }
+
+      // ===== Quick Capture Modal =====
+      function openQuickCapture() {
+        el.qcDomainSelect.innerHTML = '';
+        state.data.domains.forEach(d => {
+          const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name;
+          el.qcDomainSelect.appendChild(opt);
+        });
+        el.qcTitle.value = ''; el.qcContent.value = ''; el.qcTags.value = '';
+        el.qcOverlay.classList.add('open');
+        setTimeout(() => el.qcTitle.focus(), 50);
+      }
+      function closeQuickCapture() { el.qcOverlay.classList.remove('open'); }
+      function saveQuickCapture() {
+        const domId = el.qcDomainSelect.value;
+        const title = el.qcTitle.value.trim();
+        const content = el.qcContent.value;
+        const tags = el.qcTags.value.split(',').map(t => t.trim()).filter(t => t).map(t => t.slice(0, CONFIG.maxTagLen));
+        if (!title && !content.trim()) { showToast('タイトルまたは内容を入力してください', 'error'); return; }
+        addEntry(domId, title, content, tags);
+        closeQuickCapture(); showToast('メモを追加しました');
+      }
+
+      // ===== Domain Settings Modal =====
+      function openDomainSettings(domainId) {
+        state.dsDomainId = domainId;
+        const d = domainId ? state.data.domains.find(d => d.id === domainId) : null;
+        document.getElementById('ds-modal-title').textContent = d ? 'ドメイン設定' : '新規ドメイン';
+        el.dsName.value = d ? d.name : '';
+        const delBtn = document.getElementById('ds-delete-btn');
+        delBtn.style.display = d ? '' : 'none';
+        // Color picker
+        el.dsColorPicker.innerHTML = '';
+        const selColor = d ? d.color : CONFIG.domainColors[state.data.domains.length % CONFIG.domainColors.length];
+        CONFIG.domainColors.forEach(c => {
+          const swatch = document.createElement('div'); swatch.className = 'color-swatch' + (c === selColor ? ' selected' : '');
+          swatch.style.backgroundColor = c; swatch.dataset.color = c;
+          swatch.addEventListener('click', () => {
+            el.dsColorPicker.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            swatch.classList.add('selected');
+          });
+          el.dsColorPicker.appendChild(swatch);
+        });
+        el.dsOverlay.classList.add('open');
+        setTimeout(() => el.dsName.focus(), 50);
+      }
+      function closeDomainSettings() { el.dsOverlay.classList.remove('open'); state.dsDomainId = null; }
+      function saveDomainSettings() {
+        const name = el.dsName.value.trim();
+        if (!name) { showToast('ドメイン名を入力してください', 'error'); return; }
+        const sel = el.dsColorPicker.querySelector('.selected');
+        const color = sel ? sel.dataset.color : CONFIG.domainColors[0];
+        if (state.dsDomainId) { updateDomain(state.dsDomainId, name, color); showToast('ドメインを更新しました'); }
+        else { addDomain(name, color); showToast('ドメインを追加しました'); }
+        closeDomainSettings();
+      }
+      function deleteDomainFromSettings() {
+        if (!state.dsDomainId) return;
+        const d = state.data.domains.find(d => d.id === state.dsDomainId);
+        showConfirm('ドメイン「' + (d ? d.name : '') + '」を削除しますか？\nすべてのメモも削除されます。').then(ok => {
+          if (ok) { deleteDomain(state.dsDomainId); closeDomainSettings(); showToast('ドメインを削除しました'); }
+        });
+      }
+
+      // ===== Export =====
+      function exportJSON() {
+        const data = { version: 1, domains: state.data.domains, exportedAt: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'nexus_export_' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast('JSONをエクスポートしました');
+      }
+      function exportMarkdown() {
+        let md = '# Nexus Report - ' + new Date().toISOString().slice(0, 10) + '\n\n';
+        state.data.domains.forEach(d => {
+          md += '## ' + d.name + '\n\n';
+          if (d.summary) md += '### AI Summary\n\n> ' + d.summary.replace(/\n/g, '\n> ') + '\n\n';
+          md += '### メモ\n\n';
+          d.entries.forEach(e => {
+            md += '#### [' + formatDate(e.updatedAt) + '] ' + (e.title || '無題') + '\n\n';
+            if (e.content) md += e.content + '\n\n';
+            if (e.tags && e.tags.length) md += 'Tags: ' + e.tags.join(', ') + '\n\n';
+            md += '---\n\n';
+          });
+        });
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'nexus_report_' + new Date().toISOString().slice(0, 10) + '.md';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast('Markdownをエクスポートしました');
+      }
+
+      // ===== Import =====
+      function triggerImport() { el.importFileInput.value = ''; el.importFileInput.click(); }
+      async function handleImportFile(file) {
+        if (!file) return;
+        if (file.size > CONFIG.maxFileSize) { showToast('ファイルサイズが5MBを超えています', 'error'); return; }
+        const text = await new Promise((res, rej) => {
+          const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(); r.readAsText(file);
+        }).catch(() => null);
+        if (!text) { showToast('ファイルの読み込みに失敗しました', 'error'); return; }
+        let data;
+        try { data = JSON.parse(text); } catch(_) { showToast('JSONの解析に失敗しました', 'error'); return; }
+        // Validate
+        const err = validateImport(data);
+        if (err) { showToast('インポートエラー: ' + err, 'error'); return; }
+        // Backup current data
+        safeSetItem(CONFIG.backupKey, JSON.stringify(state.data));
+        // Choose merge or replace
+        const choice = await showChoice('インポート方法', data.domains.length + ' ドメインをインポートします', [
+          { label: 'キャンセル', value: null, cls: 'btn-secondary' },
+          { label: '既存データに統合', value: 'merge', cls: 'btn-secondary' },
+          { label: '完全置換', value: 'replace', cls: 'btn-primary' },
+        ]);
+        if (!choice) return;
+        if (choice === 'replace') {
+          if (data.domains.length < CONFIG.minDomains) { showToast('ドメイン数が最低' + CONFIG.minDomains + 'つ必要です', 'error'); return; }
+          state.data = { version: 1, domains: data.domains, layout: state.data.layout, focusDomainId: null, gridSizes: null };
+          saveData(); renderWorkspace(); showToast('データを置換しました');
+        } else {
+          const result = mergeImport(state.data, data);
+          if (result.error) { showToast(result.error, 'error'); return; }
+          state.data = result.data; saveData(); renderWorkspace(); showToast('データを統合しました');
+        }
+      }
+
+      function validateImport(data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return '無効なデータ形式';
+        if (typeof data.version !== 'number') return 'versionが不正';
+        if (!Array.isArray(data.domains)) return 'domainsが不正';
+        if (data.domains.length > CONFIG.maxDomains) return 'ドメイン数が上限(' + CONFIG.maxDomains + ')を超えています';
+        const domainIds = new Set(), entryIds = new Set(), domainNames = new Set();
+        let totalEntries = 0;
+        for (let di = 0; di < data.domains.length; di++) {
+          const raw = data.domains[di];
+          if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'ドメイン[' + di + ']が不正';
+          // Whitelist keys
+          const d = {}; for (const k of DOMAIN_ALLOWED_KEYS) { if (Object.prototype.hasOwnProperty.call(raw, k)) d[k] = raw[k]; }
+          data.domains[di] = d;
+          if (typeof d.id !== 'string' || d.id.length > 20) return 'ドメイン[' + di + ']のidが不正';
+          if (domainIds.has(d.id)) return 'ドメインIDが重複: ' + d.id;
+          domainIds.add(d.id);
+          if (typeof d.name !== 'string' || d.name.length > 100) return 'ドメイン[' + di + ']のnameが不正';
+          const nameLower = d.name.toLowerCase();
+          if (domainNames.has(nameLower)) return 'ドメイン名 "' + d.name + '" が重複しています';
+          domainNames.add(nameLower);
+          if (typeof d.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(d.color)) return 'ドメイン[' + di + ']のcolorが不正';
+          if (d.summary == null) d.summary = '';
+          if (typeof d.summary !== 'string' || d.summary.length > CONFIG.maxSummaryLen) return 'ドメイン "' + d.name + '" のsummaryが長さ上限を超えています';
+          if (d.summaryCollapsed == null) d.summaryCollapsed = false;
+          if (typeof d.summaryCollapsed !== 'boolean') d.summaryCollapsed = false;
+          if (!Array.isArray(d.entries)) return 'ドメイン "' + d.name + '" のentriesが不正';
+          if (d.entries.length > CONFIG.maxEntriesPerDomain) return 'ドメイン "' + d.name + '" のエントリ数が上限を超えています';
+          for (let ei = 0; ei < d.entries.length; ei++) {
+            const rawE = d.entries[ei];
+            if (!rawE || typeof rawE !== 'object' || Array.isArray(rawE)) return 'ドメイン "' + d.name + '" のエントリ[' + ei + ']が不正';
+            const e = {}; for (const k of ENTRY_ALLOWED_KEYS) { if (Object.prototype.hasOwnProperty.call(rawE, k)) e[k] = rawE[k]; }
+            d.entries[ei] = e;
+            if (typeof e.id !== 'string' || e.id.length > 20) return 'ドメイン "' + d.name + '" のエントリ[' + ei + ']のidが不正';
+            if (entryIds.has(e.id)) return 'エントリIDが重複: ' + e.id;
+            entryIds.add(e.id);
+            if (typeof e.title !== 'string' || e.title.length > CONFIG.maxTitleLen) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' の title が長さ上限を超えています';
+            if (typeof e.content !== 'string' || e.content.length > CONFIG.maxContentLen) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' の content が長さ上限を超えています';
+            if (!Array.isArray(e.tags)) e.tags = [];
+            if (e.tags.length > CONFIG.maxTags) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のタグ数が上限を超えています';
+            for (const t of e.tags) { if (typeof t !== 'string' || t.length > CONFIG.maxTagLen) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のタグが不正'; }
+            if (typeof e.createdAt !== 'string' || isNaN(new Date(e.createdAt).getTime())) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のcreatedAtが不正';
+            if (typeof e.updatedAt !== 'string' || isNaN(new Date(e.updatedAt).getTime())) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のupdatedAtが不正';
+            if (e.collapsed == null) e.collapsed = false;
+            if (typeof e.collapsed !== 'boolean') e.collapsed = false;
+          }
+          totalEntries += d.entries.length;
+        }
+        if (totalEntries > CONFIG.maxTotalEntries) return 'エントリ総数が上限(' + CONFIG.maxTotalEntries + ')を超えています';
+        return null;
+      }
+
+      function mergeImport(existing, imported) {
+        const result = deepClone(existing);
+        const allEntryIds = new Set();
+        result.domains.forEach(d => d.entries.forEach(e => allEntryIds.add(e.id)));
+        for (const impDom of imported.domains) {
+          const match = result.domains.find(d => d.name.toLowerCase() === impDom.name.toLowerCase());
+          if (match) {
+            match.color = impDom.color;
+            match.summary = impDom.summary;
+            for (const impEntry of impDom.entries) {
+              const existing = match.entries.find(e => e.id === impEntry.id);
+              if (existing) {
+                const impTime = Date.parse(impEntry.updatedAt);
+                const exTime = Date.parse(existing.updatedAt);
+                if (isNaN(exTime) || (!isNaN(impTime) && impTime > exTime)) Object.assign(existing, impEntry);
+              } else {
+                if (allEntryIds.has(impEntry.id)) impEntry.id = genId();
+                allEntryIds.add(impEntry.id);
+                match.entries.push(impEntry);
+              }
+            }
+          } else {
+            const newDom = deepClone(impDom); newDom.id = genId();
+            for (const e of newDom.entries) {
+              if (allEntryIds.has(e.id)) e.id = genId();
+              allEntryIds.add(e.id);
+            }
+            result.domains.push(newDom);
+          }
+        }
+        if (result.domains.length > CONFIG.maxDomains) return { error: 'ドメイン数が上限(' + CONFIG.maxDomains + ')を超えます' };
+        const total = result.domains.reduce((s, d) => s + d.entries.length, 0);
+        if (total > CONFIG.maxTotalEntries) return { error: 'エントリ総数が上限(' + CONFIG.maxTotalEntries + ')を超えます' };
+        return { data: result };
+      }
+
+      // ===== Layout Domain Picker =====
+      let activePicker = null;
+      let pickerClickOutHandler = null;
+      function closeLayoutDomainPicker() {
+        if (activePicker) {
+          const parent = activePicker.parentElement;
+          activePicker.remove(); activePicker = null;
+          if (parent) parent.style.position = '';
+        }
+        if (pickerClickOutHandler) { document.removeEventListener('click', pickerClickOutHandler, true); pickerClickOutHandler = null; }
+      }
+      function showLayoutDomainPicker(btnEl, layout) {
+        if (state.data.domains.length === 0) return;
+        // If already in this layout and focusDomainId is valid, show picker to switch domain
+        // If not in this layout yet, also show picker
+        closeLayoutDomainPicker();
+        const picker = document.createElement('div');
+        picker.className = 'layout-domain-picker';
+        state.data.domains.forEach(d => {
+          const item = document.createElement('button'); item.className = 'layout-domain-picker-item';
+          const dot = document.createElement('span'); dot.className = 'layout-domain-picker-dot';
+          dot.style.backgroundColor = d.color;
+          const label = document.createElement('span'); label.textContent = d.name;
+          item.append(dot, label);
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.data.focusDomainId = d.id;
+            closeLayoutDomainPicker();
+            applyLayout(layout);
+          });
+          picker.appendChild(item);
+        });
+        // Position relative to button
+        const parent = btnEl.parentElement; parent.style.position = 'relative';
+        parent.appendChild(picker);
+        activePicker = picker;
+        // Close on click outside / Escape
+        pickerClickOutHandler = (e) => {
+          if (!picker.contains(e.target) && e.target !== btnEl) closeLayoutDomainPicker();
+        };
+        setTimeout(() => document.addEventListener('click', pickerClickOutHandler, true), 0);
+      }
+
+      // ===== Keyboard Shortcuts =====
+      document.addEventListener('keydown', function(e) {
+        // Ctrl+Shift+N: Quick capture
+        if (e.ctrlKey && e.shiftKey && e.key === 'N') { e.preventDefault(); openQuickCapture(); return; }
+        // Escape: close modals / clear
+        if (e.key === 'Escape') {
+          if (activePicker) { closeLayoutDomainPicker(); return; }
+          if (el.confirmOverlay.classList.contains('open')) { closeConfirm(false); return; }
+          if (el.qcOverlay.classList.contains('open')) { closeQuickCapture(); return; }
+          if (el.dsOverlay.classList.contains('open')) { closeDomainSettings(); return; }
+          if (state.editingEntry) { state.editingEntry = null; renderWorkspace(); return; }
+          if (state.editingSummary) { state.editingSummary = null; renderWorkspace(); return; }
+          if (state.searchQuery || state.activeTag) { state.searchQuery = ''; state.activeTag = null; el.globalSearch.value = ''; renderWorkspace(); return; }
+          return;
+        }
+        // Skip shortcuts when typing in input/textarea
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+        // /: focus search
+        if (e.key === '/') { e.preventDefault(); el.globalSearch.focus(); return; }
+        // Alt+1~8: focus domain pane
+        if (e.altKey && !e.shiftKey && e.key >= '1' && e.key <= '8') {
+          const idx = parseInt(e.key) - 1;
+          if (idx < state.data.domains.length) {
+            e.preventDefault();
+            const pane = el.workspace.querySelectorAll('.domain-pane')[idx];
+            if (pane) { const inp = pane.querySelector('.quick-add-input'); if (inp) inp.focus(); }
+          }
+          return;
+        }
+        // Alt+Shift+1~4: layout switch
+        if (e.altKey && e.shiftKey) {
+          const layouts = ['grid', 'horizontal', 'focus', 'single'];
+          const idx = parseInt(e.key) - 1;
+          if (idx >= 0 && idx < layouts.length) { e.preventDefault(); applyLayout(layouts[idx]); }
+          return;
+        }
+      });
+
+      // ===== Event Bindings =====
+      function bindEvents() {
+        el.globalSearch.addEventListener('input', (e) => debouncedSearch(e.target.value));
+        el.layoutBtns.grid.addEventListener('click', () => applyLayout('grid'));
+        el.layoutBtns.horizontal.addEventListener('click', () => applyLayout('horizontal'));
+        el.layoutBtns.focus.addEventListener('click', (e) => showLayoutDomainPicker(e.currentTarget, 'focus'));
+        el.layoutBtns.single.addEventListener('click', (e) => showLayoutDomainPicker(e.currentTarget, 'single'));
+        document.getElementById('add-domain-btn').addEventListener('click', () => openDomainSettings(null));
+        document.getElementById('expand-all-btn').addEventListener('click', () => {
+          state.data.domains.forEach(d => { d.summaryCollapsed = false; d.entries.forEach(e => e.collapsed = false); });
+          debouncedSave(); renderWorkspace();
+        });
+        document.getElementById('collapse-all-btn').addEventListener('click', () => {
+          state.data.domains.forEach(d => { d.summaryCollapsed = true; d.entries.forEach(e => e.collapsed = true); });
+          debouncedSave(); renderWorkspace();
+        });
+        el.themeBtn.addEventListener('click', () => applyTheme(state.theme === 'dark' ? 'light' : 'dark'));
+        document.getElementById('export-json-btn').addEventListener('click', exportJSON);
+        document.getElementById('export-md-btn').addEventListener('click', exportMarkdown);
+        document.getElementById('import-btn').addEventListener('click', triggerImport);
+        el.importFileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleImportFile(e.target.files[0]); });
+        // Quick capture modal
+        document.getElementById('qc-close-btn').addEventListener('click', closeQuickCapture);
+        document.getElementById('qc-cancel-btn').addEventListener('click', closeQuickCapture);
+        document.getElementById('qc-save-btn').addEventListener('click', saveQuickCapture);
+        el.qcContent.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { saveQuickCapture(); e.preventDefault(); } });
+        // Domain settings modal
+        document.getElementById('ds-close-btn').addEventListener('click', closeDomainSettings);
+        document.getElementById('ds-cancel-btn').addEventListener('click', closeDomainSettings);
+        document.getElementById('ds-save-btn').addEventListener('click', saveDomainSettings);
+        document.getElementById('ds-delete-btn').addEventListener('click', deleteDomainFromSettings);
+        el.dsName.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveDomainSettings(); });
+        // Modal overlay click-to-close
+        [el.qcOverlay, el.dsOverlay, el.confirmOverlay].forEach(ov => {
+          ov.addEventListener('click', (e) => {
+            if (e.target === ov) {
+              if (ov === el.confirmOverlay) closeConfirm(false);
+              else if (ov === el.qcOverlay) closeQuickCapture();
+              else closeDomainSettings();
+            }
+          });
+        });
+      }
+
+      // ===== Init =====
+      function init() {
+        // CDN error banner
+        if (!canRenderMarkdown) {
+          el.cdnBanner.style.display = 'block';
+          el.cdnBanner.textContent = hasDOMPurify ? 'marked.js の読み込みに失敗しました。Markdownレンダリングは利用できません。'
+            : 'DOMPurify の読み込みに失敗しました。Markdownレンダリングは利用できません。';
+        }
+        // Private browsing detection
+        try { localStorage.setItem('__nexus_test__', '1'); localStorage.removeItem('__nexus_test__'); }
+        catch(_) { showToast('プライベートモードではデータが保存されません', 'warning'); }
+
+        state.data = loadData();
+        applyTheme(loadTheme());
+        bindEvents();
+        setupGutterResize();
+        // Set initial layout button active state
+        Object.entries(el.layoutBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === state.data.layout));
+        renderWorkspace();
+        safeReplaceIcons();
+      }
+      init();
+    })();
+    </script>
+  </body>
+</html>
