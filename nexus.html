@@ -7,10 +7,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+      integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
     <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"
+      integrity="sha512-3S64QagKiTlNjSfuh3UYtYSkP494WHoWc96YvbmB2BReHpNtxlrMNY6MbJLDpavcgD8Pj5p44F/PY586uVO5iA=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/markdown/markdown.min.js"
+      integrity="sha512-DmMao0nRIbyDjbaHc8fNd3kxGsZj9PCU6Iu/CeidLQT9Py8nYVA5n0PqXYmvqNdU+lCiTHOM/4E7bM/G8BttJg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/edit/continuelist.min.js"
+      integrity="sha512-eAuQaBSvlaYxR3d+ow+tm+393cV1VanYI4j7GWHEpjuKhxaIUPbHzADL6qxJa0/7ECIKcQzPxat9o6rvIyGxhA=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
       :root {
         --da-ink: #1e1f25;
@@ -160,7 +172,6 @@
         transition: box-shadow var(--duration-normal) var(--ease-out-expo);
       }
       .domain-pane:hover { box-shadow: var(--shadow-sm); }
-      .domain-pane.drag-over { box-shadow: 0 0 0 2px var(--da-secondary); }
       .domain-pane-header {
         display: flex; align-items: center; gap: 8px; padding: 8px 12px;
         border-bottom: 1px solid var(--app-border-default); flex-shrink: 0;
@@ -171,10 +182,6 @@
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         cursor: default;
       }
-      .domain-count {
-        font-size: 11px; color: var(--app-text-muted);
-        background: var(--app-bg-secondary); padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
-      }
       .domain-actions { display: flex; gap: 2px; flex-shrink: 0; }
       .pane-btn {
         background: none; border: none; cursor: pointer; padding: 5px; border-radius: 4px;
@@ -183,7 +190,7 @@
       }
       .pane-btn:hover { background: var(--app-bg-secondary); color: var(--app-text-primary); }
       .pane-btn svg { width: 16px; height: 16px; }
-      .pane-btn-label { font-size: 11px; }
+      .pane-btn.active { color: var(--da-secondary); }
 
       /* ===== Summary Area ===== */
       .domain-summary-area {
@@ -213,126 +220,83 @@
       .summary-edit-area textarea:focus { border-color: var(--app-border-focus); }
       .summary-edit-btns { display: flex; gap: 4px; margin-top: 4px; justify-content: flex-end; }
 
-      /* ===== Quick Add ===== */
-      .domain-quick-add {
-        padding: 6px 12px; border-bottom: 1px solid var(--app-border-default); flex-shrink: 0;
+      /* ===== Editor / Preview Area ===== */
+      .domain-editor-area {
+        flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0;
       }
-      .quick-add-input {
-        width: 100%; padding: 6px 10px; font-size: 13px; font-family: inherit;
-        border: 1px solid var(--app-border-default); border-radius: 6px;
-        background: var(--app-bg-secondary); color: var(--app-text-primary); outline: none;
-        transition: border-color var(--duration-fast);
+      .domain-editor-area .CodeMirror {
+        width: 100%; height: 100%; flex: 1;
+        font-size: 13px; line-height: 1.6;
+        font-family: Consolas, "Courier New", monospace;
       }
-      .quick-add-input::placeholder { color: var(--app-editor-placeholder); }
-      .quick-add-input:focus { border-color: var(--app-border-focus); background: var(--app-editor-bg); }
+      .CodeMirror-activeline-background { background: var(--da-accent-glow) !important; }
+      .CodeMirror-selected { background: var(--da-accent-muted) !important; }
+      .CodeMirror-focused .CodeMirror-selected { background: var(--da-accent-muted) !important; }
+      .domain-editor-area .cm-search-highlight .CodeMirror-selectedtext {
+        background: rgba(255, 200, 50, 0.35) !important;
+      }
+      .domain-preview-area {
+        flex: 1; overflow-y: auto; padding: 12px; font-size: 13px; line-height: 1.6;
+      }
+      .domain-fallback-textarea {
+        width: 100%; height: 100%; flex: 1; padding: 12px;
+        font-size: 13px; line-height: 1.6; font-family: Consolas, "Courier New", monospace;
+        border: none; outline: none; resize: none;
+        background: var(--app-editor-bg); color: var(--app-editor-text);
+      }
 
-      /* ===== Entry List ===== */
-      .domain-entries { flex: 1; overflow-y: auto; padding: 4px; }
-      .memo-entry {
-        border: 1px solid var(--app-border-default); border-radius: 6px; margin-bottom: 4px;
-        background: var(--app-bg-primary);
-        transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
-      }
-      .memo-entry:hover { border-color: var(--app-border-hover); }
-      .memo-entry.dragging { opacity: 0.4; }
-      .memo-header {
-        display: flex; align-items: center; gap: 6px; padding: 6px 8px; cursor: pointer;
-      }
-      .drag-handle {
-        cursor: grab; color: var(--app-text-muted); display: flex; padding: 2px;
-        flex-shrink: 0; opacity: 0.5;
-      }
-      .drag-handle:hover { opacity: 1; }
-      .drag-handle svg { width: 12px; height: 12px; }
-      .memo-title {
-        flex: 1; font-size: 13px; font-weight: 500; min-width: 0;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      }
-      .memo-title.untitled { color: var(--app-text-muted); font-style: italic; }
-      .memo-time { font-size: 10px; color: var(--app-text-muted); flex-shrink: 0; white-space: nowrap; }
-      .memo-entry-actions { display: flex; gap: 4px; flex-shrink: 0; }
-      .entry-action-btn {
-        font-size: 11px; padding: 3px 8px; border-radius: 4px; gap: 4px;
-        display: inline-flex; align-items: center; background: none; border: 1px solid transparent;
-        color: var(--app-text-muted); cursor: pointer; font-family: inherit;
-        transition: all var(--duration-fast) var(--ease-out-expo);
-      }
-      .entry-action-btn svg { width: 12px; height: 12px; }
-      .entry-action-btn:hover { background: var(--app-bg-secondary); color: var(--app-text-primary); border-color: var(--app-border-default); }
-      .entry-action-danger:hover { background: var(--da-error); color: #fff; border-color: var(--da-error); }
-      .memo-entry .entry-action-btn { opacity: 0.6; transition: opacity var(--duration-fast), background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast); }
-      .memo-entry:hover .entry-action-btn { opacity: 1; }
-      .memo-body { padding: 0 8px 8px 26px; cursor: text; }
-      .memo-body.hidden { display: none; }
-
-      /* ===== Memo Content (Markdown) ===== */
-      .memo-content {
-        font-size: 13px; line-height: 1.6; color: var(--app-text-primary);
-        word-break: break-word; overflow-wrap: break-word;
-      }
-      .memo-content p { margin-bottom: 8px; }
-      .memo-content p:last-child { margin-bottom: 0; }
-      .memo-content h1, .memo-content h2, .memo-content h3,
-      .memo-content h4, .memo-content h5, .memo-content h6 {
+      /* ===== Preview Markdown ===== */
+      .preview-content p { margin-bottom: 8px; }
+      .preview-content p:last-child { margin-bottom: 0; }
+      .preview-content h1, .preview-content h2, .preview-content h3,
+      .preview-content h4, .preview-content h5, .preview-content h6 {
         margin: 12px 0 6px; font-weight: 600; line-height: 1.3;
       }
-      .memo-content h1 { font-size: 18px; } .memo-content h2 { font-size: 16px; }
-      .memo-content h3 { font-size: 15px; } .memo-content h4 { font-size: 14px; }
-      .memo-content h5 { font-size: 13px; } .memo-content h6 { font-size: 12px; }
-      .memo-content ul, .memo-content ol { padding-left: 20px; margin-bottom: 8px; }
-      .memo-content li { margin-bottom: 2px; }
-      .memo-content code {
+      .preview-content h1 { font-size: 18px; } .preview-content h2 { font-size: 16px; }
+      .preview-content h3 { font-size: 15px; } .preview-content h4 { font-size: 14px; }
+      .preview-content h5 { font-size: 13px; } .preview-content h6 { font-size: 12px; }
+      .preview-content ul, .preview-content ol { padding-left: 20px; margin-bottom: 8px; }
+      .preview-content li { margin-bottom: 2px; }
+      .preview-content code {
         background: var(--app-bg-secondary); padding: 2px 5px; border-radius: 3px;
-        font-size: 12px; font-family: "Consolas", "Monaco", monospace;
+        font-size: 12px; font-family: Consolas, Monaco, monospace;
       }
-      .memo-content pre {
+      .preview-content pre {
         background: var(--app-bg-secondary); padding: 10px; border-radius: 6px;
         margin-bottom: 8px; overflow-x: auto;
       }
-      .memo-content pre code { background: none; padding: 0; }
-      .memo-content blockquote {
+      .preview-content pre code { background: none; padding: 0; }
+      .preview-content blockquote {
         border-left: 3px solid var(--da-secondary); padding: 4px 12px;
         margin: 8px 0; color: var(--app-text-secondary);
       }
-      .memo-content a { color: var(--da-secondary); text-decoration: underline; }
-      .memo-content a:hover { color: var(--da-secondary-hover); }
-      .memo-content hr { border: none; border-top: 1px solid var(--app-border-default); margin: 12px 0; }
-      .memo-content table { border-collapse: collapse; width: 100%; margin-bottom: 8px; font-size: 12px; }
-      .memo-content th, .memo-content td { border: 1px solid var(--app-border-default); padding: 4px 8px; text-align: left; }
-      .memo-content th { background: var(--app-bg-secondary); font-weight: 600; }
-      .memo-content del { text-decoration: line-through; color: var(--app-text-muted); }
-      .memo-content:empty::before {
-        content: "ダブルクリックで編集..."; color: var(--app-text-muted); font-style: italic;
-      }
+      .preview-content a { color: var(--da-secondary); text-decoration: underline; }
+      .preview-content a:hover { color: var(--da-secondary-hover); }
+      .preview-content hr { border: none; border-top: 1px solid var(--app-border-default); margin: 12px 0; }
+      .preview-content table { border-collapse: collapse; width: 100%; margin-bottom: 8px; font-size: 12px; }
+      .preview-content th, .preview-content td { border: 1px solid var(--app-border-default); padding: 4px 8px; text-align: left; }
+      .preview-content th { background: var(--app-bg-secondary); font-weight: 600; }
+      .preview-content del { text-decoration: line-through; color: var(--app-text-muted); }
 
-      /* ===== Memo Tags ===== */
-      .memo-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-      .memo-tag {
-        font-size: 10px; padding: 2px 8px; border-radius: 10px; cursor: pointer;
-        background: var(--da-accent-muted); color: var(--da-secondary);
-        border: 1px solid transparent;
-        transition: all var(--duration-fast);
+      /* ===== Outline Dropdown ===== */
+      .outline-dropdown {
+        position: absolute; top: 100%; left: 0; z-index: 600;
+        background: var(--app-bg-primary); border: 1px solid var(--app-border-default);
+        border-radius: 8px; box-shadow: var(--shadow-md); min-width: 200px; max-width: 300px;
+        max-height: 300px; overflow-y: auto; padding: 4px; margin-top: 4px;
       }
-      .memo-tag:hover { border-color: var(--da-secondary); }
-      .memo-tag.active-tag { background: var(--da-secondary); color: var(--da-snow); }
-
-      /* ===== Inline Edit ===== */
-      .edit-area { padding: 0 8px 8px 26px; }
-      .edit-field {
-        width: 100%; padding: 6px 8px; font-size: 13px; font-family: inherit;
-        border: 1px solid var(--app-border-default); border-radius: 6px;
-        background: var(--app-editor-bg); color: var(--app-editor-text); outline: none;
-        margin-bottom: 6px;
+      .outline-item {
+        display: block; width: 100%; text-align: left; padding: 5px 10px;
+        border: none; background: none; cursor: pointer; font-size: 12px;
+        color: var(--app-text-primary); font-family: inherit; border-radius: 4px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        transition: background var(--duration-fast);
       }
-      .edit-field:focus { border-color: var(--app-border-focus); }
-      .edit-textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
-      .edit-controls { display: flex; gap: 4px; justify-content: flex-end; }
-
-      /* ===== Drop Indicator ===== */
-      .drop-indicator {
-        height: 3px; background: var(--da-secondary); border-radius: 2px;
-        margin: 2px 4px; transition: opacity var(--duration-fast);
-      }
+      .outline-item:hover { background: var(--app-bg-secondary); }
+      .outline-item[data-level="3"],
+      .outline-item[data-level="4"],
+      .outline-item[data-level="5"],
+      .outline-item[data-level="6"] { padding-left: 24px; }
 
       /* ===== Modals ===== */
       .modal-overlay {
@@ -405,25 +369,15 @@
         text-align: center; flex-shrink: 0;
       }
 
-      /* ===== Active Tag Filter Bar ===== */
-      .active-filter-bar {
-        padding: 4px 6px; background: var(--app-bg-secondary);
-        border-bottom: 1px solid var(--app-border-default);
-        display: flex; align-items: center; gap: 4px; flex-shrink: 0; flex-wrap: wrap;
-      }
-      .active-filter-bar.hidden { display: none; }
-      .filter-label { font-size: 11px; color: var(--app-text-muted); margin-right: 4px; }
-      .filter-clear-btn {
-        background: none; border: none; cursor: pointer; font-size: 11px;
-        color: var(--da-secondary); margin-left: auto; padding: 2px 6px;
-      }
-      .filter-clear-btn:hover { text-decoration: underline; }
-
       /* ===== Scrollbar ===== */
-      .domain-entries::-webkit-scrollbar, .summary-content::-webkit-scrollbar { width: 6px; }
-      .domain-entries::-webkit-scrollbar-track, .summary-content::-webkit-scrollbar-track { background: transparent; }
-      .domain-entries::-webkit-scrollbar-thumb, .summary-content::-webkit-scrollbar-thumb { background: var(--da-ash); border-radius: 3px; }
-      .domain-entries::-webkit-scrollbar-thumb:hover, .summary-content::-webkit-scrollbar-thumb:hover { background: var(--da-stone); }
+      .domain-preview-area::-webkit-scrollbar, .summary-content::-webkit-scrollbar,
+      .outline-dropdown::-webkit-scrollbar { width: 6px; }
+      .domain-preview-area::-webkit-scrollbar-track, .summary-content::-webkit-scrollbar-track,
+      .outline-dropdown::-webkit-scrollbar-track { background: transparent; }
+      .domain-preview-area::-webkit-scrollbar-thumb, .summary-content::-webkit-scrollbar-thumb,
+      .outline-dropdown::-webkit-scrollbar-thumb { background: var(--da-ash); border-radius: 3px; }
+      .domain-preview-area::-webkit-scrollbar-thumb:hover, .summary-content::-webkit-scrollbar-thumb:hover,
+      .outline-dropdown::-webkit-scrollbar-thumb:hover { background: var(--da-stone); }
 
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
@@ -446,7 +400,6 @@
       .layout-domain-picker-dot {
         width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
       }
-      .edit-move-label { font-size: 12px; font-weight: 600; color: var(--app-text-secondary); margin-bottom: 4px; }
       .hidden-input { display: none; }
       i[data-feather] {
         display: inline-block;
@@ -464,25 +417,23 @@
       <span class="toolbar-title">Nexus</span>
       <div class="toolbar-menu">
         <div class="search-wrapper">
-          <i data-feather="search">🔍</i>
+          <i data-feather="search">&#128269;</i>
           <input type="text" class="toolbar-search" id="global-search" placeholder="検索... ( / )" aria-label="グローバル検索" />
         </div>
         <div class="btn-group" role="group" aria-label="レイアウト切替">
-          <button class="toolbar-button" id="layout-grid-btn" title="グリッド (Alt+Shift+1)"><i data-feather="grid">⊞</i></button>
-          <button class="toolbar-button" id="layout-horizontal-btn" title="横並び (Alt+Shift+2)"><i data-feather="columns">▥</i></button>
-          <button class="toolbar-button" id="layout-focus-btn" title="フォーカス (Alt+Shift+3)"><i data-feather="sidebar">◧</i></button>
-          <button class="toolbar-button" id="layout-single-btn" title="シングル (Alt+Shift+4)"><i data-feather="square">□</i></button>
+          <button class="toolbar-button" id="layout-grid-btn" title="グリッド (Alt+Shift+1)"><i data-feather="grid">&#8862;</i></button>
+          <button class="toolbar-button" id="layout-horizontal-btn" title="横並び (Alt+Shift+2)"><i data-feather="columns">&#9637;</i></button>
+          <button class="toolbar-button" id="layout-focus-btn" title="フォーカス (Alt+Shift+3)"><i data-feather="sidebar">&#9703;</i></button>
+          <button class="toolbar-button" id="layout-single-btn" title="シングル (Alt+Shift+4)"><i data-feather="square">&#9633;</i></button>
         </div>
         <div class="btn-group" role="group" aria-label="操作">
-          <button class="toolbar-button" id="add-domain-btn" title="ドメイン追加"><i data-feather="plus-circle">⊕</i></button>
-          <button class="toolbar-button" id="expand-all-btn" title="すべて展開"><i data-feather="chevrons-down">⇊</i></button>
-          <button class="toolbar-button" id="collapse-all-btn" title="すべて折りたたみ"><i data-feather="chevrons-up">⇈</i></button>
+          <button class="toolbar-button" id="add-domain-btn" title="ドメイン追加"><i data-feather="plus-circle">&#8853;</i></button>
         </div>
-        <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え"><i data-feather="moon" id="theme-icon">☽</i></button>
+        <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え"><i data-feather="moon" id="theme-icon">&#9789;</i></button>
         <div class="btn-group" role="group" aria-label="データ操作">
-          <button class="toolbar-button" id="export-json-btn" title="JSONエクスポート"><i data-feather="download">↓</i></button>
-          <button class="toolbar-button" id="export-md-btn" title="Markdownエクスポート"><i data-feather="file-text">📄</i></button>
-          <button class="toolbar-button" id="import-btn" title="インポート"><i data-feather="upload">↑</i></button>
+          <button class="toolbar-button" id="export-json-btn" title="JSONエクスポート"><i data-feather="download">&#8595;</i></button>
+          <button class="toolbar-button" id="export-md-btn" title="Markdownエクスポート"><i data-feather="file-text">&#128196;</i></button>
+          <button class="toolbar-button" id="import-btn" title="インポート"><i data-feather="upload">&#8593;</i></button>
         </div>
         <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
           <a href="index.html">HTML</a>
@@ -496,7 +447,6 @@
     </div>
 
     <div id="cdn-error-banner" class="cdn-error-banner" style="display:none"></div>
-    <div id="active-filter-bar" class="active-filter-bar hidden"></div>
     <div class="nexus-workspace" id="workspace"></div>
     <div class="resize-overlay" id="resize-overlay"></div>
 
@@ -505,7 +455,7 @@
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="qc-modal-title">
         <div class="modal-header">
           <span class="modal-title" id="qc-modal-title">クイックキャプチャ</span>
-          <button class="modal-close-btn" id="qc-close-btn" aria-label="閉じる"><i data-feather="x">✕</i></button>
+          <button class="modal-close-btn" id="qc-close-btn" aria-label="閉じる"><i data-feather="x">&#10005;</i></button>
         </div>
         <div class="modal-body">
           <div class="form-group">
@@ -513,21 +463,13 @@
             <select class="form-input" id="qc-domain-select"></select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="qc-title-input">タイトル</label>
-            <input type="text" class="form-input" id="qc-title-input" placeholder="タイトル" maxlength="200" />
-          </div>
-          <div class="form-group">
             <label class="form-label" for="qc-content-input">内容 (Markdown)</label>
             <textarea class="form-input form-textarea" id="qc-content-input" placeholder="メモ内容..."></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="qc-tags-input">タグ (カンマ区切り)</label>
-            <input type="text" class="form-input" id="qc-tags-input" placeholder="設計, API, ..." />
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="qc-cancel-btn">キャンセル</button>
-          <button class="btn btn-primary" id="qc-save-btn">保存</button>
+          <button class="btn btn-primary" id="qc-save-btn">追記</button>
         </div>
       </div>
     </div>
@@ -537,7 +479,7 @@
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ds-modal-title">
         <div class="modal-header">
           <span class="modal-title" id="ds-modal-title">ドメイン設定</span>
-          <button class="modal-close-btn" id="ds-close-btn" aria-label="閉じる"><i data-feather="x">✕</i></button>
+          <button class="modal-close-btn" id="ds-close-btn" aria-label="閉じる"><i data-feather="x">&#10005;</i></button>
         </div>
         <div class="modal-body">
           <div class="form-group">
@@ -576,21 +518,22 @@
       // ===== Config =====
       const CONFIG = {
         storageKey: 'nexus_data', backupKey: 'nexus_data_backup', themeKey: 'nexusTheme',
+        v1BackupKey: 'nexus_data_v1_backup',
         debounceDelay: 300, searchDebounceDelay: 200,
         minDomains: 2, maxDomains: 8,
-        maxEntriesPerDomain: 500, maxTotalEntries: 2000,
-        maxTitleLen: 200, maxContentLen: 50000, maxSummaryLen: 50000,
-        maxTags: 20, maxTagLen: 50, maxFileSize: 5 * 1024 * 1024,
+        maxDomainContentLen: 200000, maxSummaryLen: 50000,
+        maxFileSize: 5 * 1024 * 1024,
+        storageSizeWarning: 4 * 1024 * 1024,
         domainColors: ['#5b8fcc','#4aaa9a','#c7a04e','#c76b7e','#8b6fc0','#5aab6b','#c78856','#4a9ec7'],
         defaultDomains: ['アプリ','インフラ','PMO','マイグレーション'],
       };
-      const DOMAIN_ALLOWED_KEYS = ['id','name','color','summary','summaryCollapsed','entries'];
-      const ENTRY_ALLOWED_KEYS = ['id','title','content','tags','createdAt','updatedAt','collapsed'];
+      const DOMAIN_ALLOWED_KEYS = ['id','name','color','summary','summaryCollapsed','content'];
 
       // ===== CDN Checks =====
       const hasMarked = typeof window.marked !== 'undefined';
       const hasDOMPurify = typeof window.DOMPurify !== 'undefined';
       const hasFeather = typeof window.feather !== 'undefined';
+      const hasCodeMirror = typeof window.CodeMirror !== 'undefined';
       function safeReplaceIcons(root) {
         try { if (hasFeather) feather.replace(root ? { root: root } : undefined); } catch(_) {}
       }
@@ -608,11 +551,6 @@
       // ===== Utilities =====
       function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
       function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
-      function formatDate(iso) {
-        try { const d = new Date(iso); if (isNaN(d.getTime())) return '';
-          return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-        } catch(_) { return ''; }
-      }
       function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
       function renderMarkdown(text) {
         if (!canRenderMarkdown || !text) return text ? '<p>' + escHtml(text) + '</p>' : '';
@@ -638,14 +576,11 @@
         themeBtn: document.getElementById('theme-toggle-btn'),
         themeIcon: document.getElementById('theme-icon'),
         cdnBanner: document.getElementById('cdn-error-banner'),
-        filterBar: document.getElementById('active-filter-bar'),
         importFileInput: document.getElementById('import-file-input'),
         // Quick capture
         qcOverlay: document.getElementById('quick-capture-overlay'),
         qcDomainSelect: document.getElementById('qc-domain-select'),
-        qcTitle: document.getElementById('qc-title-input'),
         qcContent: document.getElementById('qc-content-input'),
-        qcTags: document.getElementById('qc-tags-input'),
         // Domain settings
         dsOverlay: document.getElementById('domain-settings-overlay'),
         dsName: document.getElementById('ds-name-input'),
@@ -667,29 +602,58 @@
       // ===== State =====
       const state = {
         data: null, theme: 'light',
-        editingEntry: null, // { domainId, entryId }
         editingSummary: null, // domainId
-        activeTag: null, searchQuery: '',
-        dragging: false, confirmResolve: null,
-        dsDomainId: null, // domain being edited in settings modal
+        searchQuery: '',
+        confirmResolve: null,
+        dsDomainId: null,
+        cmInstances: {},  // domainId -> CodeMirror instance
+        paneMode: {},     // domainId -> 'edit' | 'preview'
+        searchMarks: {},  // domainId -> [TextMarker]
       };
 
       // ===== Storage =====
       function createDefaultState() {
         return {
-          version: 1,
+          version: 2,
           domains: CONFIG.defaultDomains.map((name, i) => ({
-            id: genId(), name, color: CONFIG.domainColors[i], summary: '', summaryCollapsed: false, entries: [],
+            id: genId(), name, color: CONFIG.domainColors[i], summary: '', summaryCollapsed: false, content: '',
           })),
           layout: 'grid', focusDomainId: null, gridSizes: null,
         };
+      }
+
+      // ===== Migration v1 -> v2 =====
+      function migrateV1toV2(data) {
+        if (!data || data.version === 2) return data;
+        let migrated = false;
+        for (const d of data.domains) {
+          if (!Array.isArray(d.entries)) continue;
+          const parts = [];
+          for (const raw of d.entries) {
+            const e = (raw && typeof raw === 'object') ? raw : {};
+            const title = (typeof e.title === 'string' ? e.title : '').replace(/[\r\n]/g, ' ').trim() || 'Untitled';
+            let block = '## ' + title;
+            const tags = Array.isArray(e.tags) ? e.tags : (typeof e.tags === 'string' ? e.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+            if (tags.length) {
+              block += '\n\nTags: ' + tags.join(', ');
+            }
+            if (typeof e.content === 'string' && e.content) {
+              block += '\n\n' + e.content;
+            }
+            parts.push(block);
+          }
+          d.content = parts.join('\n\n---\n\n');
+          delete d.entries;
+          migrated = true;
+        }
+        data.version = 2;
+        return data;
       }
 
       function validateData(data) {
         if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
         if (!Array.isArray(data.domains)) return false;
         if (data.domains.length < CONFIG.minDomains || data.domains.length > CONFIG.maxDomains) return false;
-        let totalEntries = 0;
         for (const d of data.domains) {
           if (!d || typeof d !== 'object') return false;
           if (typeof d.id !== 'string' || typeof d.name !== 'string') return false;
@@ -698,48 +662,47 @@
           if (typeof d.summary !== 'string' || d.summary.length > CONFIG.maxSummaryLen) return false;
           if (d.summaryCollapsed == null) d.summaryCollapsed = false;
           if (typeof d.summaryCollapsed !== 'boolean') d.summaryCollapsed = false;
-          if (!Array.isArray(d.entries)) return false;
-          if (d.entries.length > CONFIG.maxEntriesPerDomain) return false;
-          for (const e of d.entries) {
-            if (!e || typeof e !== 'object') return false;
-            if (typeof e.id !== 'string') return false;
-            if (e.title == null) e.title = '';
-            if (typeof e.title !== 'string') return false;
-            if (e.title.length > CONFIG.maxTitleLen) e.title = e.title.slice(0, CONFIG.maxTitleLen);
-            if (e.content == null) e.content = '';
-            if (typeof e.content !== 'string') return false;
-            if (e.content.length > CONFIG.maxContentLen) e.content = e.content.slice(0, CONFIG.maxContentLen);
-            if (!Array.isArray(e.tags)) e.tags = [];
-            e.tags = e.tags.filter(t => typeof t === 'string' && t.length <= CONFIG.maxTagLen).slice(0, CONFIG.maxTags);
-            if (typeof e.createdAt !== 'string' || isNaN(new Date(e.createdAt).getTime())) e.createdAt = new Date().toISOString();
-            if (typeof e.updatedAt !== 'string' || isNaN(new Date(e.updatedAt).getTime())) e.updatedAt = e.createdAt;
-            if (e.collapsed == null) e.collapsed = false;
-            if (typeof e.collapsed !== 'boolean') e.collapsed = false;
-          }
-          totalEntries += d.entries.length;
+          if (d.content == null) d.content = '';
+          if (typeof d.content !== 'string') return false;
+          if (d.content.length > CONFIG.maxDomainContentLen) d.content = d.content.slice(0, CONFIG.maxDomainContentLen);
         }
-        if (totalEntries > CONFIG.maxTotalEntries) return false;
-        // Normalize layout
         if (!['grid','horizontal','focus','single'].includes(data.layout)) data.layout = 'grid';
         return true;
       }
 
       function loadData() {
-        const raw = localStorage.getItem(CONFIG.storageKey);
-        if (raw) {
-          try {
-            const data = JSON.parse(raw);
-            if (validateData(data)) return data;
-          } catch(_) {}
-          // Main data corrupt, try backup
-          const backup = localStorage.getItem(CONFIG.backupKey);
-          if (backup) {
+        try {
+          const raw = localStorage.getItem(CONFIG.storageKey);
+          if (raw) {
             try {
-              const bd = JSON.parse(backup);
-              if (validateData(bd)) { showToast('データを自動復元しました', 'warning'); return bd; }
+              let data = JSON.parse(raw);
+              // v1 -> v2 migration
+              if (data && data.version !== 2 && Array.isArray(data.domains) && data.domains.some(d => Array.isArray(d.entries))) {
+                safeSetItem(CONFIG.v1BackupKey, raw);
+                data = migrateV1toV2(data);
+                if (validateData(data)) {
+                  safeSetItem(CONFIG.storageKey, JSON.stringify(data));
+                  showToast('データをv2に移行しました。タグはテキストとして保持されています');
+                  return data;
+                }
+              }
+              if (validateData(data)) return data;
             } catch(_) {}
+            try {
+              const backup = localStorage.getItem(CONFIG.backupKey);
+              if (backup) {
+                const bd = JSON.parse(backup);
+                if (bd.version !== 2 && Array.isArray(bd.domains)) {
+                  const migrated = migrateV1toV2(deepClone(bd));
+                  if (validateData(migrated)) { showToast('バックアップデータをv2に移行しました', 'warning'); return migrated; }
+                }
+                if (validateData(bd)) { showToast('データを自動復元しました', 'warning'); return bd; }
+              }
+            } catch(_) {}
+            showToast('データ破損により初期化しました', 'error');
           }
-          showToast('データ破損により初期化しました', 'error');
+        } catch(_) {
+          // localStorage access denied (e.g. SecurityError in privacy mode)
         }
         return createDefaultState();
       }
@@ -747,11 +710,17 @@
       function safeSetItem(key, value) {
         try { localStorage.setItem(key, value); return true; }
         catch(e) {
-          if (e.name === 'QuotaExceededError') showToast('保存容量超過。不要なメモを削除してください', 'error');
+          if (e.name === 'QuotaExceededError') showToast('保存容量超過。不要なコンテンツを削除してください', 'error');
           return false;
         }
       }
-      function saveData() { safeSetItem(CONFIG.storageKey, JSON.stringify(state.data)); }
+      function saveData() {
+        const json = JSON.stringify(state.data);
+        if (json.length > CONFIG.storageSizeWarning) {
+          showToast('データサイズが大きくなっています（' + Math.round(json.length / 1024) + 'KB）', 'warning');
+        }
+        safeSetItem(CONFIG.storageKey, json);
+      }
       const debouncedSave = debounce(saveData, CONFIG.debounceDelay);
 
       // ===== Theme =====
@@ -761,13 +730,14 @@
         safeSetItem(CONFIG.themeKey, theme);
         const iconName = theme === 'dark' ? 'sun' : 'moon';
         el.themeIcon.setAttribute('data-feather', iconName);
-        el.themeIcon.textContent = iconName === 'sun' ? '☀' : '☽';
+        el.themeIcon.textContent = iconName === 'sun' ? '\u2600' : '\u263D';
         safeReplaceIcons();
         el.themeBtn.classList.add('theme-icon-spin');
         setTimeout(() => el.themeBtn.classList.remove('theme-icon-spin'), 400);
       }
       function loadTheme() {
-        return localStorage.getItem(CONFIG.themeKey) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        try { return localStorage.getItem(CONFIG.themeKey) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+        catch(_) { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
       }
 
       // ===== Toast =====
@@ -784,7 +754,6 @@
       function applyLayout(layout, keepSizes) {
         state.data.layout = layout;
         if (!keepSizes) state.data.gridSizes = null;
-        // Update toolbar buttons
         Object.entries(el.layoutBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === layout));
         debouncedSave();
         renderWorkspace();
@@ -810,7 +779,7 @@
             ws.style.gridTemplateColumns = gs?.cols || '1fr 1fr';
             ws.style.gridTemplateRows = gs?.rows || 'repeat(' + others.length + ', 1fr)';
           }
-        } else { // grid
+        } else {
           const cols = Math.ceil(n / 2);
           const rows = n > cols ? 2 : 1;
           ws.style.gridTemplateColumns = gs?.cols || 'repeat(' + cols + ', 1fr)';
@@ -888,13 +857,16 @@
         state.data.gridSizes = {
           cols: el.workspace.style.gridTemplateColumns, rows: el.workspace.style.gridTemplateRows,
         };
-        gutterState = null; debouncedSave();
+        gutterState = null;
+        // Refresh all CodeMirror instances after resize
+        Object.values(state.cmInstances).forEach(cm => { try { cm.refresh(); } catch(_) {} });
+        debouncedSave();
       });
 
       // ===== Domain CRUD =====
       function addDomain(name, color) {
         if (state.data.domains.length >= CONFIG.maxDomains) { showToast('ドメイン数の上限(' + CONFIG.maxDomains + ')に達しています', 'error'); return; }
-        state.data.domains.push({ id: genId(), name: name.slice(0, 100), color, summary: '', summaryCollapsed: false, entries: [] });
+        state.data.domains.push({ id: genId(), name: name.slice(0, 100), color, summary: '', summaryCollapsed: false, content: '' });
         saveData(); renderWorkspace();
       }
       function updateDomain(id, name, color) {
@@ -904,73 +876,47 @@
       }
       function deleteDomain(id) {
         if (state.data.domains.length <= CONFIG.minDomains) { showToast('ドメインは最低' + CONFIG.minDomains + 'つ必要です', 'error'); return; }
+        destroyCmInstance(id);
         state.data.domains = state.data.domains.filter(d => d.id !== id);
         if (state.data.focusDomainId === id) state.data.focusDomainId = null;
+        delete state.paneMode[id];
         saveData(); renderWorkspace();
       }
 
-      // ===== Entry CRUD =====
-      function countAllEntries() { return state.data.domains.reduce((s, d) => s + d.entries.length, 0); }
-      function addEntry(domainId, title, content, tags, skipRender) {
-        const d = state.data.domains.find(d => d.id === domainId); if (!d) return null;
-        if (d.entries.length >= CONFIG.maxEntriesPerDomain) { showToast('ドメイン内エントリ上限に達しています', 'error'); return null; }
-        if (countAllEntries() >= CONFIG.maxTotalEntries) { showToast('エントリ総数の上限に達しています', 'error'); return null; }
-        const now = new Date().toISOString();
-        const entryId = genId();
-        d.entries.unshift({ id: entryId, title: (title||'').slice(0, CONFIG.maxTitleLen), content: (content||'').slice(0, CONFIG.maxContentLen), tags: (tags||[]).slice(0, CONFIG.maxTags), createdAt: now, updatedAt: now, collapsed: false });
-        if (!skipRender) { saveData(); renderWorkspace(); }
-        return entryId;
+      // ===== CodeMirror Instance Management =====
+      function destroyCmInstance(domainId) {
+        if (state.cmInstances[domainId]) {
+          try { state.cmInstances[domainId].toTextArea(); } catch(_) {}
+          delete state.cmInstances[domainId];
+        }
+        if (state.searchMarks[domainId]) {
+          state.searchMarks[domainId].forEach(m => { try { m.clear(); } catch(_) {} });
+          delete state.searchMarks[domainId];
+        }
       }
-      function updateEntry(domainId, entryId, updates) {
-        const d = state.data.domains.find(d => d.id === domainId); if (!d) return;
-        const e = d.entries.find(e => e.id === entryId); if (!e) return;
-        if (updates.title != null) e.title = updates.title.slice(0, CONFIG.maxTitleLen);
-        if (updates.content != null) e.content = updates.content.slice(0, CONFIG.maxContentLen);
-        if (updates.tags != null) e.tags = updates.tags.slice(0, CONFIG.maxTags);
-        if (updates.collapsed != null) e.collapsed = updates.collapsed;
-        e.updatedAt = new Date().toISOString();
-        debouncedSave(); renderWorkspace();
-      }
-      function deleteEntry(domainId, entryId) {
-        const d = state.data.domains.find(d => d.id === domainId); if (!d) return;
-        d.entries = d.entries.filter(e => e.id !== entryId);
-        saveData(); renderWorkspace();
-      }
-      function moveEntryToDomain(entryId, fromDomainId, toDomainId, insertIndex) {
-        if (fromDomainId === toDomainId && insertIndex == null) return;
-        const from = state.data.domains.find(d => d.id === fromDomainId);
-        const to = state.data.domains.find(d => d.id === toDomainId);
-        if (!from || !to) return;
-        const idx = from.entries.findIndex(e => e.id === entryId); if (idx < 0) return;
-        const [entry] = from.entries.splice(idx, 1);
-        if (insertIndex != null) to.entries.splice(insertIndex, 0, entry);
-        else to.entries.unshift(entry);
-        saveData(); renderWorkspace();
+      function destroyAllCmInstances() {
+        Object.keys(state.cmInstances).forEach(destroyCmInstance);
       }
 
-      // ===== Edit Mode Save (atomic update + optional move) =====
-      function saveEditedEntry(domainId, entryId, updates, targetDomainId) {
-        const domain = state.data.domains.find(d => d.id === domainId);
-        if (!domain) return;
-        const entry = domain.entries.find(e => e.id === entryId);
-        if (!entry) return;
-        const needsMove = targetDomainId && targetDomainId !== domainId;
-        let targetDomain = null;
-        if (needsMove) {
-          targetDomain = state.data.domains.find(d => d.id === targetDomainId);
-          if (!targetDomain) return;
-        }
-        entry.title = (updates.title || '').slice(0, CONFIG.maxTitleLen);
-        entry.content = (updates.content || '').slice(0, CONFIG.maxContentLen);
-        entry.tags = (updates.tags || []).slice(0, CONFIG.maxTags);
-        entry.updatedAt = new Date().toISOString();
-        if (needsMove) {
-          domain.entries = domain.entries.filter(e => e.id !== entryId);
-          targetDomain.entries.unshift(entry);
-        }
-        state.editingEntry = null;
-        saveData();
-        renderWorkspace();
+      function createCmInstance(textarea, domainId) {
+        if (!hasCodeMirror) return null;
+        const cm = CodeMirror.fromTextArea(textarea, {
+          lineNumbers: false,
+          mode: 'markdown',
+          lineWrapping: true,
+          extraKeys: { Enter: 'newlineAndIndentContinueMarkdownList' },
+        });
+        cm.on('change', () => {
+          const d = state.data.domains.find(d => d.id === domainId);
+          if (d) {
+            d.content = cm.getValue().slice(0, CONFIG.maxDomainContentLen);
+            debouncedSave();
+          }
+        });
+        state.cmInstances[domainId] = cm;
+        // Apply search highlights if active
+        if (state.searchQuery) applySearchHighlight(domainId);
+        return cm;
       }
 
       // ===== Summary =====
@@ -983,22 +929,66 @@
       // ===== Search =====
       const debouncedSearch = debounce(function(query) {
         state.searchQuery = query.toLowerCase().trim();
+        // Apply/clear highlights on all CM instances
+        state.data.domains.forEach(d => {
+          if (state.cmInstances[d.id]) applySearchHighlight(d.id);
+        });
         renderWorkspace();
       }, CONFIG.searchDebounceDelay);
 
-      function entryMatchesFilter(entry) {
-        const q = state.searchQuery;
-        const tag = state.activeTag;
-        if (q) {
-          const haystack = ((entry.title||'') + ' ' + (entry.content||'') + ' ' + (entry.tags||[]).join(' ')).toLowerCase();
-          if (!haystack.includes(q)) return false;
+      function applySearchHighlight(domainId) {
+        // Clear old marks
+        if (state.searchMarks[domainId]) {
+          state.searchMarks[domainId].forEach(m => { try { m.clear(); } catch(_) {} });
         }
-        if (tag && !(entry.tags||[]).includes(tag)) return false;
-        return true;
+        state.searchMarks[domainId] = [];
+        const cm = state.cmInstances[domainId];
+        if (!cm || !state.searchQuery) return;
+        const query = state.searchQuery;
+        const text = cm.getValue().toLowerCase();
+        let idx = 0;
+        while ((idx = text.indexOf(query, idx)) >= 0) {
+          const from = cm.posFromIndex(idx);
+          const to = cm.posFromIndex(idx + query.length);
+          const mark = cm.markText(from, to, { className: 'cm-search-highlight' });
+          state.searchMarks[domainId].push(mark);
+          idx += query.length;
+        }
+      }
+
+      function domainMatchesSearch(domain) {
+        if (!state.searchQuery) return true;
+        const haystack = (domain.name + ' ' + domain.content + ' ' + (domain.summary || '')).toLowerCase();
+        return haystack.includes(state.searchQuery);
+      }
+
+      // ===== Heading Outline =====
+      function extractHeadings(content) {
+        const lines = (content || '').split('\n');
+        const headings = [];
+        for (let i = 0; i < lines.length; i++) {
+          const match = lines[i].match(/^(#{1,6})\s+(.+)$/);
+          if (match) {
+            const text = match[2].replace(/[\x00-\x1f]/g, '').slice(0, 200);
+            headings.push({ level: match[1].length, text, line: i });
+          }
+        }
+        return headings;
       }
 
       // ===== Rendering =====
       function renderWorkspace() {
+        // Save CM cursors before destroying
+        const cursors = {};
+        const scrolls = {};
+        Object.entries(state.cmInstances).forEach(([id, cm]) => {
+          try {
+            cursors[id] = cm.getCursor();
+            scrolls[id] = cm.getScrollInfo();
+          } catch(_) {}
+        });
+        destroyAllCmInstances();
+
         const ws = el.workspace;
         ws.innerHTML = '';
         const domains = state.data.domains;
@@ -1025,39 +1015,90 @@
         }
         setGridTemplate();
         safeReplaceIcons();
-        renderFilterBar();
+
+        // Initialize CodeMirror instances
+        state.data.domains.forEach(d => {
+          const mode = state.paneMode[d.id] || 'edit';
+          if (mode === 'edit') {
+            const paneEl = ws.querySelector('[data-domain-id="' + d.id + '"]');
+            if (!paneEl) return;
+            const ta = paneEl.querySelector('.domain-cm-textarea');
+            if (ta) {
+              const cm = createCmInstance(ta, d.id);
+              if (cm) {
+                // Restore cursor and scroll
+                if (cursors[d.id]) {
+                  try { cm.setCursor(cursors[d.id]); } catch(_) {}
+                }
+                if (scrolls[d.id]) {
+                  try { cm.scrollTo(scrolls[d.id].left, scrolls[d.id].top); } catch(_) {}
+                }
+                setTimeout(() => { try { cm.refresh(); } catch(_) {} }, 0);
+              }
+            }
+          }
+        });
       }
 
       function renderPane(domain) {
         const pane = document.createElement('div');
         pane.className = 'domain-pane'; pane.dataset.domainId = domain.id;
+        const mode = state.paneMode[domain.id] || 'edit';
+
         // Header
         const header = document.createElement('div'); header.className = 'domain-pane-header';
         const colorBar = document.createElement('div'); colorBar.className = 'domain-color-bar';
         colorBar.style.backgroundColor = domain.color;
         const nameEl = document.createElement('div'); nameEl.className = 'domain-name';
         nameEl.textContent = domain.name;
-        const filteredEntries = domain.entries.filter(entryMatchesFilter);
-        const count = document.createElement('span'); count.className = 'domain-count';
-        count.textContent = filteredEntries.length + '/' + domain.entries.length;
         const actions = document.createElement('div'); actions.className = 'domain-actions';
-        actions.innerHTML = '<button class="pane-btn pane-focus-btn" title="フォーカス"><i data-feather="maximize-2">⤢</i></button>'
-          + '<button class="pane-btn pane-settings-btn" title="ドメイン設定"><i data-feather="settings">⚙</i></button>'
-          + '<button class="pane-btn pane-add-btn" title="エントリ追加"><i data-feather="plus">+</i> <span class="pane-btn-label">追加</span></button>';
-        actions.querySelector('.pane-focus-btn').addEventListener('click', () => {
+
+        // Outline button
+        const outlineBtn = document.createElement('button');
+        outlineBtn.className = 'pane-btn'; outlineBtn.title = 'アウトライン';
+        outlineBtn.innerHTML = '<i data-feather="list">&#9776;</i>';
+        outlineBtn.style.position = 'relative';
+        outlineBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleOutlineDropdown(outlineBtn, domain);
+        });
+
+        // Edit/Preview toggle
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'pane-btn' + (mode === 'preview' ? ' active' : '');
+        toggleBtn.title = mode === 'edit' ? 'プレビュー' : '編集';
+        toggleBtn.innerHTML = mode === 'edit'
+          ? '<i data-feather="eye">&#128065;</i>'
+          : '<i data-feather="edit-2">&#9998;</i>';
+        toggleBtn.addEventListener('click', () => {
+          // Save CM content before switching
+          const cm = state.cmInstances[domain.id];
+          if (cm) {
+            domain.content = cm.getValue().slice(0, CONFIG.maxDomainContentLen);
+            debouncedSave();
+          }
+          state.paneMode[domain.id] = mode === 'edit' ? 'preview' : 'edit';
+          renderWorkspace();
+        });
+
+        // Focus button
+        const focusBtn = document.createElement('button');
+        focusBtn.className = 'pane-btn'; focusBtn.title = 'フォーカス';
+        focusBtn.innerHTML = '<i data-feather="maximize-2">&#10530;</i>';
+        focusBtn.addEventListener('click', () => {
           state.data.focusDomainId = domain.id; debouncedSave();
           if (state.data.layout !== 'focus' && state.data.layout !== 'single') applyLayout('focus');
           else renderWorkspace();
         });
-        actions.querySelector('.pane-settings-btn').addEventListener('click', () => openDomainSettings(domain.id));
-        actions.querySelector('.pane-add-btn').addEventListener('click', () => {
-          const newEntryId = addEntry(domain.id, '', '', [], true);
-          if (newEntryId) {
-            state.editingEntry = { domainId: domain.id, entryId: newEntryId };
-            saveData(); renderWorkspace();
-          }
-        });
-        header.append(colorBar, nameEl, count, actions);
+
+        // Settings button
+        const settingsBtn = document.createElement('button');
+        settingsBtn.className = 'pane-btn'; settingsBtn.title = 'ドメイン設定';
+        settingsBtn.innerHTML = '<i data-feather="settings">&#9881;</i>';
+        settingsBtn.addEventListener('click', () => openDomainSettings(domain.id));
+
+        actions.append(outlineBtn, toggleBtn, focusBtn, settingsBtn);
+        header.append(colorBar, nameEl, actions);
         pane.appendChild(header);
 
         // Summary area
@@ -1073,10 +1114,10 @@
           editArea.append(ta, btns); summaryArea.appendChild(editArea);
         } else {
           const toggle = document.createElement('button'); toggle.className = 'summary-toggle' + (domain.summaryCollapsed ? ' collapsed' : '');
-          toggle.innerHTML = '<i data-feather="chevron-down">▼</i><span>AI Summary</span>';
+          toggle.innerHTML = '<i data-feather="chevron-down">&#9660;</i><span>AI Summary</span>';
           const editBtn = document.createElement('button');
           editBtn.className = 'pane-btn'; editBtn.style.marginLeft = 'auto';
-          editBtn.innerHTML = '<i data-feather="edit-2">✎</i>'; editBtn.title = '要約編集';
+          editBtn.innerHTML = '<i data-feather="edit-2">&#9998;</i>'; editBtn.title = '要約編集';
           editBtn.addEventListener('click', (e) => { e.stopPropagation(); state.editingSummary = domain.id; renderWorkspace(); });
           toggle.appendChild(editBtn);
           toggle.addEventListener('click', (e) => {
@@ -1085,205 +1126,86 @@
           });
           summaryArea.appendChild(toggle);
           if (!domain.summaryCollapsed) {
-            const content = document.createElement('div'); content.className = 'summary-content memo-content';
+            const content = document.createElement('div'); content.className = 'summary-content preview-content';
             content.innerHTML = domain.summary ? renderMarkdown(domain.summary) : '<em style="color:var(--app-text-muted);font-size:12px">要約なし</em>';
             summaryArea.appendChild(content);
           }
         }
         pane.appendChild(summaryArea);
 
-        // Quick add
-        const quickAdd = document.createElement('div'); quickAdd.className = 'domain-quick-add';
-        const qaInput = document.createElement('input'); qaInput.className = 'quick-add-input';
-        qaInput.type = 'text'; qaInput.placeholder = '新規メモ... (Enter)'; qaInput.maxLength = CONFIG.maxTitleLen;
-        qaInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && qaInput.value.trim()) {
-            addEntry(domain.id, qaInput.value.trim(), '', []);
-            // renderWorkspace後に新しいinputにフォーカスを戻す
-            const newPane = el.workspace.querySelector('[data-domain-id="' + domain.id + '"]');
-            if (newPane) {
-              const newInput = newPane.querySelector('.quick-add-input');
-              if (newInput) newInput.focus();
-            }
+        // Editor / Preview area
+        const editorArea = document.createElement('div'); editorArea.className = 'domain-editor-area';
+        if (mode === 'preview') {
+          const previewDiv = document.createElement('div');
+          previewDiv.className = 'domain-preview-area preview-content';
+          previewDiv.innerHTML = renderMarkdown(domain.content) || '<em style="color:var(--app-text-muted);font-size:12px">コンテンツなし</em>';
+          editorArea.appendChild(previewDiv);
+        } else {
+          if (hasCodeMirror) {
+            const ta = document.createElement('textarea');
+            ta.className = 'domain-cm-textarea';
+            ta.value = domain.content;
+            editorArea.appendChild(ta);
+          } else {
+            // Fallback: plain textarea
+            const ta = document.createElement('textarea');
+            ta.className = 'domain-fallback-textarea';
+            ta.value = domain.content;
+            ta.placeholder = 'Markdownでメモを入力...';
+            ta.addEventListener('input', () => {
+              domain.content = ta.value.slice(0, CONFIG.maxDomainContentLen);
+              debouncedSave();
+            });
+            editorArea.appendChild(ta);
           }
-        });
-        quickAdd.appendChild(qaInput); pane.appendChild(quickAdd);
-
-        // Entry list
-        const entriesDiv = document.createElement('div'); entriesDiv.className = 'domain-entries';
-        filteredEntries.forEach((entry, i) => entriesDiv.appendChild(renderEntry(entry, domain)));
-        if (filteredEntries.length === 0) {
-          const empty = document.createElement('div');
-          empty.style.cssText = 'padding:20px;text-align:center;color:var(--app-text-muted);font-size:12px;';
-          empty.textContent = state.searchQuery || state.activeTag ? '一致するメモなし' : 'メモなし';
-          entriesDiv.appendChild(empty);
         }
-        pane.appendChild(entriesDiv);
+        pane.appendChild(editorArea);
 
-        // Drag & drop events
-        pane.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; pane.classList.add('drag-over'); });
-        pane.addEventListener('dragleave', (e) => { if (!pane.contains(e.relatedTarget)) pane.classList.remove('drag-over'); });
-        pane.addEventListener('drop', (e) => {
-          e.preventDefault(); pane.classList.remove('drag-over');
-          try {
-            const d = JSON.parse(e.dataTransfer.getData('text/plain'));
-            if (!d || typeof d.entryId !== 'string' || typeof d.domainId !== 'string') return;
-            // Find drop index
-            let dropIdx = 0;
-            const target = e.target.closest('.memo-entry');
-            if (target) {
-              const entries = entriesDiv.querySelectorAll('.memo-entry');
-              const arr = Array.from(entries);
-              const targetIdx = arr.indexOf(target);
-              const rect = target.getBoundingClientRect();
-              dropIdx = e.clientY < rect.top + rect.height / 2 ? targetIdx : targetIdx + 1;
-            }
-            if (d.domainId === domain.id) {
-              // Reorder within same domain
-              const dom = state.data.domains.find(dd => dd.id === domain.id);
-              if (dom) {
-                const ei = dom.entries.findIndex(ee => ee.id === d.entryId);
-                if (ei >= 0) {
-                  const [entry] = dom.entries.splice(ei, 1);
-                  const adjustedIdx = ei < dropIdx ? dropIdx - 1 : dropIdx;
-                  dom.entries.splice(adjustedIdx, 0, entry);
-                  saveData(); renderWorkspace();
-                }
-              }
-            } else {
-              moveEntryToDomain(d.entryId, d.domainId, domain.id, dropIdx);
-            }
-          } catch(_) {}
-        });
         return pane;
       }
 
-      function renderEntry(entry, domain) {
-        const isEditing = state.editingEntry && state.editingEntry.entryId === entry.id;
-        const div = document.createElement('div');
-        div.className = 'memo-entry' + (entry.collapsed && !isEditing ? ' collapsed' : '');
-        div.dataset.entryId = entry.id; div.draggable = true;
-        div.addEventListener('dragstart', (e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({ entryId: entry.id, domainId: domain.id }));
-          e.dataTransfer.effectAllowed = 'move'; div.classList.add('dragging'); state.dragging = true;
-        });
-        div.addEventListener('dragend', () => { div.classList.remove('dragging'); state.dragging = false; });
-
-        // Header
-        const header = document.createElement('div'); header.className = 'memo-header';
-        header.innerHTML = '<span class="drag-handle"><i data-feather="grip-vertical">⋮</i></span>';
-        const titleEl = document.createElement('span');
-        titleEl.className = 'memo-title' + (!entry.title ? ' untitled' : '');
-        titleEl.textContent = entry.title || '無題';
-        const timeEl = document.createElement('span'); timeEl.className = 'memo-time';
-        timeEl.textContent = formatDate(entry.updatedAt);
-        const actionsEl = document.createElement('span'); actionsEl.className = 'memo-entry-actions';
-        if (!isEditing) {
-          actionsEl.innerHTML = '<button class="entry-action-btn memo-edit-btn" title="編集"><i data-feather="edit-2">✎</i> 編集</button>'
-            + '<button class="entry-action-btn entry-action-danger memo-delete-btn" title="削除"><i data-feather="trash-2">✕</i> 削除</button>';
-          actionsEl.querySelector('.memo-edit-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            state.editingEntry = { domainId: domain.id, entryId: entry.id }; renderWorkspace();
-          });
-          actionsEl.querySelector('.memo-delete-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            showConfirm('このメモを削除しますか？').then(ok => { if (ok) deleteEntry(domain.id, entry.id); });
-          });
+      // ===== Outline Dropdown =====
+      let activeOutline = null;
+      let outlineClickOutHandler = null;
+      function closeOutlineDropdown() {
+        if (activeOutline) {
+          activeOutline.remove(); activeOutline = null;
         }
-        header.append(titleEl, timeEl, actionsEl);
-        header.addEventListener('click', (e) => {
-          if (e.target.closest('.pane-btn') || e.target.closest('.drag-handle')) return;
-          if (isEditing) return;
-          updateEntry(domain.id, entry.id, { collapsed: !entry.collapsed });
-        });
-        div.appendChild(header);
-
-        if (isEditing) {
-          // Edit mode
-          const editArea = document.createElement('div'); editArea.className = 'edit-area';
-          const titleInput = document.createElement('input'); titleInput.className = 'edit-field';
-          titleInput.type = 'text'; titleInput.value = entry.title; titleInput.placeholder = 'タイトル'; titleInput.maxLength = CONFIG.maxTitleLen;
-          const contentTa = document.createElement('textarea'); contentTa.className = 'edit-field edit-textarea';
-          contentTa.value = entry.content; contentTa.placeholder = '内容 (Markdown)';
-          const tagsInput = document.createElement('input'); tagsInput.className = 'edit-field';
-          tagsInput.type = 'text'; tagsInput.value = (entry.tags||[]).join(', '); tagsInput.placeholder = 'タグ (カンマ区切り)';
-          // Domain move select
-          const moveLabel = document.createElement('div'); moveLabel.className = 'edit-move-label'; moveLabel.textContent = '移動先ドメイン';
-          const moveSelect = document.createElement('select'); moveSelect.className = 'edit-field';
-          state.data.domains.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d.id; opt.textContent = d.name;
-            if (d.id === domain.id) opt.selected = true;
-            moveSelect.appendChild(opt);
-          });
-          const controls = document.createElement('div'); controls.className = 'edit-controls';
-          controls.innerHTML = '<button class="btn btn-sm btn-secondary">キャンセル</button><button class="btn btn-sm btn-primary">保存</button>';
-          controls.children[0].addEventListener('click', () => { state.editingEntry = null; renderWorkspace(); });
-          controls.children[1].addEventListener('click', () => {
-            const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t).map(t => t.slice(0, CONFIG.maxTagLen));
-            saveEditedEntry(domain.id, entry.id, { title: titleInput.value.trim(), content: contentTa.value, tags }, moveSelect.value);
-          });
-          contentTa.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { controls.children[1].click(); e.preventDefault(); }
-            if (e.key === 'Escape') { controls.children[0].click(); e.preventDefault(); }
-          });
-          editArea.append(titleInput, contentTa, tagsInput, moveLabel, moveSelect, controls);
-          div.appendChild(editArea);
-          setTimeout(() => contentTa.focus(), 0);
-        } else if (!entry.collapsed) {
-          // View mode
-          const body = document.createElement('div'); body.className = 'memo-body';
-          body.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            state.editingEntry = { domainId: domain.id, entryId: entry.id };
-            renderWorkspace();
-          });
-          const content = document.createElement('div'); content.className = 'memo-content';
-          content.innerHTML = renderMarkdown(entry.content);
-          body.appendChild(content);
-          if (entry.tags && entry.tags.length) {
-            const tagsDiv = document.createElement('div'); tagsDiv.className = 'memo-tags';
-            entry.tags.forEach(t => {
-              const tag = document.createElement('span');
-              tag.className = 'memo-tag' + (state.activeTag === t ? ' active-tag' : '');
-              tag.textContent = t;
-              tag.addEventListener('click', (e) => {
-                e.stopPropagation();
-                state.activeTag = state.activeTag === t ? null : t;
-                renderWorkspace();
-              });
-              tagsDiv.appendChild(tag);
-            });
-            body.appendChild(tagsDiv);
-          }
-          div.appendChild(body);
+        if (outlineClickOutHandler) {
+          document.removeEventListener('click', outlineClickOutHandler, true);
+          outlineClickOutHandler = null;
         }
-        return div;
       }
-
-      // ===== Filter Bar =====
-      function renderFilterBar() {
-        const bar = el.filterBar;
-        if (!state.activeTag && !state.searchQuery) { bar.classList.add('hidden'); return; }
-        bar.classList.remove('hidden');
-        bar.innerHTML = '<span class="filter-label">フィルタ:</span>';
-        if (state.searchQuery) {
-          const badge = document.createElement('span'); badge.className = 'memo-tag';
-          badge.textContent = '検索: ' + state.searchQuery;
-          bar.appendChild(badge);
-        }
-        if (state.activeTag) {
-          const badge = document.createElement('span'); badge.className = 'memo-tag active-tag';
-          badge.textContent = state.activeTag;
-          bar.appendChild(badge);
-        }
-        const clearBtn = document.createElement('button'); clearBtn.className = 'filter-clear-btn';
-        clearBtn.textContent = 'クリア';
-        clearBtn.addEventListener('click', () => {
-          state.activeTag = null; state.searchQuery = ''; el.globalSearch.value = '';
-          renderWorkspace();
+      function toggleOutlineDropdown(btnEl, domain) {
+        if (activeOutline) { closeOutlineDropdown(); return; }
+        const headings = extractHeadings(domain.content);
+        if (headings.length === 0) { showToast('見出し（## ...）がありません'); return; }
+        const dropdown = document.createElement('div');
+        dropdown.className = 'outline-dropdown';
+        headings.forEach(h => {
+          const item = document.createElement('button');
+          item.className = 'outline-item';
+          item.textContent = h.text;
+          item.dataset.level = h.level;
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeOutlineDropdown();
+            const cm = state.cmInstances[domain.id];
+            if (cm) {
+              cm.setCursor({ line: h.line, ch: 0 });
+              cm.scrollIntoView({ line: h.line, ch: 0 }, 100);
+              cm.focus();
+            }
+          });
+          dropdown.appendChild(item);
         });
-        bar.appendChild(clearBtn);
+        btnEl.style.position = 'relative';
+        btnEl.appendChild(dropdown);
+        activeOutline = dropdown;
+        outlineClickOutHandler = (e) => {
+          if (!dropdown.contains(e.target) && e.target !== btnEl) closeOutlineDropdown();
+        };
+        setTimeout(() => document.addEventListener('click', outlineClickOutHandler, true), 0);
       }
 
       // ===== Confirm Modal =====
@@ -1327,19 +1249,26 @@
           const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name;
           el.qcDomainSelect.appendChild(opt);
         });
-        el.qcTitle.value = ''; el.qcContent.value = ''; el.qcTags.value = '';
+        el.qcContent.value = '';
         el.qcOverlay.classList.add('open');
-        setTimeout(() => el.qcTitle.focus(), 50);
+        setTimeout(() => el.qcContent.focus(), 50);
       }
       function closeQuickCapture() { el.qcOverlay.classList.remove('open'); }
       function saveQuickCapture() {
         const domId = el.qcDomainSelect.value;
-        const title = el.qcTitle.value.trim();
-        const content = el.qcContent.value;
-        const tags = el.qcTags.value.split(',').map(t => t.trim()).filter(t => t).map(t => t.slice(0, CONFIG.maxTagLen));
-        if (!title && !content.trim()) { showToast('タイトルまたは内容を入力してください', 'error'); return; }
-        addEntry(domId, title, content, tags);
-        closeQuickCapture(); showToast('メモを追加しました');
+        const content = el.qcContent.value.trim();
+        if (!content) { showToast('内容を入力してください', 'error'); return; }
+        const d = state.data.domains.find(d => d.id === domId);
+        if (!d) return;
+        // Append to domain content
+        const separator = d.content.trim() ? '\n\n' : '';
+        d.content = (d.content + separator + content).slice(0, CONFIG.maxDomainContentLen);
+        // Update CM if active
+        const cm = state.cmInstances[domId];
+        if (cm) cm.setValue(d.content);
+        saveData();
+        closeQuickCapture();
+        showToast('メモを追記しました');
       }
 
       // ===== Domain Settings Modal =====
@@ -1350,7 +1279,6 @@
         el.dsName.value = d ? d.name : '';
         const delBtn = document.getElementById('ds-delete-btn');
         delBtn.style.display = d ? '' : 'none';
-        // Color picker
         el.dsColorPicker.innerHTML = '';
         const selColor = d ? d.color : CONFIG.domainColors[state.data.domains.length % CONFIG.domainColors.length];
         CONFIG.domainColors.forEach(c => {
@@ -1378,14 +1306,14 @@
       function deleteDomainFromSettings() {
         if (!state.dsDomainId) return;
         const d = state.data.domains.find(d => d.id === state.dsDomainId);
-        showConfirm('ドメイン「' + (d ? d.name : '') + '」を削除しますか？\nすべてのメモも削除されます。').then(ok => {
+        showConfirm('ドメイン「' + (d ? d.name : '') + '」を削除しますか？\nすべてのコンテンツも削除されます。').then(ok => {
           if (ok) { deleteDomain(state.dsDomainId); closeDomainSettings(); showToast('ドメインを削除しました'); }
         });
       }
 
       // ===== Export =====
       function exportJSON() {
-        const data = { version: 1, domains: state.data.domains, exportedAt: new Date().toISOString() };
+        const data = { version: 2, domains: state.data.domains, exportedAt: new Date().toISOString() };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1398,13 +1326,8 @@
         state.data.domains.forEach(d => {
           md += '## ' + d.name + '\n\n';
           if (d.summary) md += '### AI Summary\n\n> ' + d.summary.replace(/\n/g, '\n> ') + '\n\n';
-          md += '### メモ\n\n';
-          d.entries.forEach(e => {
-            md += '#### [' + formatDate(e.updatedAt) + '] ' + (e.title || '無題') + '\n\n';
-            if (e.content) md += e.content + '\n\n';
-            if (e.tags && e.tags.length) md += 'Tags: ' + e.tags.join(', ') + '\n\n';
-            md += '---\n\n';
-          });
+          if (d.content) md += d.content + '\n\n';
+          md += '---\n\n';
         });
         const blob = new Blob([md], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
@@ -1425,12 +1348,13 @@
         if (!text) { showToast('ファイルの読み込みに失敗しました', 'error'); return; }
         let data;
         try { data = JSON.parse(text); } catch(_) { showToast('JSONの解析に失敗しました', 'error'); return; }
-        // Validate
+        // Migrate v1 imports
+        if (data && data.version !== 2 && Array.isArray(data.domains) && data.domains.some(d => Array.isArray(d.entries))) {
+          try { data = migrateV1toV2(deepClone(data)); } catch(_) { showToast('v1データの変換に失敗しました', 'error'); return; }
+        }
         const err = validateImport(data);
         if (err) { showToast('インポートエラー: ' + err, 'error'); return; }
-        // Backup current data
         safeSetItem(CONFIG.backupKey, JSON.stringify(state.data));
-        // Choose merge or replace
         const choice = await showChoice('インポート方法', data.domains.length + ' ドメインをインポートします', [
           { label: 'キャンセル', value: null, cls: 'btn-secondary' },
           { label: '既存データに統合', value: 'merge', cls: 'btn-secondary' },
@@ -1439,7 +1363,7 @@
         if (!choice) return;
         if (choice === 'replace') {
           if (data.domains.length < CONFIG.minDomains) { showToast('ドメイン数が最低' + CONFIG.minDomains + 'つ必要です', 'error'); return; }
-          state.data = { version: 1, domains: data.domains, layout: state.data.layout, focusDomainId: null, gridSizes: null };
+          state.data = { version: 2, domains: data.domains, layout: state.data.layout, focusDomainId: null, gridSizes: null };
           saveData(); renderWorkspace(); showToast('データを置換しました');
         } else {
           const result = mergeImport(state.data, data);
@@ -1453,12 +1377,10 @@
         if (typeof data.version !== 'number') return 'versionが不正';
         if (!Array.isArray(data.domains)) return 'domainsが不正';
         if (data.domains.length > CONFIG.maxDomains) return 'ドメイン数が上限(' + CONFIG.maxDomains + ')を超えています';
-        const domainIds = new Set(), entryIds = new Set(), domainNames = new Set();
-        let totalEntries = 0;
+        const domainIds = new Set(), domainNames = new Set();
         for (let di = 0; di < data.domains.length; di++) {
           const raw = data.domains[di];
           if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'ドメイン[' + di + ']が不正';
-          // Whitelist keys
           const d = {}; for (const k of DOMAIN_ALLOWED_KEYS) { if (Object.prototype.hasOwnProperty.call(raw, k)) d[k] = raw[k]; }
           data.domains[di] = d;
           if (typeof d.id !== 'string' || d.id.length > 20) return 'ドメイン[' + di + ']のidが不正';
@@ -1473,65 +1395,31 @@
           if (typeof d.summary !== 'string' || d.summary.length > CONFIG.maxSummaryLen) return 'ドメイン "' + d.name + '" のsummaryが長さ上限を超えています';
           if (d.summaryCollapsed == null) d.summaryCollapsed = false;
           if (typeof d.summaryCollapsed !== 'boolean') d.summaryCollapsed = false;
-          if (!Array.isArray(d.entries)) return 'ドメイン "' + d.name + '" のentriesが不正';
-          if (d.entries.length > CONFIG.maxEntriesPerDomain) return 'ドメイン "' + d.name + '" のエントリ数が上限を超えています';
-          for (let ei = 0; ei < d.entries.length; ei++) {
-            const rawE = d.entries[ei];
-            if (!rawE || typeof rawE !== 'object' || Array.isArray(rawE)) return 'ドメイン "' + d.name + '" のエントリ[' + ei + ']が不正';
-            const e = {}; for (const k of ENTRY_ALLOWED_KEYS) { if (Object.prototype.hasOwnProperty.call(rawE, k)) e[k] = rawE[k]; }
-            d.entries[ei] = e;
-            if (typeof e.id !== 'string' || e.id.length > 20) return 'ドメイン "' + d.name + '" のエントリ[' + ei + ']のidが不正';
-            if (entryIds.has(e.id)) return 'エントリIDが重複: ' + e.id;
-            entryIds.add(e.id);
-            if (typeof e.title !== 'string' || e.title.length > CONFIG.maxTitleLen) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' の title が長さ上限を超えています';
-            if (typeof e.content !== 'string' || e.content.length > CONFIG.maxContentLen) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' の content が長さ上限を超えています';
-            if (!Array.isArray(e.tags)) e.tags = [];
-            if (e.tags.length > CONFIG.maxTags) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のタグ数が上限を超えています';
-            for (const t of e.tags) { if (typeof t !== 'string' || t.length > CONFIG.maxTagLen) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のタグが不正'; }
-            if (typeof e.createdAt !== 'string' || isNaN(new Date(e.createdAt).getTime())) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のcreatedAtが不正';
-            if (typeof e.updatedAt !== 'string' || isNaN(new Date(e.updatedAt).getTime())) return 'ドメイン "' + d.name + '" のエントリ #' + (ei+1) + ' のupdatedAtが不正';
-            if (e.collapsed == null) e.collapsed = false;
-            if (typeof e.collapsed !== 'boolean') e.collapsed = false;
-          }
-          totalEntries += d.entries.length;
+          if (d.content == null) d.content = '';
+          if (typeof d.content !== 'string') return 'ドメイン "' + d.name + '" のcontentが不正';
+          if (d.content.length > CONFIG.maxDomainContentLen) return 'ドメイン "' + d.name + '" のcontent長が上限を超えています';
         }
-        if (totalEntries > CONFIG.maxTotalEntries) return 'エントリ総数が上限(' + CONFIG.maxTotalEntries + ')を超えています';
         return null;
       }
 
       function mergeImport(existing, imported) {
         const result = deepClone(existing);
-        const allEntryIds = new Set();
-        result.domains.forEach(d => d.entries.forEach(e => allEntryIds.add(e.id)));
         for (const impDom of imported.domains) {
           const match = result.domains.find(d => d.name.toLowerCase() === impDom.name.toLowerCase());
           if (match) {
             match.color = impDom.color;
-            match.summary = impDom.summary;
-            for (const impEntry of impDom.entries) {
-              const existing = match.entries.find(e => e.id === impEntry.id);
-              if (existing) {
-                const impTime = Date.parse(impEntry.updatedAt);
-                const exTime = Date.parse(existing.updatedAt);
-                if (isNaN(exTime) || (!isNaN(impTime) && impTime > exTime)) Object.assign(existing, impEntry);
-              } else {
-                if (allEntryIds.has(impEntry.id)) impEntry.id = genId();
-                allEntryIds.add(impEntry.id);
-                match.entries.push(impEntry);
-              }
+            match.summary = impDom.summary || match.summary;
+            // Append imported content
+            if (impDom.content) {
+              const separator = match.content.trim() ? '\n\n---\n\n' : '';
+              match.content = (match.content + separator + impDom.content).slice(0, CONFIG.maxDomainContentLen);
             }
           } else {
             const newDom = deepClone(impDom); newDom.id = genId();
-            for (const e of newDom.entries) {
-              if (allEntryIds.has(e.id)) e.id = genId();
-              allEntryIds.add(e.id);
-            }
             result.domains.push(newDom);
           }
         }
         if (result.domains.length > CONFIG.maxDomains) return { error: 'ドメイン数が上限(' + CONFIG.maxDomains + ')を超えます' };
-        const total = result.domains.reduce((s, d) => s + d.entries.length, 0);
-        if (total > CONFIG.maxTotalEntries) return { error: 'エントリ総数が上限(' + CONFIG.maxTotalEntries + ')を超えます' };
         return { data: result };
       }
 
@@ -1548,8 +1436,6 @@
       }
       function showLayoutDomainPicker(btnEl, layout) {
         if (state.data.domains.length === 0) return;
-        // If already in this layout and focusDomainId is valid, show picker to switch domain
-        // If not in this layout yet, also show picker
         closeLayoutDomainPicker();
         const picker = document.createElement('div');
         picker.className = 'layout-domain-picker';
@@ -1567,11 +1453,9 @@
           });
           picker.appendChild(item);
         });
-        // Position relative to button
         const parent = btnEl.parentElement; parent.style.position = 'relative';
         parent.appendChild(picker);
         activePicker = picker;
-        // Close on click outside / Escape
         pickerClickOutHandler = (e) => {
           if (!picker.contains(e.target) && e.target !== btnEl) closeLayoutDomainPicker();
         };
@@ -1584,27 +1468,29 @@
         if (e.ctrlKey && e.shiftKey && e.key === 'N') { e.preventDefault(); openQuickCapture(); return; }
         // Escape: close modals / clear
         if (e.key === 'Escape') {
+          if (activeOutline) { closeOutlineDropdown(); return; }
           if (activePicker) { closeLayoutDomainPicker(); return; }
           if (el.confirmOverlay.classList.contains('open')) { closeConfirm(false); return; }
           if (el.qcOverlay.classList.contains('open')) { closeQuickCapture(); return; }
           if (el.dsOverlay.classList.contains('open')) { closeDomainSettings(); return; }
-          if (state.editingEntry) { state.editingEntry = null; renderWorkspace(); return; }
           if (state.editingSummary) { state.editingSummary = null; renderWorkspace(); return; }
-          if (state.searchQuery || state.activeTag) { state.searchQuery = ''; state.activeTag = null; el.globalSearch.value = ''; renderWorkspace(); return; }
+          if (state.searchQuery) { state.searchQuery = ''; el.globalSearch.value = ''; renderWorkspace(); return; }
           return;
         }
-        // Skip shortcuts when typing in input/textarea
+        // Skip shortcuts when typing in CodeMirror or input/textarea
         const active = document.activeElement;
         if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+        if (active && active.closest('.CodeMirror')) return;
         // /: focus search
         if (e.key === '/') { e.preventDefault(); el.globalSearch.focus(); return; }
-        // Alt+1~8: focus domain pane
+        // Alt+1~8: focus domain pane CM
         if (e.altKey && !e.shiftKey && e.key >= '1' && e.key <= '8') {
           const idx = parseInt(e.key) - 1;
           if (idx < state.data.domains.length) {
             e.preventDefault();
-            const pane = el.workspace.querySelectorAll('.domain-pane')[idx];
-            if (pane) { const inp = pane.querySelector('.quick-add-input'); if (inp) inp.focus(); }
+            const domId = state.data.domains[idx].id;
+            const cm = state.cmInstances[domId];
+            if (cm) cm.focus();
           }
           return;
         }
@@ -1625,14 +1511,6 @@
         el.layoutBtns.focus.addEventListener('click', (e) => showLayoutDomainPicker(e.currentTarget, 'focus'));
         el.layoutBtns.single.addEventListener('click', (e) => showLayoutDomainPicker(e.currentTarget, 'single'));
         document.getElementById('add-domain-btn').addEventListener('click', () => openDomainSettings(null));
-        document.getElementById('expand-all-btn').addEventListener('click', () => {
-          state.data.domains.forEach(d => { d.summaryCollapsed = false; d.entries.forEach(e => e.collapsed = false); });
-          debouncedSave(); renderWorkspace();
-        });
-        document.getElementById('collapse-all-btn').addEventListener('click', () => {
-          state.data.domains.forEach(d => { d.summaryCollapsed = true; d.entries.forEach(e => e.collapsed = true); });
-          debouncedSave(); renderWorkspace();
-        });
         el.themeBtn.addEventListener('click', () => applyTheme(state.theme === 'dark' ? 'light' : 'dark'));
         document.getElementById('export-json-btn').addEventListener('click', exportJSON);
         document.getElementById('export-md-btn').addEventListener('click', exportMarkdown);
@@ -1664,10 +1542,14 @@
       // ===== Init =====
       function init() {
         // CDN error banner
+        const cdnErrors = [];
         if (!canRenderMarkdown) {
+          cdnErrors.push(hasDOMPurify ? 'marked.js' : 'DOMPurify');
+        }
+        if (!hasCodeMirror) cdnErrors.push('CodeMirror');
+        if (cdnErrors.length) {
           el.cdnBanner.style.display = 'block';
-          el.cdnBanner.textContent = hasDOMPurify ? 'marked.js の読み込みに失敗しました。Markdownレンダリングは利用できません。'
-            : 'DOMPurify の読み込みに失敗しました。Markdownレンダリングは利用できません。';
+          el.cdnBanner.textContent = cdnErrors.join(', ') + ' の読み込みに失敗しました。一部機能が制限されます。';
         }
         // Private browsing detection
         try { localStorage.setItem('__nexus_test__', '1'); localStorage.removeItem('__nexus_test__'); }
@@ -1677,7 +1559,6 @@
         applyTheme(loadTheme());
         bindEvents();
         setupGutterResize();
-        // Set initial layout button active state
         Object.entries(el.layoutBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === state.data.layout));
         renderWorkspace();
         safeReplaceIcons();

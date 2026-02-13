@@ -9,9 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 - **シングルファイル構成**: 各HTMLファイルが独立した完結アプリケーション。ビルド不要
-- **共通パターン**: `index.html`, `markdown_preview.html`, `shelf.html`, `tangle.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は全ファイルを確認する
+- **共通パターン**: `index.html`, `markdown_preview.html`, `shelf.html`, `tangle.html`, `nexus.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は全ファイルを確認する
 - **エディタ**: CodeMirror 5.65.7（CDN）を使用。`elements.htmlEditor`は初期化後CodeMirrorインスタンスに置き換わる（`getValue()` / `setValue()` / `replaceRange()`等のAPIを使用）
-- **外部CDN依存**: Feather Icons, lodash (debounce), CodeMirror, Noto Sans JP。Loomは外部依存なし（JetBrains Mono fontのみ）。Shelf/TangleはCodeMirror不使用
+- **外部CDN依存**: Feather Icons, lodash (debounce), CodeMirror, Noto Sans JP。Loomは外部依存なし（JetBrains Mono fontのみ）。Shelf/TangleはCodeMirror不使用。NexusはCodeMirror使用（Markdownモード）
 - **ツール間導線**: 全ファイルのツールバーに相互リンクナビゲーション（`.toolbar-nav` / Loomは`.header-nav`）
 - **状態管理**: 各アプリがIIFE内でstate objectとlocalStorageで状態を管理
 
@@ -24,6 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `loom.html` | AI出力ワークベンチ（Context Builder + Output Assembler） | `loom_state` |
 | `shelf.html` | AIナレッジクリッパー | `shelf_data`, `shelfTheme`, `shelfView` |
 | `tangle.html` | 思考アウトライナー | `tangle_data`, `tangleTheme` |
+| `nexus.html` | 領域横断メモワークスペース | `nexus_data`, `nexusTheme` |
 
 ## Development
 
@@ -57,3 +58,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ノード: `{ id, text, aiResponse, collapsed, aiCollapsed, children: Node[] }`
 - ドラッグ&ドロップ（before/after/inside）、フォーカスモード（サブツリー表示）
 - エクスポート: Markdown / PlainText / JSON
+
+## Nexus固有の設計
+
+- 領域横断Markdownワークスペース。複数ドメイン（2～8個）を並べて俯瞰するマルチペインビュー
+- CSS Gridレイアウト: grid/horizontal/focus/singleの4プリセット + ガタードラッグによる自由リサイズ
+- ドメインペイン: カラーインジケータ + AI要約（Markdown, 折りたたみ可）+ CodeMirrorエディタ
+- データモデル（v2）: `domain → content: "## Topic\n..."` 単一Markdown文字列。旧v1（entries配列）は自動マイグレーション
+- Edit/Previewトグル: 各ペイン独立でCodeMirror編集 / Markdownプレビュー切替
+- Heading Outline: `## 見出し` をドロップダウンで一覧表示、行番号ベースでジャンプ
+- Markdownレンダリング: `marked.parse()` → `DOMPurify.sanitize()` パイプラインでXSS防止
+- グローバル検索（全ドメイン横断、debounce 200ms）+ CodeMirror `markText()` ハイライト
+- クイックキャプチャ: Ctrl+Shift+N でモーダルからドメインのcontentに追記
+- JSON/Markdownエクスポート、JSONインポート（v1後方互換マイグレーション + 統合/置換選択）
+- `validateData()` でloadData時の検証、`validateImport()` でインポート時の厳密検証（ホワイトリスト適用）
+- CDNフォールバック: CodeMirror読み込み失敗時はplain textareaにフォールバック
