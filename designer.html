@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visual HTML Designer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+    <!-- CodeMirror core -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/htmlmixed/htmlmixed.min.js"></script>
+    <!-- CodeMirror addons: fold -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/fold/foldgutter.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/fold/brace-fold.min.js"></script>
+    <!-- CodeMirror addons: search -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/dialog/dialog.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/jump-to-line.min.js"></script>
+    <!-- CodeMirror addons: active line -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/selection/active-line.min.js"></script>
+    <!-- js-beautify for HTML formatting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+    <style>
+    :root {
+      --da-ink: #1e1f25;
+      --da-charcoal: #282a32;
+      --da-graphite: #353842;
+      --da-slate: #4a4e5c;
+      --da-ash: #6b7085;
+      --da-stone: #9498ab;
+      --da-cloud: #c4c8d6;
+      --da-mist: #e2e4ec;
+      --da-frost: #f0f1f5;
+      --da-snow: #f8f9fb;
+      --da-secondary: #5b8fcc;
+      --da-secondary-hover: #4a7db8;
+      --da-accent-muted: #5b8fcc26;
+      --da-accent-glow: #5b8fcc12;
+      --da-success: #4aba8a;
+      --da-warning: #d4943a;
+      --da-error: #d45a5a;
+      --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+      --duration-fast: 100ms;
+      --duration-normal: 200ms;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+      --app-text-primary: var(--da-ink);
+      --app-text-secondary: var(--da-slate);
+      --app-text-on-dark: var(--da-snow);
+      --app-text-muted: var(--da-ash);
+      --app-bg-primary: var(--da-snow);
+      --app-bg-secondary: var(--da-frost);
+      --app-bg-dark: var(--da-charcoal);
+      --app-border-default: var(--da-mist);
+      --app-border-focus: var(--da-secondary);
+      --app-border-hover: var(--da-cloud);
+      --app-toolbar-bg: var(--da-charcoal);
+      --app-toolbar-text: var(--da-snow);
+      --app-toolbar-border: var(--da-graphite);
+      --app-panel-header-bg: var(--da-ink);
+      --app-panel-header-text: var(--da-snow);
+      --app-editor-bg: var(--da-snow);
+      --app-editor-text: var(--da-ink);
+      --app-editor-placeholder: var(--da-ash);
+      --app-line-numbers-bg: var(--da-ink);
+      --app-line-numbers-text: var(--da-cloud);
+      --app-gutter-bg: var(--da-ink);
+      --app-gutter-hover: var(--da-graphite);
+      --app-gutter-handle: var(--da-stone);
+      --app-accent: var(--da-secondary);
+      --app-accent-hover: var(--da-secondary-hover);
+    }
+
+    :root[data-theme="dark"] {
+      --app-text-primary: var(--da-frost);
+      --app-text-secondary: var(--da-stone);
+      --app-text-muted: var(--da-ash);
+      --app-bg-primary: var(--da-charcoal);
+      --app-bg-secondary: var(--da-ink);
+      --app-bg-dark: var(--da-ink);
+      --app-border-default: var(--da-graphite);
+      --app-border-hover: var(--da-slate);
+      --app-toolbar-bg: var(--da-ink);
+      --app-toolbar-text: var(--da-frost);
+      --app-toolbar-border: var(--da-graphite);
+      --app-panel-header-bg: var(--da-ink);
+      --app-panel-header-text: var(--da-frost);
+      --app-editor-bg: var(--da-charcoal);
+      --app-editor-text: var(--da-frost);
+      --app-editor-placeholder: var(--da-ash);
+      --app-line-numbers-bg: var(--da-ink);
+      --app-line-numbers-text: var(--da-cloud);
+      --app-gutter-bg: var(--da-ink);
+      --app-gutter-hover: var(--da-graphite);
+      --app-gutter-handle: var(--da-stone);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: 400;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--app-bg-primary);
+      color: var(--app-text-primary);
+    }
+
+    .toolbar {
+      background-color: var(--app-toolbar-bg);
+      color: var(--app-toolbar-text);
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--app-toolbar-border);
+      box-shadow: inset 0 -2px 0 0 var(--da-secondary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      min-height: 48px;
+    }
+
+    .toolbar-title {
+      font-weight: 500;
+      font-size: 15px;
+      line-height: 1.4;
+      margin-right: auto;
+      color: var(--app-toolbar-text);
+      letter-spacing: 0.05em;
+    }
+
+    .toolbar-menu {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    .toolbar-button {
+      background: none;
+      border: 1px solid transparent;
+      padding: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      min-width: 34px;
+      min-height: 34px;
+      transition: all var(--duration-normal) var(--ease-out-expo);
+    }
+    .toolbar-button svg {
+      width: 17px;
+      height: 17px;
+      color: var(--da-cloud);
+      transition: all var(--duration-normal) var(--ease-out-expo);
+    }
+    .toolbar-button:hover { background-color: var(--da-graphite); }
+    .toolbar-button:hover svg { color: var(--da-snow); }
+    .toolbar-button:active { transform: scale(0.93); }
+    .toolbar-button.active {
+      background: var(--da-accent-muted);
+      border-color: var(--da-secondary);
+    }
+    .toolbar-button.active svg { color: var(--da-snow); }
+    .toolbar-button:focus-visible {
+      outline: 2px solid var(--da-secondary);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 4px var(--da-accent-muted);
+      border-radius: 6px;
+    }
+
+    .toolbar-separator {
+      width: 1px;
+      height: 24px;
+      background: var(--da-graphite);
+      margin: 0 4px;
+    }
+
+    @media (max-width: 600px) {
+      .toolbar { flex-wrap: wrap; }
+      .toolbar-menu { width: 100%; justify-content: center; flex-wrap: wrap; }
+    }
+
+    #html-editor:focus, #html-editor:focus-visible {
+      outline: 2px solid var(--app-border-focus);
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+
+    .split-view {
+      display: flex;
+      width: 100%;
+      flex-grow: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .split-view.layout-lr { flex-direction: row; }
+    .split-view.layout-tb { flex-direction: column; }
+
+    .editor-container, .preview-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      transition: width 250ms var(--ease-out-expo), height 250ms var(--ease-out-expo);
+    }
+
+    .editor-container { background-color: var(--app-editor-bg); }
+    .split-view.layout-lr .editor-container { width: 50%; height: 100%; }
+    .split-view.layout-tb .editor-container { width: 100%; height: 50%; }
+    .preview-panel { background-color: var(--app-bg-primary); }
+    .split-view.layout-lr .preview-panel { width: 50%; height: 100%; }
+    .split-view.layout-tb .preview-panel { width: 100%; height: 50%; }
+
+    .split-view.layout-po .editor-container,
+    .split-view.layout-po .gutter { display: none; }
+    .split-view.layout-po .preview-panel { width: 100% !important; height: 100% !important; }
+
+    .panel-header {
+      background: var(--app-panel-header-bg);
+      color: var(--app-panel-header-text);
+      padding: 8px 16px;
+      border-left: 3px solid var(--da-secondary);
+      font-weight: 600;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .panel-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0;
+      border-left: none;
+    }
+    .panel-tab {
+      background: transparent;
+      border: none;
+      color: var(--app-panel-header-text);
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      opacity: 0.6;
+      transition: all var(--duration-normal);
+    }
+    .panel-tab.active {
+      opacity: 1;
+      border-bottom-color: var(--da-secondary);
+    }
+    .panel-tab:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .panel-tab:not(:disabled):hover {
+      opacity: 0.9;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .editor-content-wrapper {
+      display: flex;
+      flex-grow: 1;
+      overflow: hidden;
+      border: 1px solid var(--app-border-default);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    :root[data-theme="dark"] .editor-content-wrapper {
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    #html-editor {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 0;
+      padding: 12px 16px;
+      font-family: "Noto Sans Mono", Consolas, "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      flex-grow: 1;
+      background-color: var(--app-editor-bg);
+      color: var(--app-editor-text);
+    }
+    .CodeMirror { width: 100%; height: 100%; flex-grow: 1; }
+    .CodeMirror-activeline-background { background: var(--da-accent-glow) !important; }
+    .CodeMirror-selected { background: var(--da-accent-muted) !important; }
+    .CodeMirror-focused .CodeMirror-selected { background: var(--da-accent-muted) !important; }
+    #html-editor::placeholder {
+      color: var(--app-editor-placeholder);
+      font-style: italic;
+    }
+
+    .panel-content {
+      flex-grow: 1;
+      overflow: hidden;
+      padding: 0;
+      border: 1px solid var(--app-border-default);
+      border-top: none;
+      background-color: var(--app-bg-primary);
+      border-radius: 0 0 4px 4px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #preview-container {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: var(--app-bg-primary);
+      border-radius: 4px;
+      flex-grow: 1;
+    }
+
+    /* Design Mode active: blue border on preview */
+    .preview-panel.design-active .panel-content {
+      border: 2px solid var(--da-secondary);
+      border-radius: 0 0 4px 4px;
+    }
+
+    .gutter {
+      background-color: var(--app-gutter-bg);
+      position: relative;
+      transition: background-color var(--duration-normal) var(--ease-out-expo);
+    }
+    .split-view.layout-lr .gutter {
+      width: 6px; height: 100%; cursor: col-resize;
+      margin: 0 -4px; padding: 0 4px; background-clip: content-box;
+    }
+    .split-view.layout-tb .gutter {
+      width: 100%; height: 6px; cursor: row-resize;
+      margin: -4px 0; padding: 4px 0; background-clip: content-box;
+    }
+    .gutter:hover { background-color: var(--da-secondary); }
+    .gutter.dragging { box-shadow: 0 0 8px var(--da-accent-muted); }
+    .gutter::before {
+      content: "";
+      position: absolute;
+      border-radius: 2px;
+      transition: background-color var(--duration-normal) var(--ease-out-expo);
+    }
+    .split-view.layout-lr .gutter::before {
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 3px; height: 3px;
+      box-shadow: 0 -6px 0 0 var(--app-gutter-handle), 0 0 0 0 var(--app-gutter-handle), 0 6px 0 0 var(--app-gutter-handle);
+      background: var(--app-gutter-handle);
+    }
+    .split-view.layout-tb .gutter::before {
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 3px; height: 3px;
+      box-shadow: -6px 0 0 0 var(--app-gutter-handle), 0 0 0 0 var(--app-gutter-handle), 6px 0 0 0 var(--app-gutter-handle);
+      background: var(--app-gutter-handle);
+    }
+
+    body.dragging-lr, body.dragging-lr * { cursor: col-resize !important; }
+    body.dragging-tb, body.dragging-tb * { cursor: row-resize !important; }
+    .resize-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 9999;
+    }
+
+    /* Toast notifications */
+    @keyframes toast-slide-in {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes toast-fade-out {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-8px); opacity: 0; }
+    }
+    .temp-message {
+      position: fixed;
+      top: 60px; right: 20px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 10000;
+      pointer-events: none;
+      background-color: var(--da-charcoal);
+      color: var(--da-snow);
+      border: 1px solid var(--da-graphite);
+      box-shadow: var(--shadow-md);
+      animation: toast-slide-in 300ms var(--ease-out-expo);
+    }
+    .temp-message[role="status"] { border-left: 3px solid var(--da-success); }
+    .temp-message.toast-error[role="status"] { border-left: 3px solid var(--da-error); }
+    .temp-message.toast-out { animation: toast-fade-out 300ms var(--ease-out-expo) forwards; }
+
+    .theme-icon-spin svg { animation: theme-spin 400ms var(--ease-out-expo); }
+    @keyframes theme-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .toolbar-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 4px;
+    }
+    .toolbar-nav a {
+      color: var(--da-cloud);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+      transition: all var(--duration-normal) var(--ease-out-expo);
+      white-space: nowrap;
+    }
+    .toolbar-nav a:hover { color: var(--da-snow); background-color: var(--da-graphite); }
+    .toolbar-nav a.nav-active { color: var(--da-secondary); background: var(--da-accent-muted); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ======== Design Toolbar ======== */
+    .design-toolbar {
+      background: var(--app-bg-secondary);
+      border-top: 1px solid var(--app-border-default);
+      overflow-y: auto;
+      flex-grow: 1;
+      font-size: 12px;
+    }
+    .design-toolbar::-webkit-scrollbar { width: 5px; }
+    .design-toolbar::-webkit-scrollbar-track { background: transparent; }
+    .design-toolbar::-webkit-scrollbar-thumb {
+      background: var(--da-ash);
+      border-radius: 3px;
+    }
+
+    .dt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--app-panel-header-bg);
+      border-bottom: 1px solid var(--app-border-default);
+      gap: 8px;
+    }
+    .dt-element-tag {
+      font-family: "Noto Sans Mono", Consolas, monospace;
+      font-size: 13px;
+      color: var(--da-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dt-hint {
+      font-size: 11px;
+      color: var(--da-stone);
+      padding: 8px 12px;
+      text-align: center;
+    }
+    .dt-actions {
+      display: flex;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .dt-btn {
+      background: none;
+      border: 1px solid var(--da-graphite);
+      border-radius: 4px;
+      padding: 3px 5px;
+      cursor: pointer;
+      color: var(--da-cloud);
+      display: flex;
+      align-items: center;
+      transition: all var(--duration-fast);
+    }
+    .dt-btn:hover {
+      background: var(--da-accent-muted);
+      border-color: var(--da-secondary);
+      color: var(--da-snow);
+    }
+    .dt-btn svg { width: 13px; height: 13px; }
+
+    .dt-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--app-text-secondary);
+      border-bottom: 1px solid var(--app-border-default);
+      user-select: none;
+      transition: background var(--duration-fast);
+    }
+    .dt-section-header:hover { background: var(--da-accent-glow); }
+    .dt-section-header .dt-chevron {
+      width: 14px; height: 14px;
+      transition: transform 200ms var(--ease-out-expo);
+    }
+    .dt-section-header.collapsed .dt-chevron { transform: rotate(-90deg); }
+
+    .dt-section-body {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-bottom: 1px solid var(--app-border-default);
+    }
+    .dt-section-body.collapsed { display: none; }
+
+    .dt-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dt-row label {
+      min-width: 65px;
+      color: var(--app-text-secondary);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .dt-color-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dt-color-row label {
+      min-width: 50px;
+      color: var(--app-text-secondary);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .dt-color-row input[type="color"] {
+      width: 26px; height: 26px;
+      border: 1px solid var(--app-border-default);
+      border-radius: 4px;
+      padding: 1px;
+      cursor: pointer;
+      background: none;
+    }
+    .dt-input, .dt-input-sm {
+      border: 1px solid var(--app-border-default);
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 11px;
+      background: var(--app-editor-bg);
+      color: var(--app-text-primary);
+      font-family: inherit;
+    }
+    .dt-input { width: 90px; }
+    .dt-input-sm { width: 52px; }
+
+    .dt-select {
+      border: 1px solid var(--app-border-default);
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 11px;
+      background: var(--app-editor-bg);
+      color: var(--app-text-primary);
+      font-family: inherit;
+    }
+
+    .dt-row input[type="range"] {
+      flex: 1;
+      min-width: 60px;
+      accent-color: var(--da-secondary);
+      height: 16px;
+    }
+
+    .dt-btn-group {
+      display: flex;
+      gap: 1px;
+      background: var(--app-border-default);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .dt-btn-sm {
+      background: var(--app-bg-secondary);
+      border: none;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--app-text-secondary);
+      transition: all var(--duration-fast);
+    }
+    .dt-btn-sm:hover, .dt-btn-sm.active {
+      background: var(--da-accent-muted);
+      color: var(--app-text-primary);
+    }
+
+    .dt-transparent-btn {
+      background: none;
+      border: 1px solid var(--app-border-default);
+      border-radius: 4px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--app-text-muted);
+      line-height: 1;
+    }
+    .dt-transparent-btn:hover {
+      border-color: var(--da-error);
+      color: var(--da-error);
+    }
+
+    .dt-link-btn {
+      background: none;
+      border: 1px solid var(--app-border-default);
+      border-radius: 4px;
+      padding: 2px 5px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--app-text-muted);
+      display: flex;
+      align-items: center;
+    }
+    .dt-link-btn.linked {
+      color: var(--da-secondary);
+      border-color: var(--da-secondary);
+    }
+    .dt-link-btn svg { width: 12px; height: 12px; }
+
+    /* Box model diagram */
+    .dt-box-model {
+      width: 100%;
+      max-width: 260px;
+      margin: 4px auto;
+      font-size: 10px;
+    }
+    .dt-box-margin {
+      position: relative;
+      background: rgba(255, 165, 0, 0.1);
+      border: 1px dashed rgba(255, 165, 0, 0.3);
+      padding: 18px 24px;
+    }
+    .dt-box-padding {
+      position: relative;
+      background: rgba(76, 175, 80, 0.1);
+      border: 1px dashed rgba(76, 175, 80, 0.3);
+      padding: 18px 24px;
+    }
+    .dt-box-content {
+      background: rgba(91, 143, 204, 0.15);
+      border: 1px solid rgba(91, 143, 204, 0.3);
+      padding: 6px;
+      text-align: center;
+      color: var(--app-text-muted);
+      font-size: 10px;
+    }
+    .dt-box-label {
+      position: absolute;
+      top: 1px; left: 3px;
+      font-size: 9px;
+      color: var(--app-text-muted);
+      opacity: 0.7;
+    }
+    .dt-box-input {
+      position: absolute;
+      width: 32px;
+      text-align: center;
+      border: 1px solid var(--app-border-default);
+      border-radius: 3px;
+      font-size: 10px;
+      padding: 1px;
+      background: var(--app-editor-bg);
+      color: var(--app-text-primary);
+      font-family: inherit;
+    }
+    .dt-box-input:focus {
+      outline: 1px solid var(--da-secondary);
+      border-color: var(--da-secondary);
+    }
+    .dt-box-top { top: 1px; left: 50%; transform: translateX(-50%); }
+    .dt-box-right { right: 2px; top: 50%; transform: translateY(-50%); }
+    .dt-box-bottom { bottom: 1px; left: 50%; transform: translateX(-50%); }
+    .dt-box-left { left: 2px; top: 50%; transform: translateY(-50%); }
+
+    /* Add child dropdown */
+    .dt-add-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--app-bg-primary);
+      border: 1px solid var(--app-border-default);
+      border-radius: 6px;
+      box-shadow: var(--shadow-md);
+      z-index: 200;
+      min-width: 120px;
+      padding: 4px 0;
+    }
+    .dt-add-dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-family: "Noto Sans Mono", Consolas, monospace;
+      color: var(--app-text-primary);
+      cursor: pointer;
+    }
+    .dt-add-dropdown button:hover {
+      background: var(--da-accent-muted);
+    }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <span class="toolbar-title">Visual HTML Designer</span>
+      <div class="toolbar-menu">
+        <div class="btn-group" role="group" aria-label="編集操作">
+          <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" tabindex="0">
+            <i data-feather="rotate-ccw"></i>
+          </button>
+          <button class="toolbar-button" id="redo-btn" title="やり直す (Ctrl+Y)" aria-label="やり直す" tabindex="0">
+            <i data-feather="rotate-cw"></i>
+          </button>
+          <button class="toolbar-button" id="copy-btn" title="コードをクリップボードにコピー (Ctrl+Shift+C)" aria-label="コピー" tabindex="0">
+            <i data-feather="copy"></i>
+          </button>
+          <button class="toolbar-button" id="paste-btn" title="クリップボードから貼り付け" aria-label="貼り付け" tabindex="0">
+            <i data-feather="clipboard"></i>
+          </button>
+          <button class="toolbar-button" id="clear-btn" title="エディターをクリア (Ctrl+Delete)" aria-label="クリア" tabindex="0">
+            <i data-feather="trash-2"></i>
+          </button>
+        </div>
+        <div class="btn-group" role="group" aria-label="レイアウト切り替え">
+          <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割" tabindex="0">
+            <i data-feather="columns"></i>
+          </button>
+          <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割" tabindex="0">
+            <i data-feather="minimize-2"></i>
+          </button>
+          <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ" tabindex="0">
+            <i data-feather="eye"></i>
+          </button>
+          <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" tabindex="0">
+            <i data-feather="moon" id="theme-toggle-icon"></i>
+          </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="btn-group" role="group" aria-label="デザインモード">
+          <button class="toolbar-button" id="design-mode-btn" title="デザインモード (Ctrl+D)" aria-label="デザインモード切替" tabindex="0">
+            <i data-feather="edit-3"></i>
+          </button>
+        </div>
+        <div style="flex-grow: 1" aria-hidden="true"></div>
+        <div class="btn-group" role="group" aria-label="ファイル操作">
+          <button class="toolbar-button" id="open-btn" title="HTMLファイルを開く" aria-label="開く" tabindex="0">
+            <i data-feather="upload"></i>
+          </button>
+          <input type="file" id="file-input" accept=".html,.htm,text/html" style="display: none;" />
+          <button class="toolbar-button" id="save-btn" title="HTMLファイルをダウンロード (Ctrl+S)" aria-label="保存" tabindex="0">
+            <i data-feather="download"></i>
+          </button>
+        </div>
+        <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
+          <a href="index.html">HTML</a>
+          <a href="designer.html" class="nav-active">Designer</a>
+          <a href="markdown_preview.html">MD</a>
+          <a href="loom.html">Loom</a>
+          <a href="shelf.html">Shelf</a>
+          <a href="tangle.html">Tangle</a>
+          <a href="nexus.html">Nexus</a>
+          <a href="diffuse.html">Diffuse</a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="split-view" id="split-view">
+      <div class="editor-container" id="editor-container">
+        <div class="panel-header panel-tabs">
+          <button class="panel-tab active" id="tab-code" data-tab="code">Code</button>
+          <button class="panel-tab" id="tab-design" data-tab="design" disabled>Design</button>
+        </div>
+        <div class="editor-content-wrapper" id="code-panel">
+          <textarea
+            id="html-editor"
+            placeholder="HTMLコードをここに入力..."
+            wrap="soft"
+            aria-label="HTMLコードエディター"
+            role="textbox"
+            aria-multiline="true"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+      </div>
+      <div class="gutter" id="gutter"></div>
+      <div class="preview-panel" id="preview-panel">
+        <div class="panel-header">Preview</div>
+
+        <!-- Design Toolbar -->
+        <div id="design-toolbar" class="design-toolbar" style="display: none;">
+          <div class="dt-header">
+            <span class="dt-element-tag" id="dt-element-tag">--</span>
+            <div class="dt-actions" id="dt-actions" style="display: none;">
+              <button class="dt-btn" id="dt-move-up" title="上へ移動"><i data-feather="chevron-up"></i></button>
+              <button class="dt-btn" id="dt-move-down" title="下へ移動"><i data-feather="chevron-down"></i></button>
+              <button class="dt-btn" id="dt-duplicate" title="複製"><i data-feather="copy"></i></button>
+              <button class="dt-btn" id="dt-delete" title="削除"><i data-feather="trash-2"></i></button>
+              <div style="position:relative">
+                <button class="dt-btn" id="dt-add-child" title="子要素追加"><i data-feather="plus"></i></button>
+                <div class="dt-add-dropdown" id="dt-add-dropdown" style="display:none">
+                  <button data-tag="div">div</button>
+                  <button data-tag="p">p</button>
+                  <button data-tag="span">span</button>
+                  <button data-tag="h2">h2</button>
+                  <button data-tag="button">button</button>
+                  <button data-tag="a">a</button>
+                  <button data-tag="img">img</button>
+                  <button data-tag="ul">ul &gt; li</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="dt-hint" class="dt-hint">要素をクリックして選択</div>
+
+          <div id="dt-controls" style="display: none;">
+            <!-- Colors -->
+            <div class="dt-section-header" data-section="dt-colors">
+              <span>Colors</span>
+              <i data-feather="chevron-down" class="dt-chevron"></i>
+            </div>
+            <div class="dt-section-body" id="dt-colors">
+              <div class="dt-color-row">
+                <label>Background</label>
+                <input type="color" id="dt-bg-color" value="#ffffff" />
+                <input type="text" id="dt-bg-color-text" class="dt-input-sm" placeholder="#fff" />
+                <button class="dt-transparent-btn" id="dt-bg-transparent" title="transparent">T</button>
+              </div>
+              <div class="dt-color-row">
+                <label>Text</label>
+                <input type="color" id="dt-text-color" value="#000000" />
+                <input type="text" id="dt-text-color-text" class="dt-input-sm" placeholder="#000" />
+              </div>
+              <div class="dt-color-row">
+                <label>Border</label>
+                <input type="color" id="dt-border-color" value="#000000" />
+                <input type="text" id="dt-border-color-text" class="dt-input-sm" placeholder="#000" />
+              </div>
+            </div>
+
+            <!-- Typography -->
+            <div class="dt-section-header collapsed" data-section="dt-typography">
+              <span>Typography</span>
+              <i data-feather="chevron-down" class="dt-chevron"></i>
+            </div>
+            <div class="dt-section-body collapsed" id="dt-typography">
+              <div class="dt-row">
+                <label>Font Size</label>
+                <input type="range" id="dt-font-size-slider" min="8" max="72" value="16" />
+                <input type="number" id="dt-font-size" class="dt-input-sm" min="1" max="200" value="16" />
+                <span>px</span>
+              </div>
+              <div class="dt-row">
+                <label>Weight</label>
+                <select id="dt-font-weight" class="dt-select">
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                  <option value="300">300</option>
+                  <option value="400" selected>400</option>
+                  <option value="500">500</option>
+                  <option value="600">600</option>
+                  <option value="700">700</option>
+                  <option value="800">800</option>
+                  <option value="900">900</option>
+                </select>
+              </div>
+              <div class="dt-row">
+                <label>Align</label>
+                <div class="dt-btn-group" id="dt-text-align-group">
+                  <button class="dt-btn-sm" data-align="left">L</button>
+                  <button class="dt-btn-sm" data-align="center">C</button>
+                  <button class="dt-btn-sm" data-align="right">R</button>
+                  <button class="dt-btn-sm" data-align="justify">J</button>
+                </div>
+              </div>
+              <div class="dt-row">
+                <label>Line Height</label>
+                <input type="range" id="dt-line-height-slider" min="0.5" max="3" step="0.1" value="1.5" />
+                <input type="number" id="dt-line-height" class="dt-input-sm" min="0.5" max="5" step="0.1" value="1.5" />
+              </div>
+            </div>
+
+            <!-- Spacing -->
+            <div class="dt-section-header collapsed" data-section="dt-spacing">
+              <span>Spacing</span>
+              <i data-feather="chevron-down" class="dt-chevron"></i>
+            </div>
+            <div class="dt-section-body collapsed" id="dt-spacing">
+              <div class="dt-box-model">
+                <div class="dt-box-margin">
+                  <span class="dt-box-label">margin</span>
+                  <input class="dt-box-input dt-box-top" id="dt-margin-top" value="0" data-prop="marginTop" />
+                  <input class="dt-box-input dt-box-right" id="dt-margin-right" value="0" data-prop="marginRight" />
+                  <input class="dt-box-input dt-box-bottom" id="dt-margin-bottom" value="0" data-prop="marginBottom" />
+                  <input class="dt-box-input dt-box-left" id="dt-margin-left" value="0" data-prop="marginLeft" />
+                  <div class="dt-box-padding">
+                    <span class="dt-box-label">padding</span>
+                    <input class="dt-box-input dt-box-top" id="dt-padding-top" value="0" data-prop="paddingTop" />
+                    <input class="dt-box-input dt-box-right" id="dt-padding-right" value="0" data-prop="paddingRight" />
+                    <input class="dt-box-input dt-box-bottom" id="dt-padding-bottom" value="0" data-prop="paddingBottom" />
+                    <input class="dt-box-input dt-box-left" id="dt-padding-left" value="0" data-prop="paddingLeft" />
+                    <div class="dt-box-content">content</div>
+                  </div>
+                </div>
+              </div>
+              <div class="dt-row" style="margin-top:4px; justify-content:center; gap:12px">
+                <button class="dt-link-btn" id="dt-padding-link" title="Padding一括変更">
+                  <i data-feather="link"></i>
+                  <span style="margin-left:3px">Pad</span>
+                </button>
+                <button class="dt-link-btn" id="dt-margin-link" title="Margin一括変更">
+                  <i data-feather="link"></i>
+                  <span style="margin-left:3px">Mar</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Box -->
+            <div class="dt-section-header collapsed" data-section="dt-box">
+              <span>Box</span>
+              <i data-feather="chevron-down" class="dt-chevron"></i>
+            </div>
+            <div class="dt-section-body collapsed" id="dt-box">
+              <div class="dt-row">
+                <label>Width</label>
+                <input type="text" id="dt-width" class="dt-input" placeholder="auto" />
+              </div>
+              <div class="dt-row">
+                <label>Height</label>
+                <input type="text" id="dt-height" class="dt-input" placeholder="auto" />
+              </div>
+              <div class="dt-row">
+                <label>Radius</label>
+                <input type="range" id="dt-border-radius-slider" min="0" max="50" value="0" />
+                <input type="number" id="dt-border-radius" class="dt-input-sm" min="0" max="999" value="0" />
+                <span>px</span>
+              </div>
+              <div class="dt-row">
+                <label>Opacity</label>
+                <input type="range" id="dt-opacity-slider" min="0" max="1" step="0.05" value="1" />
+                <span id="dt-opacity-value" style="min-width:28px;text-align:right">1</span>
+              </div>
+              <div class="dt-row">
+                <label>Display</label>
+                <select id="dt-display" class="dt-select">
+                  <option value="block">block</option>
+                  <option value="flex">flex</option>
+                  <option value="grid">grid</option>
+                  <option value="inline">inline</option>
+                  <option value="inline-block">inline-block</option>
+                  <option value="none">none</option>
+                </select>
+              </div>
+              <div class="dt-row">
+                <label>Overflow</label>
+                <select id="dt-overflow" class="dt-select">
+                  <option value="visible">visible</option>
+                  <option value="hidden">hidden</option>
+                  <option value="scroll">scroll</option>
+                  <option value="auto">auto</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <iframe id="preview-container" frameborder="0" aria-label="HTMLプレビュー" title="HTMLコードのプレビュー結果"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    (function() {
+      'use strict';
+
+      // ========================================
+      // CONFIG
+      // ========================================
+      var CONFIG = {
+        defaultLayout: 'lr',
+        storageKey: 'designerCode',
+        layoutStorageKey: 'designerLayout',
+        themeStorageKey: 'designerTheme',
+        debounceDelay: 300,
+        designSyncDelay: 600,
+        layouts: { lr: 'Left-Right', tb: 'Top-Bottom', po: 'Preview Only' }
+      };
+
+      // ========================================
+      // UTILITIES
+      // ========================================
+      var ErrorHandler = {
+        log: function(error, context) {
+          console.error('[Designer' + (context ? ' - ' + context : '') + ']', error);
+        },
+        showPreviewError: function(error) {
+          var iframeDoc = elements.previewContainer.contentDocument ||
+            (elements.previewContainer.contentWindow && elements.previewContainer.contentWindow.document);
+          if (!iframeDoc) return;
+          iframeDoc.open();
+          iframeDoc.write(
+            '<div style="padding:20px;background:#fff3cd;border:1px solid #ffeaa7;color:#856404;font-family:system-ui">' +
+            '<h3 style="margin-top:0">Preview Error</h3>' +
+            '<pre style="background:#f8f9fa;padding:10px;border-radius:4px;overflow-x:auto">' +
+            escHtml(error.message || String(error)) + '</pre></div>'
+          );
+          iframeDoc.close();
+        },
+        handle: function(error, context, showToUser) {
+          ErrorHandler.log(error, context);
+          if (showToUser && context === 'preview') ErrorHandler.showPreviewError(error);
+        }
+      };
+
+      var debounce = window._ ? _.debounce : function(func, delay) {
+        var timeoutId;
+        return function() {
+          var args = arguments, self = this;
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(function() { func.apply(self, args); }, delay);
+        };
+      };
+
+      function escHtml(str) {
+        return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
+      function colorToHex(color) {
+        if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return '';
+        var match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (!match) return color;
+        return '#' + [match[1], match[2], match[3]].map(function(x) {
+          return parseInt(x).toString(16).padStart(2, '0');
+        }).join('');
+      }
+
+      function parsePixelValue(val) {
+        return parseInt(val) || 0;
+      }
+
+      function beautifyHtml(html) {
+        if (typeof html_beautify === 'function') {
+          return html_beautify(html, {
+            indent_size: 2,
+            wrap_line_length: 0,
+            preserve_newlines: true,
+            max_preserve_newlines: 2,
+            indent_inner_html: true
+          });
+        }
+        return html;
+      }
+
+      function doTouchDrag(ev) { doDrag(ev.touches[0]); }
+
+      // ========================================
+      // DOM ELEMENTS
+      // ========================================
+      var elements = {
+        splitView: document.getElementById('split-view'),
+        editorContainer: document.getElementById('editor-container'),
+        previewPanel: document.getElementById('preview-panel'),
+        gutter: document.getElementById('gutter'),
+        htmlEditor: document.getElementById('html-editor'),
+        previewContainer: document.getElementById('preview-container'),
+        layoutLrBtn: document.getElementById('layout-lr-btn'),
+        layoutTbBtn: document.getElementById('layout-tb-btn'),
+        layoutPoBtn: document.getElementById('layout-po-btn'),
+        undoBtn: document.getElementById('undo-btn'),
+        redoBtn: document.getElementById('redo-btn'),
+        copyBtn: document.getElementById('copy-btn'),
+        pasteBtn: document.getElementById('paste-btn'),
+        clearBtn: document.getElementById('clear-btn'),
+        openBtn: document.getElementById('open-btn'),
+        fileInput: document.getElementById('file-input'),
+        saveBtn: document.getElementById('save-btn'),
+        themeToggleBtn: document.getElementById('theme-toggle-btn'),
+        themeToggleIcon: document.getElementById('theme-toggle-icon'),
+        designModeBtn: document.getElementById('design-mode-btn'),
+        tabCode: document.getElementById('tab-code'),
+        tabDesign: document.getElementById('tab-design'),
+        codePanel: document.getElementById('code-panel'),
+        designToolbar: document.getElementById('design-toolbar'),
+        dtElementTag: document.getElementById('dt-element-tag'),
+        dtActions: document.getElementById('dt-actions'),
+        dtHint: document.getElementById('dt-hint'),
+        dtControls: document.getElementById('dt-controls'),
+        dtAddDropdown: document.getElementById('dt-add-dropdown'),
+        // Color inputs
+        dtBgColor: document.getElementById('dt-bg-color'),
+        dtBgColorText: document.getElementById('dt-bg-color-text'),
+        dtBgTransparent: document.getElementById('dt-bg-transparent'),
+        dtTextColor: document.getElementById('dt-text-color'),
+        dtTextColorText: document.getElementById('dt-text-color-text'),
+        dtBorderColor: document.getElementById('dt-border-color'),
+        dtBorderColorText: document.getElementById('dt-border-color-text'),
+        // Typography
+        dtFontSizeSlider: document.getElementById('dt-font-size-slider'),
+        dtFontSize: document.getElementById('dt-font-size'),
+        dtFontWeight: document.getElementById('dt-font-weight'),
+        dtTextAlignGroup: document.getElementById('dt-text-align-group'),
+        dtLineHeightSlider: document.getElementById('dt-line-height-slider'),
+        dtLineHeight: document.getElementById('dt-line-height'),
+        // Spacing
+        dtPaddingTop: document.getElementById('dt-padding-top'),
+        dtPaddingRight: document.getElementById('dt-padding-right'),
+        dtPaddingBottom: document.getElementById('dt-padding-bottom'),
+        dtPaddingLeft: document.getElementById('dt-padding-left'),
+        dtMarginTop: document.getElementById('dt-margin-top'),
+        dtMarginRight: document.getElementById('dt-margin-right'),
+        dtMarginBottom: document.getElementById('dt-margin-bottom'),
+        dtMarginLeft: document.getElementById('dt-margin-left'),
+        dtPaddingLink: document.getElementById('dt-padding-link'),
+        dtMarginLink: document.getElementById('dt-margin-link'),
+        // Box
+        dtWidth: document.getElementById('dt-width'),
+        dtHeight: document.getElementById('dt-height'),
+        dtBorderRadiusSlider: document.getElementById('dt-border-radius-slider'),
+        dtBorderRadius: document.getElementById('dt-border-radius'),
+        dtOpacitySlider: document.getElementById('dt-opacity-slider'),
+        dtOpacityValue: document.getElementById('dt-opacity-value'),
+        dtDisplay: document.getElementById('dt-display'),
+        dtOverflow: document.getElementById('dt-overflow')
+      };
+
+      // ========================================
+      // STATE
+      // ========================================
+      var state = {
+        currentLayout: CONFIG.defaultLayout,
+        currentTheme: 'light',
+        isDragging: false,
+        dragContext: {},
+        designMode: false,
+        activeTab: 'code',
+        syncingFromDesign: false,
+        designToken: (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+        paddingLinked: false,
+        marginLinked: false,
+        addDropdownOpen: false
+      };
+
+      // ========================================
+      // INITIALIZATION
+      // ========================================
+      function initialize() {
+        elements.htmlEditor = CodeMirror.fromTextArea(elements.htmlEditor, {
+          lineNumbers: true,
+          mode: 'htmlmixed',
+          lineWrapping: true,
+          foldGutter: true,
+          gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+          styleActiveLine: true,
+          extraKeys: { 'Alt-F': 'findPersistent' }
+        });
+        loadSavedCode();
+
+        var savedTheme;
+        try { savedTheme = localStorage.getItem(CONFIG.themeStorageKey); } catch(e) {}
+        applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+
+        try {
+          var savedLayout = localStorage.getItem(CONFIG.layoutStorageKey);
+          if (savedLayout && CONFIG.layouts[savedLayout]) state.currentLayout = savedLayout;
+        } catch(e) {}
+        applyLayout(state.currentLayout);
+        updatePreview();
+
+        // Editor change handler
+        elements.htmlEditor.on('change', handleEditorInput);
+
+        // Gutter resize
+        elements.gutter.addEventListener('mousedown', startDrag);
+        elements.gutter.addEventListener('touchstart', function(e) { e.preventDefault(); startDrag(e.touches[0]); });
+
+        // Layout buttons
+        elements.layoutLrBtn.addEventListener('click', function() { applyLayout('lr'); });
+        elements.layoutTbBtn.addEventListener('click', function() { applyLayout('tb'); });
+        elements.layoutPoBtn.addEventListener('click', function() { applyLayout('po'); });
+
+        // Editor operation buttons
+        elements.undoBtn.addEventListener('click', undoEditor);
+        elements.redoBtn.addEventListener('click', redoEditor);
+        elements.copyBtn.addEventListener('click', copyEditor);
+        elements.pasteBtn.addEventListener('click', pasteEditor);
+        elements.clearBtn.addEventListener('click', clearEditor);
+
+        // File I/O
+        elements.openBtn.addEventListener('click', function() { elements.fileInput.click(); });
+        elements.fileInput.addEventListener('change', function(e) {
+          loadFromFile(e.target.files[0]);
+          e.target.value = '';
+        });
+        elements.editorContainer.addEventListener('dragover', function(e) { e.preventDefault(); });
+        elements.editorContainer.addEventListener('drop', function(e) {
+          e.preventDefault();
+          loadFromFile(e.dataTransfer.files[0]);
+        });
+        elements.saveBtn.addEventListener('click', saveToFile);
+
+        // Theme
+        elements.themeToggleBtn.addEventListener('click', function() {
+          applyTheme(state.currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        // Design Mode
+        elements.designModeBtn.addEventListener('click', toggleDesignMode);
+        initDesignToolbarEvents();
+
+        // Move design toolbar to editor container & tab events
+        elements.editorContainer.appendChild(elements.designToolbar);
+        elements.tabCode.addEventListener('click', function() { switchTab('code'); });
+        elements.tabDesign.addEventListener('click', function() { switchTab('design'); });
+
+        // Keyboard
+        document.addEventListener('keydown', handleKeyboard, true);
+
+        // postMessage listener for design mode
+        window.addEventListener('message', handleDesignMessage);
+
+        // Close add-child dropdown on outside click
+        document.addEventListener('click', function(e) {
+          if (state.addDropdownOpen && !e.target.closest('#dt-add-child') && !e.target.closest('#dt-add-dropdown')) {
+            elements.dtAddDropdown.style.display = 'none';
+            state.addDropdownOpen = false;
+          }
+        });
+
+        // Toolbar button keyboard support
+        var allButtons = document.querySelectorAll('.toolbar-button');
+        allButtons.forEach(function(btn) {
+          btn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+          });
+        });
+      }
+
+      var debouncedSaveCode = debounce(saveCode, CONFIG.debounceDelay);
+      var debouncedDesignSync = debounce(syncDesignToEditor, CONFIG.designSyncDelay);
+
+      // ========================================
+      // EDITOR INPUT
+      // ========================================
+      function handleEditorInput() {
+        if (state.syncingFromDesign) {
+          state.syncingFromDesign = false;
+          return;
+        }
+        updatePreview();
+        debouncedSaveCode();
+      }
+
+      // ========================================
+      // KEYBOARD SHORTCUTS
+      // ========================================
+      function handleKeyboard(e) {
+        if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveToFile(); }
+        else if (e.ctrlKey && e.shiftKey && e.key === 'C') { e.preventDefault(); copyEditor(); }
+        else if (e.ctrlKey && e.shiftKey && e.key === 'V') { e.preventDefault(); pasteEditor(); }
+        else if (e.ctrlKey && !e.shiftKey && e.key === 'z') { e.preventDefault(); undoEditor(); }
+        else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) { e.preventDefault(); redoEditor(); }
+        else if (e.ctrlKey && e.key === 'Delete') { e.preventDefault(); clearEditor(); }
+        else if (e.ctrlKey && e.key === '1') { e.preventDefault(); applyLayout('lr'); }
+        else if (e.ctrlKey && e.key === '2') { e.preventDefault(); applyLayout('tb'); }
+        else if (e.ctrlKey && e.key === '3') { e.preventDefault(); applyLayout('po'); }
+        else if (e.ctrlKey && !e.shiftKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); e.stopPropagation(); toggleDesignMode(); }
+      }
+
+      // ========================================
+      // LAYOUT
+      // ========================================
+      function applyLayout(mode) {
+        state.currentLayout = mode;
+        try { localStorage.setItem(CONFIG.layoutStorageKey, mode); } catch(e) {}
+        elements.splitView.className = 'split-view layout-' + mode;
+        elements.editorContainer.style.width = '';
+        elements.editorContainer.style.height = '';
+        elements.previewPanel.style.width = '';
+        elements.previewPanel.style.height = '';
+        [elements.layoutLrBtn, elements.layoutTbBtn, elements.layoutPoBtn].forEach(function(b) { b.classList.remove('active'); });
+        if (mode === 'lr') { elements.layoutLrBtn.classList.add('active'); elements.editorContainer.style.width = '50%'; elements.previewPanel.style.width = '50%'; }
+        else if (mode === 'tb') { elements.layoutTbBtn.classList.add('active'); elements.editorContainer.style.height = '50%'; elements.previewPanel.style.height = '50%'; }
+        else if (mode === 'po') { elements.layoutPoBtn.classList.add('active'); }
+      }
+
+      // ========================================
+      // THEME
+      // ========================================
+      function applyTheme(theme) {
+        state.currentTheme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        try { localStorage.setItem(CONFIG.themeStorageKey, theme); } catch(e) {}
+        var btn = elements.themeToggleBtn;
+        if (btn && typeof feather !== 'undefined') {
+          btn.classList.add('theme-icon-spin');
+          var oldIcon = btn.querySelector('svg, [data-feather]');
+          if (oldIcon) oldIcon.remove();
+          var newIcon = document.createElement('i');
+          newIcon.id = 'theme-toggle-icon';
+          newIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
+          btn.appendChild(newIcon);
+          feather.replace();
+          setTimeout(function() { btn.classList.remove('theme-icon-spin'); }, 400);
+        }
+      }
+
+      // ========================================
+      // PREVIEW
+      // ========================================
+      function updatePreview() {
+        var htmlCode = elements.htmlEditor.getValue();
+        var iframeDoc = elements.previewContainer.contentDocument ||
+          (elements.previewContainer.contentWindow && elements.previewContainer.contentWindow.document);
+        if (!iframeDoc) return;
+        try {
+          iframeDoc.open();
+          iframeDoc.write(htmlCode);
+          iframeDoc.close();
+        } catch(error) {
+          ErrorHandler.handle(error, 'preview', true);
+        }
+        // Re-inject design script if Design Mode is active
+        if (state.designMode) {
+          injectDesignScript(iframeDoc);
+        }
+      }
+
+      // ========================================
+      // STORAGE
+      // ========================================
+      function saveCode() {
+        try {
+          localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.getValue());
+        } catch(error) {
+          if (error.name === 'QuotaExceededError') showTemporaryMessage('Storage full', 'error');
+          ErrorHandler.handle(error, 'save', false);
+        }
+      }
+
+      function loadSavedCode() {
+        try {
+          var saved = localStorage.getItem(CONFIG.storageKey);
+          if (saved !== null) {
+            elements.htmlEditor.setValue(saved);
+          } else {
+            elements.htmlEditor.setValue('<!DOCTYPE html>\n<html lang="ja">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Sample Page</title>\n  <style>\n    body {\n      font-family: system-ui, sans-serif;\n      margin: 0;\n      padding: 24px;\n      background: #f9fafb;\n      color: #111827;\n    }\n    .container {\n      max-width: 800px;\n      margin: 0 auto;\n      padding: 32px;\n      background: #fff;\n      border-radius: 8px;\n      box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);\n    }\n    h1 {\n      font-size: 32px;\n      color: #1f2937;\n      border-bottom: 2px solid #3b82f6;\n      padding-bottom: 12px;\n      margin-bottom: 24px;\n    }\n    p { margin-bottom: 16px; }\n    .btn {\n      background: #3b82f6;\n      color: #fff;\n      border: none;\n      padding: 12px 24px;\n      border-radius: 6px;\n      cursor: pointer;\n      font: inherit;\n      transition: all .2s;\n    }\n    .btn:hover {\n      background: #2563eb;\n      transform: translateY(-1px);\n    }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>Visual HTML Designer</h1>\n    <p>Design Mode (Ctrl+D) to visually edit elements.</p>\n    <p>Click elements to change colors, typography, spacing, and more.</p>\n    <button class="btn">Click me</button>\n  </div>\n</body>\n</html>');
+          }
+        } catch(error) {
+          ErrorHandler.handle(error, 'load', false);
+        }
+      }
+
+      // ========================================
+      // EDITOR OPERATIONS
+      // ========================================
+      function undoEditor() { elements.htmlEditor.undo(); showTemporaryMessage('Undo'); }
+      function redoEditor() { elements.htmlEditor.redo(); showTemporaryMessage('Redo'); }
+
+      function clearEditor() {
+        if (elements.htmlEditor.getValue().trim() === '') {
+          showTemporaryMessage('Already empty');
+          return;
+        }
+        var last = elements.htmlEditor.lastLine();
+        elements.htmlEditor.replaceRange('', {line:0,ch:0}, {line:last,ch:elements.htmlEditor.getLine(last).length});
+        updatePreview();
+        debouncedSaveCode();
+        showTemporaryMessage('Cleared');
+      }
+
+      function copyEditor() {
+        var content = elements.htmlEditor.getValue();
+        if (!content.trim()) { showTemporaryMessage('Nothing to copy'); return; }
+        navigator.clipboard.writeText(content).then(
+          function() { showTemporaryMessage('Copied to clipboard'); },
+          function() { showTemporaryMessage('Copy failed', 'error'); }
+        );
+      }
+
+      function pasteEditor() {
+        navigator.clipboard.readText().then(function(text) {
+          if (!text.trim()) { showTemporaryMessage('Clipboard empty', 'error'); return; }
+          elements.htmlEditor.setValue(text);
+          updatePreview();
+          debouncedSaveCode();
+          showTemporaryMessage('Pasted from clipboard');
+        }, function() {
+          showTemporaryMessage('Paste failed', 'error');
+        });
+      }
+
+      // ========================================
+      // FILE I/O
+      // ========================================
+      function loadFromFile(file) {
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { showTemporaryMessage('File too large (>5MB)', 'error'); return; }
+        var ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+        if (ext !== '.html' && ext !== '.htm') { showTemporaryMessage('HTML files only', 'error'); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          elements.htmlEditor.setValue(e.target.result);
+          updatePreview();
+          debouncedSaveCode();
+        };
+        reader.onerror = function() { showTemporaryMessage('Read failed', 'error'); };
+        reader.readAsText(file);
+      }
+
+      function getTitleFromHtml(html) {
+        var m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (m && m[1]) {
+          var fn = m[1].trim().replace(/[^a-z0-9_\-\s\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]+/gi, '_').replace(/\s+/g, '_');
+          if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(fn)) fn = '_' + fn;
+          return fn + '.html';
+        }
+        return 'designer_output.html';
+      }
+
+      function saveToFile() {
+        var html = elements.htmlEditor.getValue();
+        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = getTitleFromHtml(html);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      }
+
+      // ========================================
+      // GUTTER RESIZE
+      // ========================================
+      function startDrag(e) {
+        state.isDragging = true;
+        document.body.classList.add(state.currentLayout === 'tb' ? 'dragging-tb' : 'dragging-lr');
+        elements.gutter.classList.add('dragging');
+        state.dragContext.startX = e.clientX;
+        state.dragContext.startY = e.clientY;
+        state.dragContext.editorInitialWidth = elements.editorContainer.offsetWidth;
+        state.dragContext.editorInitialHeight = elements.editorContainer.offsetHeight;
+        window.addEventListener('mousemove', doDrag);
+        window.addEventListener('touchmove', doTouchDrag, {passive:false});
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
+        window.addEventListener('mouseleave', stopDrag);
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = state.currentLayout === 'tb' ? 'row-resize' : 'col-resize';
+        var overlay = document.createElement('div');
+        overlay.className = 'resize-overlay';
+        document.body.appendChild(overlay);
+      }
+
+      function doDrag(e) {
+        if (!state.isDragging) return;
+        requestAnimationFrame(function() {
+          var dx = e.clientX - state.dragContext.startX;
+          var dy = e.clientY - state.dragContext.startY;
+          if (state.currentLayout === 'lr') {
+            var totalW = elements.editorContainer.parentElement.clientWidth - elements.gutter.offsetWidth;
+            var newW = Math.max(totalW * 0.1, Math.min(totalW * 0.9, state.dragContext.editorInitialWidth + dx));
+            elements.editorContainer.style.width = newW + 'px';
+            elements.previewPanel.style.width = (totalW - newW) + 'px';
+          } else if (state.currentLayout === 'tb') {
+            var totalH = elements.editorContainer.parentElement.clientHeight - elements.gutter.offsetHeight;
+            var newH = Math.max(totalH * 0.1, Math.min(totalH * 0.9, state.dragContext.editorInitialHeight + dy));
+            elements.editorContainer.style.height = newH + 'px';
+            elements.previewPanel.style.height = (totalH - newH) + 'px';
+          }
+        });
+      }
+
+      function stopDrag() {
+        if (!state.isDragging) return;
+        state.isDragging = false;
+        document.body.classList.remove('dragging-lr', 'dragging-tb');
+        elements.gutter.classList.remove('dragging');
+        window.removeEventListener('mousemove', doDrag);
+        window.removeEventListener('touchmove', doTouchDrag);
+        window.removeEventListener('mouseup', stopDrag);
+        window.removeEventListener('touchend', stopDrag);
+        window.removeEventListener('mouseleave', stopDrag);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        var overlay = document.querySelector('.resize-overlay');
+        if (overlay) document.body.removeChild(overlay);
+        state.dragContext = {};
+      }
+
+      // ========================================
+      // TOAST
+      // ========================================
+      function showTemporaryMessage(message, type) {
+        var existing = document.querySelector('.temp-message');
+        if (existing) existing.remove();
+        var div = document.createElement('div');
+        div.className = 'temp-message' + (type === 'error' ? ' toast-error' : '');
+        div.textContent = message;
+        div.setAttribute('role', 'status');
+        div.setAttribute('aria-live', 'polite');
+        document.body.appendChild(div);
+        setTimeout(function() {
+          div.classList.add('toast-out');
+          setTimeout(function() { if (div.parentNode) div.parentNode.removeChild(div); }, 300);
+        }, 2000);
+      }
+
+      // ========================================
+      // DESIGN MODE
+      // ========================================
+      var EXCLUDED_TAGS = ['HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT', 'BR'];
+
+      function toggleDesignMode() {
+        if (state.designMode) {
+          disableDesignMode();
+        } else {
+          enableDesignMode();
+        }
+      }
+
+      function switchTab(tab) {
+        if (tab === 'design' && !state.designMode) return;
+        state.activeTab = tab;
+        elements.tabCode.classList.toggle('active', tab === 'code');
+        elements.tabDesign.classList.toggle('active', tab === 'design');
+        elements.codePanel.style.display = tab === 'code' ? '' : 'none';
+        elements.designToolbar.style.display = tab === 'design' ? '' : 'none';
+        if (tab === 'code') elements.htmlEditor.refresh();
+      }
+
+      function enableDesignMode() {
+        state.designMode = true;
+        elements.designModeBtn.classList.add('active');
+        elements.previewPanel.classList.add('design-active');
+        elements.tabDesign.disabled = false;
+        switchTab('design');
+        elements.dtHint.style.display = '';
+        elements.dtControls.style.display = 'none';
+        elements.dtActions.style.display = 'none';
+        elements.dtElementTag.textContent = '--';
+
+        // Inject design script into current iframe
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (iframeDoc && iframeDoc.body) {
+          injectDesignScript(iframeDoc);
+        }
+        showTemporaryMessage('Design Mode ON');
+      }
+
+      function disableDesignMode() {
+        // Final sync before disabling
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (iframeDoc && iframeDoc.body) {
+          // Clean up selection state in iframe
+          var selected = iframeDoc.querySelector('[data-designer-selected]');
+          if (selected) selected.removeAttribute('data-designer-selected');
+        }
+
+        state.designMode = false;
+        elements.designModeBtn.classList.remove('active');
+        elements.previewPanel.classList.remove('design-active');
+        elements.tabDesign.disabled = true;
+        switchTab('code');
+
+        // Re-render preview from editor (clean state)
+        updatePreview();
+        showTemporaryMessage('Design Mode OFF');
+      }
+
+      function injectDesignScript(iframeDoc) {
+        if (!iframeDoc || !iframeDoc.body) return;
+
+        // Remove any existing injected elements
+        var existing = iframeDoc.querySelectorAll('[data-designer-injected]');
+        existing.forEach(function(el) { el.remove(); });
+
+        // Inject CSS
+        var style = iframeDoc.createElement('style');
+        style.setAttribute('data-designer-injected', 'true');
+        style.textContent =
+          '[data-designer-selected]{outline:2px dashed #4a9eff!important;outline-offset:2px!important}' +
+          '.designer-hover-overlay{position:fixed;pointer-events:none;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.4);z-index:99998;transition:all 50ms}' +
+          '.designer-hover-label{position:fixed;pointer-events:none;background:#1e1f25;color:#e2e4ec;font:11px/1.3 "Noto Sans Mono",Consolas,monospace;padding:2px 6px;border-radius:3px;z-index:99999;white-space:nowrap}';
+        (iframeDoc.head || iframeDoc.documentElement).appendChild(style);
+
+        // Inject interaction script
+        var script = iframeDoc.createElement('script');
+        script.setAttribute('data-designer-injected', 'true');
+        script.textContent = getDesignModeScript();
+        iframeDoc.body.appendChild(script);
+      }
+
+      function getDesignModeScript() {
+        var token = state.designToken;
+        return '(function(){' +
+          'var TOKEN="' + token + '";' +
+          'var EXCLUDED=new Set(["HTML","HEAD","BODY","SCRIPT","STYLE","LINK","META","TITLE","NOSCRIPT","BR"]);' +
+
+          // Create overlay elements
+          'var hoverOverlay=document.createElement("div");' +
+          'hoverOverlay.className="designer-hover-overlay";' +
+          'hoverOverlay.setAttribute("data-designer-injected","true");' +
+          'hoverOverlay.style.display="none";' +
+          'document.body.appendChild(hoverOverlay);' +
+
+          'var hoverLabel=document.createElement("div");' +
+          'hoverLabel.className="designer-hover-label";' +
+          'hoverLabel.setAttribute("data-designer-injected","true");' +
+          'hoverLabel.style.display="none";' +
+          'document.body.appendChild(hoverLabel);' +
+
+          'var selected=null;' +
+
+          // Helper: get tag info string
+          'function tagInfo(el){' +
+            'var s=el.tagName.toLowerCase();' +
+            'if(el.id)s+="#"+el.id;' +
+            'if(el.className&&typeof el.className==="string"){' +
+              'var cls=el.className.split(/\\s+/).filter(function(c){return c&&c.indexOf("designer")===-1;});' +
+              'if(cls.length)s+="."+cls.join(".");' +
+            '}' +
+            'return s;' +
+          '}' +
+
+          // Helper: check if element is injected
+          'function isInjected(el){' +
+            'return el&&(el.hasAttribute&&el.hasAttribute("data-designer-injected"));' +
+          '}' +
+
+          // Helper: check if element should be excluded
+          'function isExcluded(el){' +
+            'return !el||!el.tagName||EXCLUDED.has(el.tagName)||isInjected(el);' +
+          '}' +
+
+          // Hover handler
+          'document.addEventListener("mouseover",function(e){' +
+            'var el=e.target;' +
+            'if(isExcluded(el)){hoverOverlay.style.display="none";hoverLabel.style.display="none";return;}' +
+            'var r=el.getBoundingClientRect();' +
+            'hoverOverlay.style.display="block";' +
+            'hoverOverlay.style.left=r.left+"px";' +
+            'hoverOverlay.style.top=r.top+"px";' +
+            'hoverOverlay.style.width=r.width+"px";' +
+            'hoverOverlay.style.height=r.height+"px";' +
+            'hoverLabel.style.display="block";' +
+            'hoverLabel.textContent=tagInfo(el);' +
+            'var lTop=r.top-20;' +
+            'if(lTop<2)lTop=r.bottom+4;' +
+            'hoverLabel.style.left=Math.max(0,r.left)+"px";' +
+            'hoverLabel.style.top=lTop+"px";' +
+          '});' +
+
+          'document.addEventListener("mouseout",function(e){' +
+            'if(!e.relatedTarget||e.relatedTarget===document.documentElement){' +
+              'hoverOverlay.style.display="none";hoverLabel.style.display="none";' +
+            '}' +
+          '});' +
+
+          // Click handler - select element
+          'document.addEventListener("click",function(e){' +
+            'var el=e.target;' +
+            'if(isInjected(el))return;' +
+            'if(isExcluded(el)){return;}' +
+            'e.preventDefault();e.stopPropagation();' +
+            // Deselect previous
+            'if(selected)selected.removeAttribute("data-designer-selected");' +
+            'selected=el;' +
+            'el.setAttribute("data-designer-selected","true");' +
+            // Get computed styles
+            'var cs=window.getComputedStyle(el);' +
+            'var styles={' +
+              'backgroundColor:cs.backgroundColor,' +
+              'color:cs.color,' +
+              'borderColor:cs.borderColor,' +
+              'fontSize:cs.fontSize,' +
+              'fontWeight:cs.fontWeight,' +
+              'textAlign:cs.textAlign,' +
+              'lineHeight:cs.lineHeight,' +
+              'paddingTop:cs.paddingTop,' +
+              'paddingRight:cs.paddingRight,' +
+              'paddingBottom:cs.paddingBottom,' +
+              'paddingLeft:cs.paddingLeft,' +
+              'marginTop:cs.marginTop,' +
+              'marginRight:cs.marginRight,' +
+              'marginBottom:cs.marginBottom,' +
+              'marginLeft:cs.marginLeft,' +
+              'width:cs.width,' +
+              'height:cs.height,' +
+              'borderRadius:cs.borderRadius,' +
+              'opacity:cs.opacity,' +
+              'display:cs.display,' +
+              'overflow:cs.overflow' +
+            '};' +
+            'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(el),styles:styles},"*");' +
+          '},true);' +
+
+          // Double-click - enable contentEditable for text editing
+          'document.addEventListener("dblclick",function(e){' +
+            'var el=e.target;' +
+            'if(isExcluded(el)||isInjected(el))return;' +
+            'e.preventDefault();' +
+            'el.contentEditable="true";' +
+            'el.focus();' +
+            'el.addEventListener("paste",function onPaste(pe){' +
+              'pe.preventDefault();' +
+              'var text=(pe.clipboardData||window.clipboardData).getData("text/plain");' +
+              'document.execCommand("insertText",false,text);' +
+            '});' +
+            'el.addEventListener("blur",function onBlur(){' +
+              'el.contentEditable="false";' +
+              'el.removeEventListener("blur",onBlur);' +
+              'parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+            '});' +
+          '});' +
+
+          // Escape - deselect
+          'document.addEventListener("keydown",function(e){' +
+            'if(e.key==="Escape"&&selected){' +
+              'selected.removeAttribute("data-designer-selected");' +
+              'selected=null;' +
+              'parent.postMessage({type:"__design_deselect__",token:TOKEN},"*");' +
+            '}' +
+          '});' +
+
+          // MutationObserver - detect real DOM changes
+          'var observer=new MutationObserver(function(mutations){' +
+            'var hasReal=mutations.some(function(m){' +
+              'if(m.target&&m.target.hasAttribute&&m.target.hasAttribute("data-designer-injected"))return false;' +
+              'if(m.type==="attributes"&&(m.attributeName==="data-designer-injected"||m.attributeName==="data-designer-selected"||m.attributeName==="contenteditable"))return false;' +
+              'if(m.type==="childList"){' +
+                'var added=Array.from(m.addedNodes).some(function(n){return n.nodeType===1&&!n.hasAttribute("data-designer-injected");});' +
+                'var removed=Array.from(m.removedNodes).some(function(n){return n.nodeType===1&&!n.hasAttribute("data-designer-injected");});' +
+                'return added||removed;' +
+              '}' +
+              'return true;' +
+            '});' +
+            'if(hasReal)parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+          '});' +
+          'observer.observe(document.body||document.documentElement,{' +
+            'childList:true,subtree:true,' +
+            'attributes:true,attributeFilter:["style","class","id","src","href"],' +
+            'characterData:true' +
+          '});' +
+
+        '})();';
+      }
+
+      // ========================================
+      // DESIGN MESSAGE HANDLER
+      // ========================================
+      function handleDesignMessage(e) {
+        if (!e.data || e.data.token !== state.designToken) return;
+
+        switch (e.data.type) {
+          case '__design_click__':
+            onDesignElementSelected(e.data.tag, e.data.styles);
+            break;
+          case '__design_change__':
+            debouncedDesignSync();
+            break;
+          case '__design_deselect__':
+            onDesignElementDeselected();
+            break;
+        }
+      }
+
+      function onDesignElementSelected(tag, styles) {
+        elements.dtElementTag.textContent = tag;
+        elements.dtHint.style.display = 'none';
+        elements.dtControls.style.display = '';
+        elements.dtActions.style.display = 'flex';
+
+        // Fill color values
+        var bgHex = colorToHex(styles.backgroundColor);
+        elements.dtBgColor.value = bgHex || '#ffffff';
+        elements.dtBgColorText.value = bgHex || 'transparent';
+
+        var textHex = colorToHex(styles.color);
+        elements.dtTextColor.value = textHex || '#000000';
+        elements.dtTextColorText.value = textHex || '';
+
+        var borderHex = colorToHex(styles.borderColor);
+        elements.dtBorderColor.value = borderHex || '#000000';
+        elements.dtBorderColorText.value = borderHex || '';
+
+        // Typography
+        var fs = parsePixelValue(styles.fontSize);
+        elements.dtFontSizeSlider.value = fs;
+        elements.dtFontSize.value = fs;
+
+        var fw = parseInt(styles.fontWeight) || 400;
+        elements.dtFontWeight.value = String(fw);
+
+        // Text align
+        var alignBtns = elements.dtTextAlignGroup.querySelectorAll('.dt-btn-sm');
+        alignBtns.forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-align') === styles.textAlign);
+        });
+
+        var lh = parseFloat(styles.lineHeight);
+        if (isNaN(lh) || styles.lineHeight === 'normal') lh = 1.5;
+        else lh = parseFloat((lh / fs).toFixed(2)) || 1.5;
+        elements.dtLineHeightSlider.value = lh;
+        elements.dtLineHeight.value = lh;
+
+        // Spacing
+        elements.dtPaddingTop.value = parsePixelValue(styles.paddingTop);
+        elements.dtPaddingRight.value = parsePixelValue(styles.paddingRight);
+        elements.dtPaddingBottom.value = parsePixelValue(styles.paddingBottom);
+        elements.dtPaddingLeft.value = parsePixelValue(styles.paddingLeft);
+        elements.dtMarginTop.value = parsePixelValue(styles.marginTop);
+        elements.dtMarginRight.value = parsePixelValue(styles.marginRight);
+        elements.dtMarginBottom.value = parsePixelValue(styles.marginBottom);
+        elements.dtMarginLeft.value = parsePixelValue(styles.marginLeft);
+
+        // Box
+        elements.dtWidth.value = styles.width === 'auto' ? '' : styles.width;
+        elements.dtHeight.value = styles.height === 'auto' ? '' : styles.height;
+        var br = parsePixelValue(styles.borderRadius);
+        elements.dtBorderRadiusSlider.value = Math.min(br, 50);
+        elements.dtBorderRadius.value = br;
+        var op = parseFloat(styles.opacity);
+        elements.dtOpacitySlider.value = isNaN(op) ? 1 : op;
+        elements.dtOpacityValue.textContent = isNaN(op) ? '1' : op.toFixed(2);
+        elements.dtDisplay.value = styles.display || 'block';
+        elements.dtOverflow.value = styles.overflow || 'visible';
+      }
+
+      function onDesignElementDeselected() {
+        elements.dtHint.style.display = '';
+        elements.dtControls.style.display = 'none';
+        elements.dtActions.style.display = 'none';
+        elements.dtElementTag.textContent = '--';
+      }
+
+      // ========================================
+      // GET SELECTED ELEMENT IN IFRAME
+      // ========================================
+      function getSelectedElement() {
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (!iframeDoc) return null;
+        return iframeDoc.querySelector('[data-designer-selected]');
+      }
+
+      // ========================================
+      // APPLY STYLE TO SELECTED ELEMENT
+      // ========================================
+      function applyStyle(prop, value) {
+        var el = getSelectedElement();
+        if (!el) return;
+        el.style[prop] = value;
+      }
+
+      // ========================================
+      // DESIGN TOOLBAR EVENT SETUP
+      // ========================================
+      function initDesignToolbarEvents() {
+        // Section accordion
+        var headers = document.querySelectorAll('.dt-section-header');
+        headers.forEach(function(header) {
+          header.addEventListener('click', function() {
+            var sectionId = header.getAttribute('data-section');
+            var body = document.getElementById(sectionId);
+            if (!body) return;
+            var isCollapsed = header.classList.contains('collapsed');
+            if (isCollapsed) {
+              header.classList.remove('collapsed');
+              body.classList.remove('collapsed');
+            } else {
+              header.classList.add('collapsed');
+              body.classList.add('collapsed');
+            }
+          });
+        });
+
+        // --- Colors ---
+        elements.dtBgColor.addEventListener('input', function() {
+          elements.dtBgColorText.value = this.value;
+          applyStyle('backgroundColor', this.value);
+        });
+        elements.dtBgColorText.addEventListener('change', function() {
+          var v = this.value.trim();
+          if (v) { elements.dtBgColor.value = v; applyStyle('backgroundColor', v); }
+        });
+        elements.dtBgTransparent.addEventListener('click', function() {
+          elements.dtBgColorText.value = 'transparent';
+          applyStyle('backgroundColor', 'transparent');
+        });
+        elements.dtTextColor.addEventListener('input', function() {
+          elements.dtTextColorText.value = this.value;
+          applyStyle('color', this.value);
+        });
+        elements.dtTextColorText.addEventListener('change', function() {
+          var v = this.value.trim();
+          if (v) { elements.dtTextColor.value = v; applyStyle('color', v); }
+        });
+        elements.dtBorderColor.addEventListener('input', function() {
+          elements.dtBorderColorText.value = this.value;
+          applyStyle('borderColor', this.value);
+        });
+        elements.dtBorderColorText.addEventListener('change', function() {
+          var v = this.value.trim();
+          if (v) { elements.dtBorderColor.value = v; applyStyle('borderColor', v); }
+        });
+
+        // --- Typography ---
+        elements.dtFontSizeSlider.addEventListener('input', function() {
+          elements.dtFontSize.value = this.value;
+          applyStyle('fontSize', this.value + 'px');
+        });
+        elements.dtFontSize.addEventListener('change', function() {
+          elements.dtFontSizeSlider.value = Math.min(Math.max(this.value, 8), 72);
+          applyStyle('fontSize', this.value + 'px');
+        });
+        elements.dtFontWeight.addEventListener('change', function() {
+          applyStyle('fontWeight', this.value);
+        });
+        elements.dtTextAlignGroup.addEventListener('click', function(e) {
+          var btn = e.target.closest('[data-align]');
+          if (!btn) return;
+          var align = btn.getAttribute('data-align');
+          elements.dtTextAlignGroup.querySelectorAll('.dt-btn-sm').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          applyStyle('textAlign', align);
+        });
+        elements.dtLineHeightSlider.addEventListener('input', function() {
+          elements.dtLineHeight.value = this.value;
+          applyStyle('lineHeight', this.value);
+        });
+        elements.dtLineHeight.addEventListener('change', function() {
+          elements.dtLineHeightSlider.value = this.value;
+          applyStyle('lineHeight', this.value);
+        });
+
+        // --- Spacing ---
+        var spacingInputs = [
+          elements.dtPaddingTop, elements.dtPaddingRight, elements.dtPaddingBottom, elements.dtPaddingLeft,
+          elements.dtMarginTop, elements.dtMarginRight, elements.dtMarginBottom, elements.dtMarginLeft
+        ];
+        spacingInputs.forEach(function(input) {
+          input.addEventListener('change', function() {
+            var prop = this.getAttribute('data-prop');
+            if (!prop) {
+              // Determine prop from id
+              var id = this.id;
+              if (id.indexOf('padding') !== -1) {
+                if (id.indexOf('top') !== -1) prop = 'paddingTop';
+                else if (id.indexOf('right') !== -1) prop = 'paddingRight';
+                else if (id.indexOf('bottom') !== -1) prop = 'paddingBottom';
+                else prop = 'paddingLeft';
+              } else {
+                if (id.indexOf('top') !== -1) prop = 'marginTop';
+                else if (id.indexOf('right') !== -1) prop = 'marginRight';
+                else if (id.indexOf('bottom') !== -1) prop = 'marginBottom';
+                else prop = 'marginLeft';
+              }
+            }
+            var val = (parseInt(this.value) || 0) + 'px';
+
+            // Check linked mode
+            if (prop.startsWith('padding') && state.paddingLinked) {
+              applyStyle('padding', val);
+              elements.dtPaddingTop.value = elements.dtPaddingRight.value =
+                elements.dtPaddingBottom.value = elements.dtPaddingLeft.value = parseInt(this.value) || 0;
+            } else if (prop.startsWith('margin') && state.marginLinked) {
+              applyStyle('margin', val);
+              elements.dtMarginTop.value = elements.dtMarginRight.value =
+                elements.dtMarginBottom.value = elements.dtMarginLeft.value = parseInt(this.value) || 0;
+            } else {
+              applyStyle(prop, val);
+            }
+          });
+        });
+
+        elements.dtPaddingLink.addEventListener('click', function() {
+          state.paddingLinked = !state.paddingLinked;
+          this.classList.toggle('linked', state.paddingLinked);
+        });
+        elements.dtMarginLink.addEventListener('click', function() {
+          state.marginLinked = !state.marginLinked;
+          this.classList.toggle('linked', state.marginLinked);
+        });
+
+        // --- Box ---
+        elements.dtWidth.addEventListener('change', function() {
+          var v = this.value.trim();
+          applyStyle('width', v || 'auto');
+        });
+        elements.dtHeight.addEventListener('change', function() {
+          var v = this.value.trim();
+          applyStyle('height', v || 'auto');
+        });
+        elements.dtBorderRadiusSlider.addEventListener('input', function() {
+          elements.dtBorderRadius.value = this.value;
+          applyStyle('borderRadius', this.value + 'px');
+        });
+        elements.dtBorderRadius.addEventListener('change', function() {
+          elements.dtBorderRadiusSlider.value = Math.min(this.value, 50);
+          applyStyle('borderRadius', this.value + 'px');
+        });
+        elements.dtOpacitySlider.addEventListener('input', function() {
+          elements.dtOpacityValue.textContent = parseFloat(this.value).toFixed(2);
+          applyStyle('opacity', this.value);
+        });
+        elements.dtDisplay.addEventListener('change', function() {
+          applyStyle('display', this.value);
+        });
+        elements.dtOverflow.addEventListener('change', function() {
+          applyStyle('overflow', this.value);
+        });
+
+        // --- Element operations ---
+        document.getElementById('dt-move-up').addEventListener('click', function() {
+          var el = getSelectedElement();
+          if (!el) return;
+          var prev = el.previousElementSibling;
+          while (prev && prev.hasAttribute('data-designer-injected')) prev = prev.previousElementSibling;
+          if (!prev) return;
+          el.parentNode.insertBefore(el, prev);
+          debouncedDesignSync();
+        });
+        document.getElementById('dt-move-down').addEventListener('click', function() {
+          var el = getSelectedElement();
+          if (!el || !el.nextElementSibling) return;
+          // Filter out injected siblings
+          var next = el.nextElementSibling;
+          while (next && next.hasAttribute('data-designer-injected')) next = next.nextElementSibling;
+          if (!next) return;
+          el.parentNode.insertBefore(next, el);
+          debouncedDesignSync();
+        });
+        document.getElementById('dt-duplicate').addEventListener('click', function() {
+          var el = getSelectedElement();
+          if (!el) return;
+          var clone = el.cloneNode(true);
+          clone.removeAttribute('data-designer-selected');
+          el.parentNode.insertBefore(clone, el.nextSibling);
+          debouncedDesignSync();
+        });
+        document.getElementById('dt-delete').addEventListener('click', function() {
+          var el = getSelectedElement();
+          if (!el) return;
+          el.remove();
+          onDesignElementDeselected();
+          debouncedDesignSync();
+        });
+
+        // Add child
+        document.getElementById('dt-add-child').addEventListener('click', function(e) {
+          e.stopPropagation();
+          state.addDropdownOpen = !state.addDropdownOpen;
+          elements.dtAddDropdown.style.display = state.addDropdownOpen ? '' : 'none';
+        });
+        elements.dtAddDropdown.addEventListener('click', function(e) {
+          var btn = e.target.closest('[data-tag]');
+          if (!btn) return;
+          var tag = btn.getAttribute('data-tag');
+          var el = getSelectedElement();
+          if (!el) return;
+          var iframeDoc = elements.previewContainer.contentDocument;
+          var newEl;
+          if (tag === 'img') {
+            newEl = iframeDoc.createElement('img');
+            newEl.setAttribute('src', '');
+            newEl.setAttribute('alt', 'image');
+            newEl.style.cssText = 'width:100px;height:100px;background:#ddd;display:inline-block';
+          } else if (tag === 'ul') {
+            newEl = iframeDoc.createElement('ul');
+            var li = iframeDoc.createElement('li');
+            li.textContent = 'Item';
+            newEl.appendChild(li);
+          } else {
+            newEl = iframeDoc.createElement(tag);
+            newEl.textContent = tag;
+          }
+          el.appendChild(newEl);
+          elements.dtAddDropdown.style.display = 'none';
+          state.addDropdownOpen = false;
+          debouncedDesignSync();
+        });
+      }
+
+      // ========================================
+      // DOM -> SOURCE SYNC
+      // ========================================
+      function serializeCleanHtml(iframeDoc) {
+        var clone = iframeDoc.documentElement.cloneNode(true);
+
+        // Remove designer-injected elements
+        clone.querySelectorAll('[data-designer-injected]').forEach(function(el) { el.remove(); });
+
+        // Remove designer-selected attributes
+        clone.querySelectorAll('[data-designer-selected]').forEach(function(el) {
+          el.removeAttribute('data-designer-selected');
+        });
+
+        // Remove contenteditable attributes
+        clone.querySelectorAll('[contenteditable]').forEach(function(el) {
+          el.removeAttribute('contenteditable');
+        });
+
+        return '<!DOCTYPE html>\n' + clone.outerHTML;
+      }
+
+      function syncDesignToEditor() {
+        if (!state.designMode) return;
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (!iframeDoc || !iframeDoc.documentElement) return;
+
+        var html = serializeCleanHtml(iframeDoc);
+        html = beautifyHtml(html);
+
+        state.syncingFromDesign = true;
+        // Safety reset: ensure flag clears even if change event is missed
+        setTimeout(function() { state.syncingFromDesign = false; }, 100);
+        elements.htmlEditor.operation(function() {
+          var last = elements.htmlEditor.lastLine();
+          elements.htmlEditor.replaceRange(
+            html,
+            { line: 0, ch: 0 },
+            { line: last, ch: elements.htmlEditor.getLine(last).length }
+          );
+        });
+        debouncedSaveCode();
+      }
+
+      // ========================================
+      // RUN
+      // ========================================
+      initialize();
+      if (typeof feather !== 'undefined') feather.replace();
+
+    })();
+    </script>
+  </body>
+</html>

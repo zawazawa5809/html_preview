@@ -1,0 +1,1510 @@
+<!doctype html>
+<html lang="ja" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSON/YAML 差分ビューアー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/feather-icons@4.29.1/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/yaml/yaml.min.js"></script>
+    <style>
+      :root {
+        /* Foundation - warm charcoal greys */
+        --da-ink: #1e1f25;
+        --da-charcoal: #282a32;
+        --da-graphite: #353842;
+        --da-slate: #4a4e5c;
+        --da-ash: #6b7085;
+        --da-stone: #9498ab;
+        --da-cloud: #c4c8d6;
+        --da-mist: #e2e4ec;
+        --da-frost: #f0f1f5;
+        --da-snow: #f8f9fb;
+
+        /* Accent - muted blue */
+        --da-secondary: #5b8fcc;
+        --da-secondary-hover: #4a7db8;
+        --da-accent-muted: #5b8fcc26;
+        --da-accent-glow: #5b8fcc12;
+
+        /* Semantic */
+        --da-success: #4aba8a;
+        --da-warning: #d4943a;
+        --da-error: #d45a5a;
+        --da-added: #22c55e;
+        --da-removed: #ef4444;
+        --da-changed: #f59e0b;
+
+        /* Motion & shadow tokens */
+        --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+        --duration-fast: 100ms;
+        --duration-normal: 200ms;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+        /* App semantic tokens - light */
+        --app-text-primary: var(--da-ink);
+        --app-text-secondary: var(--da-slate);
+        --app-text-on-dark: var(--da-snow);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-snow);
+        --app-bg-secondary: var(--da-frost);
+        --app-bg-dark: var(--da-charcoal);
+        --app-border-default: var(--da-mist);
+        --app-border-focus: var(--da-secondary);
+        --app-border-hover: var(--da-cloud);
+        --app-toolbar-bg: var(--da-charcoal);
+        --app-toolbar-text: var(--da-snow);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-snow);
+        --app-editor-bg: var(--da-snow);
+        --app-editor-text: var(--da-ink);
+        --app-editor-placeholder: var(--da-ash);
+        --app-line-numbers-bg: var(--da-ink);
+        --app-line-numbers-text: var(--da-cloud);
+        --app-gutter-bg: var(--da-ink);
+        --app-gutter-hover: var(--da-graphite);
+        --app-gutter-handle: var(--da-stone);
+        --app-accent: var(--da-secondary);
+        --app-accent-hover: var(--da-secondary-hover);
+      }
+
+      :root[data-theme="dark"] {
+        --app-text-primary: var(--da-frost);
+        --app-text-secondary: var(--da-stone);
+        --app-text-muted: var(--da-ash);
+        --app-bg-primary: var(--da-charcoal);
+        --app-bg-secondary: var(--da-ink);
+        --app-bg-dark: var(--da-ink);
+        --app-border-default: var(--da-graphite);
+        --app-border-hover: var(--da-slate);
+        --app-toolbar-bg: var(--da-ink);
+        --app-toolbar-text: var(--da-frost);
+        --app-toolbar-border: var(--da-graphite);
+        --app-panel-header-bg: var(--da-ink);
+        --app-panel-header-text: var(--da-frost);
+        --app-editor-bg: var(--da-charcoal);
+        --app-editor-text: var(--da-frost);
+        --app-editor-placeholder: var(--da-ash);
+        --app-line-numbers-bg: var(--da-ink);
+        --app-line-numbers-text: var(--da-cloud);
+        --app-gutter-bg: var(--da-ink);
+        --app-gutter-hover: var(--da-graphite);
+        --app-gutter-handle: var(--da-stone);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo,
+          sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 400;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--app-bg-primary);
+        color: var(--app-text-primary);
+      }
+
+      .toolbar {
+        background-color: var(--app-toolbar-bg);
+        color: var(--app-toolbar-text);
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--app-toolbar-border);
+        box-shadow: inset 0 -2px 0 0 var(--da-secondary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        min-height: 48px;
+      }
+
+      .toolbar-title {
+        font-weight: 500;
+        font-size: 15px;
+        line-height: 1.4;
+        margin-right: auto;
+        color: var(--app-toolbar-text);
+        letter-spacing: 0.05em;
+      }
+
+      .toolbar-menu {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        padding: 2px;
+      }
+
+      .toolbar-button {
+        background: none;
+        border: 1px solid transparent;
+        padding: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        min-width: 34px;
+        min-height: 34px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .toolbar-button svg {
+        width: 17px;
+        height: 17px;
+        color: var(--da-cloud);
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .toolbar-button:hover {
+        background-color: var(--da-graphite);
+      }
+      .toolbar-button:hover svg {
+        color: var(--da-snow);
+      }
+      .toolbar-button:active {
+        transform: scale(0.93);
+      }
+      .toolbar-button.active {
+        background: var(--da-accent-muted);
+        border-color: var(--da-secondary);
+      }
+      .toolbar-button.active svg {
+        color: var(--da-snow);
+      }
+
+      .toolbar-button:focus-visible {
+        outline: 2px solid var(--da-secondary);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px var(--da-accent-muted);
+        border-radius: 6px;
+      }
+
+      .action-button {
+        background: var(--da-secondary);
+        border: none;
+        padding: 8px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: var(--da-snow);
+        font-size: 13px;
+        font-weight: 500;
+        gap: 6px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .action-button:hover {
+        background: var(--da-secondary-hover);
+      }
+
+      .action-button:active {
+        transform: scale(0.97);
+      }
+
+      .action-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .action-button svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      @media (max-width: 600px) {
+        .toolbar {
+          flex-wrap: wrap;
+        }
+        .toolbar-menu {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+      }
+
+      .split-view {
+        display: flex;
+        width: 100%;
+        flex-grow: 1;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .split-view.layout-lr {
+        flex-direction: row;
+      }
+      .split-view.layout-tb {
+        flex-direction: column;
+      }
+
+      .editor-panel {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        transition:
+          width 250ms var(--ease-out-expo),
+          height 250ms var(--ease-out-expo);
+        background-color: var(--app-editor-bg);
+      }
+
+      .split-view.layout-lr .editor-panel {
+        width: 50%;
+        height: 100%;
+      }
+      .split-view.layout-tb .editor-panel {
+        width: 100%;
+        height: 50%;
+      }
+
+      .panel-header {
+        background: linear-gradient(
+          90deg,
+          var(--da-accent-glow),
+          var(--app-panel-header-bg) 30%
+        );
+        color: var(--app-panel-header-text);
+        padding: 8px 16px;
+        border-left: 3px solid var(--da-secondary);
+        font-weight: 600;
+        font-size: 11px;
+        line-height: 1.5;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        user-select: none;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .panel-header .format-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--da-accent-muted);
+        color: var(--da-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .editor-content-wrapper {
+        display: flex;
+        flex-grow: 1;
+        overflow: hidden;
+        border: 1px solid var(--app-border-default);
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      :root[data-theme="dark"] .editor-content-wrapper {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .CodeMirror {
+        width: 100%;
+        height: 100%;
+        flex-grow: 1;
+      }
+
+      .CodeMirror-activeline-background {
+        background: var(--da-accent-glow) !important;
+      }
+
+      .CodeMirror-selected {
+        background: var(--da-accent-muted) !important;
+      }
+
+      .CodeMirror-focused .CodeMirror-selected {
+        background: var(--da-accent-muted) !important;
+      }
+
+      /* Diff highlighting */
+      .diff-added {
+        background-color: rgba(34, 197, 94, 0.2) !important;
+        border-left: 3px solid var(--da-added);
+      }
+
+      .diff-removed {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+        border-left: 3px solid var(--da-removed);
+      }
+
+      .diff-changed {
+        background-color: rgba(245, 158, 11, 0.2) !important;
+        border-left: 3px solid var(--da-changed);
+      }
+
+      .gutter {
+        background-color: var(--app-gutter-bg);
+        position: relative;
+        transition: background-color var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .split-view.layout-lr .gutter {
+        width: 6px;
+        height: 100%;
+        cursor: col-resize;
+        margin: 0 -4px;
+        padding: 0 4px;
+        background-clip: content-box;
+      }
+
+      .split-view.layout-tb .gutter {
+        width: 100%;
+        height: 6px;
+        cursor: row-resize;
+        margin: -4px 0;
+        padding: 4px 0;
+        background-clip: content-box;
+      }
+
+      .gutter:hover {
+        background-color: var(--da-secondary);
+      }
+
+      .gutter.dragging {
+        box-shadow: 0 0 8px var(--da-accent-muted);
+      }
+
+      .gutter::before {
+        content: "";
+        position: absolute;
+        border-radius: 2px;
+        transition: background-color var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .split-view.layout-lr .gutter::before {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 3px;
+        height: 3px;
+        box-shadow:
+          0 -6px 0 0 var(--app-gutter-handle),
+          0 0 0 0 var(--app-gutter-handle),
+          0 6px 0 0 var(--app-gutter-handle);
+        background: var(--app-gutter-handle);
+      }
+
+      .split-view.layout-tb .gutter::before {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 3px;
+        height: 3px;
+        box-shadow:
+          -6px 0 0 0 var(--app-gutter-handle),
+          0 0 0 0 var(--app-gutter-handle),
+          6px 0 0 0 var(--app-gutter-handle);
+        background: var(--app-gutter-handle);
+      }
+
+      body.dragging-lr,
+      body.dragging-lr * {
+        cursor: col-resize !important;
+      }
+
+      body.dragging-tb,
+      body.dragging-tb * {
+        cursor: row-resize !important;
+      }
+
+      .resize-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+      }
+
+      /* Toast notifications */
+      @keyframes toast-slide-in {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes toast-fade-out {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(-8px);
+          opacity: 0;
+        }
+      }
+
+      .temp-message {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 10000;
+        pointer-events: none;
+        background-color: var(--da-charcoal);
+        color: var(--da-snow);
+        border: 1px solid var(--da-graphite);
+        box-shadow: var(--shadow-md);
+        animation: toast-slide-in 300ms var(--ease-out-expo);
+      }
+
+      .temp-message[role="status"] {
+        border-left: 3px solid var(--da-success);
+      }
+
+      .temp-message.toast-error[role="status"] {
+        border-left: 3px solid var(--da-error);
+      }
+
+      .temp-message.toast-warning[role="status"] {
+        border-left: 3px solid var(--da-warning);
+      }
+
+      .temp-message.toast-out {
+        animation: toast-fade-out 300ms var(--ease-out-expo) forwards;
+      }
+
+      /* Theme toggle animation */
+      .theme-icon-spin svg {
+        animation: theme-spin 400ms var(--ease-out-expo);
+      }
+
+      @keyframes theme-spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Tool navigation */
+      .toolbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 4px;
+      }
+
+      .toolbar-nav a {
+        color: var(--da-cloud);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 5px 10px;
+        border-radius: 6px;
+        transition: all var(--duration-normal) var(--ease-out-expo);
+        white-space: nowrap;
+      }
+
+      .toolbar-nav a:hover {
+        color: var(--da-snow);
+        background-color: var(--da-graphite);
+      }
+
+      .toolbar-nav a.nav-active {
+        color: var(--da-secondary);
+        background: var(--da-accent-muted);
+      }
+
+      /* Action bar in panel header */
+      .panel-actions {
+        display: flex;
+        gap: 4px;
+      }
+
+      .panel-actions .toolbar-button {
+        min-width: 28px;
+        min-height: 28px;
+        padding: 4px;
+      }
+
+      .panel-actions .toolbar-button svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* Diff stats */
+      .diff-stats {
+        display: flex;
+        gap: 12px;
+        padding: 8px 16px;
+        background: var(--app-bg-secondary);
+        border-bottom: 1px solid var(--app-border-default);
+        font-size: 12px;
+      }
+
+      .diff-stat {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .diff-stat-added {
+        color: var(--da-added);
+      }
+
+      .diff-stat-removed {
+        color: var(--da-removed);
+      }
+
+      .diff-stat-changed {
+        color: var(--da-changed);
+      }
+
+      /* Accessibility: reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* Feather icons fallback for CDN-blocked environments */
+      i[data-feather] {
+        display: inline-block;
+      }
+
+      .toolbar-button i[data-feather] {
+        width: 17px;
+        height: 17px;
+        color: var(--da-cloud);
+      }
+
+      .action-button i[data-feather] {
+        width: 15px;
+        height: 15px;
+      }
+
+      .toolbar-button:hover i[data-feather] {
+        color: var(--da-snow);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <span class="toolbar-title">JSON/YAML 差分ビューアー</span>
+      <div class="toolbar-menu">
+        <button class="action-button" id="convert-btn" title="変換">
+          <i data-feather="arrow-right-circle">⇨</i>
+          変換
+        </button>
+        <button class="action-button" id="diff-btn" title="差分比較">
+          <i data-feather="git-compare">⇄</i>
+          差分
+        </button>
+        <button class="action-button" id="swap-btn" title="入れ替え">
+          <i data-feather="swap-horizontal">⇋</i>
+        </button>
+        <div class="btn-group" role="group" aria-label="レイアウト切り替え">
+          <button
+            class="toolbar-button"
+            id="layout-lr-btn"
+            title="左右分割レイアウト"
+            aria-label="左右分割レイアウトに変更"
+            tabindex="0"
+          >
+            <i data-feather="columns">▥</i>
+          </button>
+          <button
+            class="toolbar-button"
+            id="layout-tb-btn"
+            title="上下分割レイアウト"
+            aria-label="上下分割レイアウトに変更"
+            tabindex="0"
+          >
+            <i data-feather="minimize-2">⬌</i>
+          </button>
+          <button
+            class="toolbar-button"
+            id="theme-toggle-btn"
+            title="テーマ切り替え"
+            aria-label="テーマ切り替え"
+            tabindex="0"
+          >
+            <i data-feather="moon" id="theme-toggle-icon">☽</i>
+          </button>
+        </div>
+        <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
+          <a href="index.html">HTML</a>
+          <a href="designer.html">Designer</a>
+          <a href="markdown_preview.html">MD</a>
+          <a href="loom.html">Loom</a>
+          <a href="shelf.html">Shelf</a>
+          <a href="tangle.html">Tangle</a>
+          <a href="nexus.html">Nexus</a>
+          <a href="diffuse.html" class="nav-active">Diffuse</a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="diff-stats" id="diff-stats" style="display: none">
+      <span class="diff-stat diff-stat-added"
+        >+ <span id="added-count">0</span> 追加</span
+      >
+      <span class="diff-stat diff-stat-removed"
+        >- <span id="removed-count">0</span> 削除</span
+      >
+      <span class="diff-stat diff-stat-changed"
+        >~ <span id="changed-count">0</span> 変更</span
+      >
+    </div>
+
+    <div class="split-view layout-lr" id="split-view">
+      <div class="editor-panel" id="editor-panel-left">
+        <div class="panel-header">
+          <span>ソース</span>
+          <div class="panel-actions">
+            <select
+              id="format-left"
+              class="format-badge"
+              style="
+                border: none;
+                cursor: pointer;
+                background: var(--da-accent-muted);
+                color: var(--da-secondary);
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+              "
+            >
+              <option value="json">JSON</option>
+              <option value="yaml">YAML</option>
+            </select>
+            <button
+              class="toolbar-button"
+              id="clear-left-btn"
+              title="クリア"
+              aria-label="左エディターをクリア"
+            >
+              <i data-feather="trash-2">🗑</i>
+            </button>
+          </div>
+        </div>
+        <div class="editor-content-wrapper">
+          <textarea
+            id="editor-left"
+            placeholder="JSONまたはYAMLを入力してください..."
+            wrap="soft"
+            aria-label="左エディター"
+            role="textbox"
+            spellcheck="false"
+            autocomplete="off"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="gutter" id="gutter"></div>
+
+      <div class="editor-panel" id="editor-panel-right">
+        <div class="panel-header">
+          <span>変換結果</span>
+          <div class="panel-actions">
+            <select
+              id="format-right"
+              class="format-badge"
+              style="
+                border: none;
+                cursor: pointer;
+                background: var(--da-accent-muted);
+                color: var(--da-secondary);
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+              "
+            >
+              <option value="yaml">YAML</option>
+              <option value="json">JSON</option>
+            </select>
+            <button
+              class="toolbar-button"
+              id="copy-right-btn"
+              title="コピー"
+              aria-label="右エディターをコピー"
+            >
+              <i data-feather="copy">📋</i>
+            </button>
+          </div>
+        </div>
+        <div class="editor-content-wrapper">
+          <textarea
+            id="editor-right"
+            placeholder="変換結果がここに表示されます..."
+            wrap="soft"
+            aria-label="右エディター"
+            role="textbox"
+            spellcheck="false"
+            autocomplete="off"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const CONFIG = {
+          defaultLayout: "lr",
+          storageKey: "diffuseState",
+          layoutStorageKey: "diffuseLayout",
+          themeStorageKey: "diffuseTheme",
+          debounceDelay: 300,
+          layouts: { lr: "左右分割", tb: "上下分割" },
+        };
+
+        // Simple YAML parser/stringifier (minimal implementation)
+        const YAML = {
+          parse: function (str) {
+            // Very basic YAML to JSON (for simple cases)
+            const lines = str.trim().split("\n");
+            const result = {};
+            let currentIndent = 0;
+            let stack = [{ obj: result, indent: -1 }];
+
+            for (let line of lines) {
+              if (!line.trim() || line.trim().startsWith("#")) continue;
+
+              const match = line.match(/^(\s*)([^:]+):\s*(.*)$/);
+              if (match) {
+                const indent = match[1].length;
+                const key = match[2].trim();
+                let value = match[3].trim();
+
+                // Find the right parent
+                while (
+                  stack.length > 1 &&
+                  stack[stack.length - 1].indent >= indent
+                ) {
+                  stack.pop();
+                }
+
+                let parent = stack[stack.length - 1].obj;
+
+                if (value === "" || value === "null") {
+                  // Object or array
+                  parent[key] = {};
+                  stack.push({ obj: parent[key], indent: indent });
+                } else if (value.startsWith('"') || value.startsWith("'")) {
+                  parent[key] = value.slice(1, -1);
+                } else if (value === "true") {
+                  parent[key] = true;
+                } else if (value === "false") {
+                  parent[key] = false;
+                } else if (value === "null") {
+                  parent[key] = null;
+                } else if (!isNaN(value)) {
+                  parent[key] = Number(value);
+                } else if (value.startsWith("[")) {
+                  parent[key] = JSON.parse(value.replace(/'/g, '"'));
+                } else if (value.startsWith("{")) {
+                  parent[key] = JSON.parse(value.replace(/'/g, '"'));
+                } else {
+                  parent[key] = value;
+                }
+              }
+            }
+            return result;
+          },
+
+          stringify: function (obj, indent = 0) {
+            const spaces = "  ".repeat(indent);
+            let result = "";
+
+            if (obj === null) return "null\n";
+            if (typeof obj !== "object") {
+              if (typeof obj === "string") {
+                if (
+                  obj.includes("\n") ||
+                  obj.includes(":") ||
+                  obj.includes("#")
+                ) {
+                  return `"${obj.replace(/"/g, '\\"')}"\n`;
+                }
+                return `${obj}\n`;
+              }
+              return `${obj}\n`;
+            }
+
+            if (Array.isArray(obj)) {
+              if (obj.length === 0) return "[]\n";
+              for (const item of obj) {
+                if (typeof item === "object" && item !== null) {
+                  result += `${spaces}- ${YAML.stringify(item, indent + 1).trim()}\n`;
+                } else {
+                  result += `${spaces}- ${YAML.stringify(item).trim()}\n`;
+                }
+              }
+              return result;
+            }
+
+            const keys = Object.keys(obj);
+            if (keys.length === 0) return "{}\n";
+
+            for (const key of keys) {
+              const value = obj[key];
+              if (typeof value === "object" && value !== null) {
+                if (Array.isArray(value) && value.length === 0) {
+                  result += `${spaces}${key}: []\n`;
+                } else if (
+                  !Array.isArray(value) &&
+                  Object.keys(value).length === 0
+                ) {
+                  result += `${spaces}${key}: {}\n`;
+                } else {
+                  result += `${spaces}${key}:\n${YAML.stringify(value, indent + 1)}`;
+                }
+              } else {
+                result += `${spaces}${key}: ${YAML.stringify(value)}`;
+              }
+            }
+            return result;
+          },
+        };
+
+        // DOM要素の取得
+        const elements = {
+          splitView: document.getElementById("split-view"),
+          editorPanelLeft: document.getElementById("editor-panel-left"),
+          editorPanelRight: document.getElementById("editor-panel-right"),
+          gutter: document.getElementById("gutter"),
+          editorLeft: document.getElementById("editor-left"),
+          editorRight: document.getElementById("editor-right"),
+          formatLeft: document.getElementById("format-left"),
+          formatRight: document.getElementById("format-right"),
+          layoutLrBtn: document.getElementById("layout-lr-btn"),
+          layoutTbBtn: document.getElementById("layout-tb-btn"),
+          themeToggleBtn: document.getElementById("theme-toggle-btn"),
+          themeToggleIcon: document.getElementById("theme-toggle-icon"),
+          convertBtn: document.getElementById("convert-btn"),
+          diffBtn: document.getElementById("diff-btn"),
+          swapBtn: document.getElementById("swap-btn"),
+          clearLeftBtn: document.getElementById("clear-left-btn"),
+          copyRightBtn: document.getElementById("copy-right-btn"),
+          diffStats: document.getElementById("diff-stats"),
+          addedCount: document.getElementById("added-count"),
+          removedCount: document.getElementById("removed-count"),
+          changedCount: document.getElementById("changed-count"),
+        };
+
+        // 状態管理
+        let state = {
+          currentLayout: CONFIG.defaultLayout,
+          currentTheme: "light",
+          isDragging: false,
+          dragContext: {},
+          leftEditor: null,
+          rightEditor: null,
+        };
+
+        // lodashのdebounceを使用
+        const debounce = window._
+          ? _.debounce
+          : (func, delay) => {
+              let timeoutId;
+              return function (...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+              };
+            };
+
+        // Safe feather.replace wrapper to prevent errors when CDN is blocked
+        const hasFeather = typeof feather !== "undefined";
+        function safeReplaceIcons(root) {
+          try {
+            if (hasFeather) feather.replace(root ? { root: root } : undefined);
+          } catch (_) {}
+        }
+
+        function escHtml(str) {
+          return (String(str) || "")
+            .replace(/&/g, "&")
+            .replace(/</g, "<")
+            .replace(/>/g, ">")
+            .replace(/"/g, '"')
+            .replace(/'/g, "&#39;");
+        }
+
+        function doTouchDrag(ev) {
+          doDrag(ev.touches[0]);
+        }
+
+        // --- 初期化 ---
+        function initialize() {
+          // CodeMirror初期化
+          elements.leftEditor = CodeMirror.fromTextArea(elements.editorLeft, {
+            lineNumbers: true,
+            mode: "application/json",
+          });
+
+          elements.rightEditor = CodeMirror.fromTextArea(elements.editorRight, {
+            lineNumbers: true,
+            mode: "text/x-yaml",
+          });
+
+          // フォーマット変更時のモード切替
+          elements.formatLeft.addEventListener("change", function () {
+            const format = this.value;
+            elements.leftEditor.setOption(
+              "mode",
+              format === "json" ? "application/json" : "text/x-yaml",
+            );
+          });
+
+          elements.formatRight.addEventListener("change", function () {
+            const format = this.value;
+            elements.rightEditor.setOption(
+              "mode",
+              format === "json" ? "application/json" : "text/x-yaml",
+            );
+          });
+
+          loadSavedState();
+
+          // テーマ適用
+          try {
+            const savedTheme = localStorage.getItem(CONFIG.themeStorageKey);
+            applyTheme(savedTheme === "dark" ? "dark" : "light");
+          } catch (e) {
+            applyTheme("light");
+          }
+
+          // レイアウト適用
+          try {
+            const savedLayout = localStorage.getItem(CONFIG.layoutStorageKey);
+            if (savedLayout && CONFIG.layouts[savedLayout]) {
+              state.currentLayout = savedLayout;
+            } else {
+              state.currentLayout = CONFIG.defaultLayout;
+            }
+          } catch (e) {
+            state.currentLayout = CONFIG.defaultLayout;
+          }
+          applyLayout(state.currentLayout);
+
+          // イベントリスナー登録
+          elements.gutter.addEventListener("mousedown", startDrag);
+          elements.gutter.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            startDrag(e.touches[0]);
+          });
+
+          elements.layoutLrBtn.addEventListener("click", () =>
+            applyLayout("lr"),
+          );
+          elements.layoutTbBtn.addEventListener("click", () =>
+            applyLayout("tb"),
+          );
+          elements.themeToggleBtn.addEventListener("click", toggleTheme);
+
+          elements.convertBtn.addEventListener("click", convert);
+          elements.diffBtn.addEventListener("click", showDiff);
+          elements.swapBtn.addEventListener("click", swapContent);
+          elements.clearLeftBtn.addEventListener("click", clearLeft);
+          elements.copyRightBtn.addEventListener("click", copyRight);
+
+          // キーボードショートカット
+          document.addEventListener("keydown", handleKeyboard);
+
+          // 保存
+          const debouncedSave = debounce(saveState, CONFIG.debounceDelay);
+          elements.leftEditor.on("change", debouncedSave);
+          elements.rightEditor.on("change", debouncedSave);
+
+          // Feather icons - use safe wrapper
+          safeReplaceIcons();
+        }
+
+        // --- レイアウト制御 ---
+        function applyLayout(mode) {
+          state.currentLayout = mode;
+          try {
+            localStorage.setItem(CONFIG.layoutStorageKey, mode);
+          } catch (e) {}
+
+          elements.splitView.className = "split-view";
+          elements.splitView.classList.add(`layout-${mode}`);
+
+          elements.editorPanelLeft.style.width = "";
+          elements.editorPanelLeft.style.height = "";
+          elements.editorPanelRight.style.width = "";
+          elements.editorPanelRight.style.height = "";
+
+          const toolbarButtons = [elements.layoutLrBtn, elements.layoutTbBtn];
+          toolbarButtons.forEach((btn) => btn.classList.remove("active"));
+          if (mode === "lr") elements.layoutLrBtn.classList.add("active");
+          else if (mode === "tb") elements.layoutTbBtn.classList.add("active");
+
+          if (mode === "lr") {
+            elements.editorPanelLeft.style.width = "50%";
+            elements.editorPanelRight.style.width = "50%";
+          } else if (mode === "tb") {
+            elements.editorPanelLeft.style.height = "50%";
+            elements.editorPanelRight.style.height = "50%";
+          }
+        }
+
+        // --- テーマ制御 ---
+        function applyTheme(theme) {
+          state.currentTheme = theme;
+          document.documentElement.setAttribute("data-theme", theme);
+          try {
+            localStorage.setItem(CONFIG.themeStorageKey, theme);
+          } catch (e) {}
+        }
+
+        function toggleTheme() {
+          const newTheme = state.currentTheme === "dark" ? "light" : "dark";
+          applyTheme(newTheme);
+
+          const btn = elements.themeToggleBtn;
+          btn.classList.add("theme-icon-spin");
+          const oldIcon = btn.querySelector("svg, [data-feather]");
+          if (oldIcon) oldIcon.remove();
+          const newIcon = document.createElement("i");
+          newIcon.id = "theme-toggle-icon";
+          newIcon.setAttribute(
+            "data-feather",
+            newTheme === "dark" ? "sun" : "moon",
+          );
+          // Update fallback character for CDN-blocked environments
+          newIcon.textContent = newTheme === "dark" ? "☀" : "☽";
+          btn.appendChild(newIcon);
+          if (typeof feather !== "undefined") {
+            try {
+              feather.replace(btn);
+            } catch (_) {}
+          }
+          setTimeout(() => btn.classList.remove("theme-icon-spin"), 400);
+        }
+
+        // --- 変換機能 ---
+        function convert() {
+          const leftContent = elements.leftEditor.getValue().trim();
+          if (!leftContent) {
+            showTemporaryMessage("変換する内容を入力してください", "warning");
+            return;
+          }
+
+          const sourceFormat = elements.formatLeft.value;
+          const targetFormat = elements.formatRight.value;
+
+          try {
+            let obj;
+
+            // パース
+            if (sourceFormat === "json") {
+              obj = JSON.parse(leftContent);
+            } else {
+              obj = YAML.parse(leftContent);
+            }
+
+            // 出力
+            let result;
+            if (targetFormat === "json") {
+              result = JSON.stringify(obj, null, 2);
+            } else {
+              result = YAML.stringify(obj);
+            }
+
+            elements.rightEditor.setValue(result);
+            elements.formatRight.value = targetFormat;
+            showTemporaryMessage(
+              `${sourceFormat.toUpperCase()} → ${targetFormat.toUpperCase()} に変換しました`,
+            );
+
+            // モード更新
+            elements.rightEditor.setOption(
+              "mode",
+              targetFormat === "json" ? "application/json" : "text/x-yaml",
+            );
+          } catch (error) {
+            showTemporaryMessage(`変換エラー: ${error.message}`, "error");
+          }
+        }
+
+        // --- 差分表示 ---
+        function showDiff() {
+          const leftContent = elements.leftEditor.getValue().trim();
+          const rightContent = elements.rightEditor.getValue().trim();
+
+          if (!leftContent || !rightContent) {
+            showTemporaryMessage(
+              "両方のエディターに内容がありません",
+              "warning",
+            );
+            return;
+          }
+
+          try {
+            // パースして比較
+            let leftObj, rightObj;
+            const leftFormat = elements.formatLeft.value;
+            const rightFormat = elements.formatRight.value;
+
+            if (leftFormat === "json") {
+              leftObj = JSON.parse(leftContent);
+            } else {
+              leftObj = YAML.parse(leftContent);
+            }
+
+            if (rightFormat === "json") {
+              rightObj = JSON.parse(rightContent);
+            } else {
+              rightObj = YAML.parse(rightContent);
+            }
+
+            const diff = computeDiff(leftObj, rightObj);
+
+            // 差分統計表示
+            elements.diffStats.style.display = "flex";
+            elements.addedCount.textContent = diff.added;
+            elements.removedCount.textContent = diff.removed;
+            elements.changedCount.textContent = diff.changed;
+
+            // 右側に変換結果をセット（差分ハイライト用）
+            elements.rightEditor.setValue(rightContent);
+
+            showTemporaryMessage(
+              `差分: +${diff.added} -${diff.removed} ~${diff.changed}`,
+            );
+          } catch (error) {
+            showTemporaryMessage(`差分計算エラー: ${error.message}`, "error");
+          }
+        }
+
+        // 簡易差分計算
+        function computeDiff(obj1, obj2, path = "") {
+          const result = { added: 0, removed: 0, changed: 0 };
+
+          const flat1 = flatten(obj1);
+          const flat2 = flatten(obj2);
+
+          const allKeys = new Set([
+            ...Object.keys(flat1),
+            ...Object.keys(flat2),
+          ]);
+
+          for (const key of allKeys) {
+            const fullPath = path ? `${path}.${key}` : key;
+
+            if (!(key in flat1)) {
+              result.added++;
+            } else if (!(key in flat2)) {
+              result.removed++;
+            } else if (
+              JSON.stringify(flat1[key]) !== JSON.stringify(flat2[key])
+            ) {
+              result.changed++;
+            }
+          }
+
+          return result;
+        }
+
+        function flatten(obj, prefix = "") {
+          const result = {};
+
+          for (const key in obj) {
+            const newKey = prefix ? `${prefix}.${key}` : key;
+
+            if (
+              obj[key] !== null &&
+              typeof obj[key] === "object" &&
+              !Array.isArray(obj[key])
+            ) {
+              Object.assign(result, flatten(obj[key], newKey));
+            } else {
+              result[newKey] = obj[key];
+            }
+          }
+
+          return result;
+        }
+
+        // --- 入れ替え ---
+        function swapContent() {
+          const leftContent = elements.leftEditor.getValue();
+          const rightContent = elements.rightEditor.getValue();
+
+          elements.leftEditor.setValue(rightContent);
+          elements.rightEditor.setValue(leftContent);
+
+          // フォーマットも入れ替え
+          const leftFormat = elements.formatLeft.value;
+          const rightFormat = elements.formatRight.value;
+
+          elements.formatLeft.value = rightFormat;
+          elements.formatRight.value = leftFormat;
+
+          // モード更新
+          elements.leftEditor.setOption(
+            "mode",
+            rightFormat === "json" ? "application/json" : "text/x-yaml",
+          );
+          elements.rightEditor.setOption(
+            "mode",
+            leftFormat === "json" ? "application/json" : "text/x-yaml",
+          );
+
+          showTemporaryMessage("内容を入れ替えました");
+        }
+
+        // --- クリア ---
+        function clearLeft() {
+          elements.leftEditor.setValue("");
+          showTemporaryMessage("左エディターをクリアしました");
+        }
+
+        // --- コピー ---
+        async function copyRight() {
+          const content = elements.rightEditor.getValue();
+          if (!content.trim()) {
+            showTemporaryMessage("コピーする内容がありません", "warning");
+            return;
+          }
+
+          try {
+            await navigator.clipboard.writeText(content);
+            showTemporaryMessage("クリップボードにコピーしました");
+          } catch (error) {
+            showTemporaryMessage("コピーに失敗しました", "error");
+          }
+        }
+
+        // --- 保存/読み込み ---
+        function saveState() {
+          try {
+            const data = {
+              leftContent: elements.leftEditor.getValue(),
+              rightContent: elements.rightEditor.getValue(),
+              leftFormat: elements.formatLeft.value,
+              rightFormat: elements.formatRight.value,
+            };
+            localStorage.setItem(CONFIG.storageKey, JSON.stringify(data));
+          } catch (e) {
+            if (e.name === "QuotaExceededError") {
+              showTemporaryMessage("ストレージの容量が不足しています", "error");
+            }
+          }
+        }
+
+        function loadSavedState() {
+          try {
+            const saved = localStorage.getItem(CONFIG.storageKey);
+            if (saved) {
+              const data = JSON.parse(saved);
+              elements.leftEditor.setValue(data.leftContent || "");
+              elements.rightEditor.setValue(data.rightContent || "");
+              elements.formatLeft.value = data.leftFormat || "json";
+              elements.formatRight.value = data.rightFormat || "yaml";
+
+              // モード設定
+              elements.leftEditor.setOption(
+                "mode",
+                elements.formatLeft.value === "json"
+                  ? "application/json"
+                  : "text/x-yaml",
+              );
+              elements.rightEditor.setOption(
+                "mode",
+                elements.formatRight.value === "json"
+                  ? "application/json"
+                  : "text/x-yaml",
+              );
+            } else {
+              // デフォルト値
+              elements.leftEditor.setValue(
+                '{\n  "name": "example",\n  "version": "1.0.0",\n  "description": "Sample JSON data",\n  "author": {\n    "name": "John Doe",\n    "email": "john@example.com"\n  }\n}',
+              );
+            }
+          } catch (e) {
+            elements.leftEditor.setValue(
+              '{\n  "name": "example",\n  "version": "1.0.0"\n}',
+            );
+          }
+        }
+
+        // --- キーボードショートカット ---
+        function handleKeyboard(e) {
+          // Ctrl+Enter: 変換
+          if (e.ctrlKey && e.key === "Enter") {
+            e.preventDefault();
+            convert();
+          }
+          // Ctrl+D: 差分
+          else if (e.ctrlKey && e.key === "d") {
+            e.preventDefault();
+            showDiff();
+          }
+          // Ctrl+Shift+S: 入れ替え
+          else if (e.ctrlKey && e.shiftKey && e.key === "S") {
+            e.preventDefault();
+            swapContent();
+          }
+        }
+
+        // --- Toast通知 ---
+        function showTemporaryMessage(message, type = "success") {
+          const existing = document.querySelector(".temp-message");
+          if (existing) existing.remove();
+
+          const messageDiv = document.createElement("div");
+          messageDiv.className =
+            "temp-message" +
+            (type === "error"
+              ? " toast-error"
+              : type === "warning"
+                ? " toast-warning"
+                : "");
+          messageDiv.textContent = message;
+          messageDiv.setAttribute("role", "status");
+          messageDiv.setAttribute("aria-live", "polite");
+
+          document.body.appendChild(messageDiv);
+
+          setTimeout(() => {
+            messageDiv.classList.add("toast-out");
+            setTimeout(() => {
+              if (messageDiv.parentNode) {
+                document.body.removeChild(messageDiv);
+              }
+            }, 300);
+          }, 2000);
+        }
+
+        // --- Split View リサイズ ---
+        function startDrag(e) {
+          state.isDragging = true;
+          document.body.classList.add(
+            state.currentLayout === "tb" ? "dragging-tb" : "dragging-lr",
+          );
+          elements.gutter.classList.add("dragging");
+
+          state.dragContext.startX = e.clientX;
+          state.dragContext.startY = e.clientY;
+          state.dragContext.leftInitialWidth =
+            elements.editorPanelLeft.offsetWidth;
+          state.dragContext.leftInitialHeight =
+            elements.editorPanelLeft.offsetHeight;
+
+          window.addEventListener("mousemove", doDrag);
+          window.addEventListener("touchmove", doTouchDrag, { passive: false });
+          window.addEventListener("mouseup", stopDrag);
+          window.addEventListener("touchend", stopDrag);
+          window.addEventListener("mouseleave", stopDrag);
+
+          document.body.style.userSelect = "none";
+
+          const overlay = document.createElement("div");
+          overlay.className = "resize-overlay";
+          document.body.appendChild(overlay);
+        }
+
+        function doDrag(e) {
+          if (!state.isDragging) return;
+
+          requestAnimationFrame(() => {
+            const dx = e.clientX - state.dragContext.startX;
+            const dy = e.clientY - state.dragContext.startY;
+
+            if (state.currentLayout === "lr") {
+              const totalWidth =
+                elements.editorPanelLeft.parentElement.clientWidth -
+                elements.gutter.offsetWidth;
+              let leftNewSize = state.dragContext.leftInitialWidth + dx;
+              const minWidth = Math.max(totalWidth * 0.1, 100);
+              leftNewSize = Math.max(minWidth, leftNewSize);
+              leftNewSize = Math.min(totalWidth - minWidth, leftNewSize);
+
+              elements.editorPanelLeft.style.width = `${leftNewSize}px`;
+              elements.editorPanelRight.style.width = `${totalWidth - leftNewSize}px`;
+            } else if (state.currentLayout === "tb") {
+              const totalHeight =
+                elements.editorPanelLeft.parentElement.clientHeight -
+                elements.gutter.offsetHeight;
+              let leftNewSize = state.dragContext.leftInitialHeight + dy;
+              const minHeight = Math.max(totalHeight * 0.1, 100);
+              leftNewSize = Math.max(minHeight, leftNewSize);
+              leftNewSize = Math.min(totalHeight - minHeight, leftNewSize);
+
+              elements.editorPanelLeft.style.height = `${leftNewSize}px`;
+              elements.editorPanelRight.style.height = `${totalHeight - leftNewSize}px`;
+            }
+          });
+        }
+
+        function stopDrag() {
+          if (!state.isDragging) return;
+          state.isDragging = false;
+          document.body.classList.remove("dragging-lr", "dragging-tb");
+          elements.gutter.classList.remove("dragging");
+
+          window.removeEventListener("mousemove", doDrag);
+          window.removeEventListener("touchmove", doTouchDrag);
+          window.removeEventListener("mouseup", stopDrag);
+          window.removeEventListener("touchend", stopDrag);
+          window.removeEventListener("mouseleave", stopDrag);
+
+          document.body.style.userSelect = "";
+
+          const overlay = document.querySelector(".resize-overlay");
+          if (overlay) {
+            document.body.removeChild(overlay);
+          }
+          state.dragContext = {};
+        }
+
+        // 初期化実行
+        initialize();
+      })();
+    </script>
+  </body>
+</html>
