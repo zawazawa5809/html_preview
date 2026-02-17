@@ -748,6 +748,40 @@
     .dt-add-dropdown button:hover {
       background: var(--da-accent-muted);
     }
+    .dt-dropdown-category {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--app-text-muted);
+      padding: 6px 12px 2px;
+      border-top: 1px solid var(--app-border-default);
+    }
+    .dt-dropdown-category:first-child { border-top: none; }
+
+    /* Breadcrumb */
+    .dt-breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      padding: 4px 12px;
+      font-size: 10px;
+      align-items: center;
+      border-bottom: 1px solid var(--app-border-default);
+      background: var(--app-panel-header-bg);
+      min-height: 0;
+    }
+    .dt-breadcrumb:empty { display: none; }
+    .dt-breadcrumb-item {
+      cursor: pointer;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: var(--da-stone);
+      font-family: "Noto Sans Mono", Consolas, monospace;
+    }
+    .dt-breadcrumb-item:hover { background: var(--da-accent-muted); color: var(--da-snow); }
+    .dt-breadcrumb-item.active { color: var(--da-secondary); }
+    .dt-breadcrumb-sep { color: var(--da-ash); font-size: 9px; }
     </style>
   </head>
   <body>
@@ -818,7 +852,7 @@
       <div class="editor-container" id="editor-container">
         <div class="panel-header panel-tabs">
           <button class="panel-tab active" id="tab-code" data-tab="code">Code</button>
-          <button class="panel-tab" id="tab-design" data-tab="design" disabled>Design</button>
+          <button class="panel-tab" id="tab-design" data-tab="design">Design</button>
         </div>
         <div class="editor-content-wrapper" id="code-panel">
           <textarea
@@ -848,21 +882,32 @@
               <button class="dt-btn" id="dt-move-down" title="下へ移動"><i data-feather="chevron-down"></i></button>
               <button class="dt-btn" id="dt-duplicate" title="複製"><i data-feather="copy"></i></button>
               <button class="dt-btn" id="dt-delete" title="削除"><i data-feather="trash-2"></i></button>
+              <button class="dt-btn" id="dt-copy-style" title="スタイルコピー"><i data-feather="droplet"></i></button>
+              <button class="dt-btn" id="dt-paste-style" title="スタイル貼り付け"><i data-feather="clipboard"></i></button>
               <div style="position:relative">
                 <button class="dt-btn" id="dt-add-child" title="子要素追加"><i data-feather="plus"></i></button>
                 <div class="dt-add-dropdown" id="dt-add-dropdown" style="display:none">
-                  <button data-tag="div">div</button>
-                  <button data-tag="p">p</button>
-                  <button data-tag="span">span</button>
-                  <button data-tag="h2">h2</button>
-                  <button data-tag="button">button</button>
-                  <button data-tag="a">a</button>
-                  <button data-tag="img">img</button>
-                  <button data-tag="ul">ul &gt; li</button>
+                  <div class="dt-dropdown-category">Layout</div>
+                  <button data-template="container">Container</button>
+                  <button data-template="section">Section</button>
+                  <button data-template="flex-row">Flex Row</button>
+                  <button data-template="flex-col">Flex Column</button>
+                  <button data-template="grid-2col">Grid (2col)</button>
+                  <button data-template="divider">Divider</button>
+                  <div class="dt-dropdown-category">Content</div>
+                  <button data-template="heading">Heading</button>
+                  <button data-template="text">Text Block</button>
+                  <button data-template="list">List</button>
+                  <div class="dt-dropdown-category">Media</div>
+                  <button data-template="image">Image</button>
+                  <div class="dt-dropdown-category">Interactive</div>
+                  <button data-template="button">Button</button>
+                  <button data-template="link">Link</button>
                 </div>
               </div>
             </div>
           </div>
+          <div class="dt-breadcrumb" id="dt-breadcrumb"></div>
 
           <div id="dt-hint" class="dt-hint">要素をクリックして選択</div>
 
@@ -1140,6 +1185,7 @@
         dtHint: document.getElementById('dt-hint'),
         dtControls: document.getElementById('dt-controls'),
         dtAddDropdown: document.getElementById('dt-add-dropdown'),
+        dtBreadcrumb: document.getElementById('dt-breadcrumb'),
         // Color inputs
         dtBgColor: document.getElementById('dt-bg-color'),
         dtBgColorText: document.getElementById('dt-bg-color-text'),
@@ -1191,7 +1237,8 @@
         designToken: (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2),
         paddingLinked: false,
         marginLinked: false,
-        addDropdownOpen: false
+        addDropdownOpen: false,
+        copiedStyles: null
       };
 
       // ========================================
@@ -1318,6 +1365,21 @@
         else if (e.ctrlKey && e.key === '2') { e.preventDefault(); applyLayout('tb'); }
         else if (e.ctrlKey && e.key === '3') { e.preventDefault(); applyLayout('po'); }
         else if (e.ctrlKey && !e.shiftKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); e.stopPropagation(); toggleDesignMode(); }
+        else if (e.key === 'Delete' && !e.ctrlKey && state.designMode && state.activeTab === 'design') {
+          var activeEl = document.activeElement;
+          if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA')) return;
+          if (activeEl === elements.previewContainer) {
+            var iframeDoc = elements.previewContainer.contentDocument;
+            var iframeActive = iframeDoc && iframeDoc.activeElement;
+            if (iframeActive && iframeActive.isContentEditable) return;
+          }
+          var el = getSelectedElement();
+          if (!el) return;
+          e.preventDefault();
+          el.remove();
+          onDesignElementDeselected();
+          debouncedDesignSync();
+        }
       }
 
       // ========================================
@@ -1574,7 +1636,10 @@
       }
 
       function switchTab(tab) {
-        if (tab === 'design' && !state.designMode) return;
+        if (tab === 'design' && !state.designMode) {
+          enableDesignMode();
+          return;
+        }
         state.activeTab = tab;
         elements.tabCode.classList.toggle('active', tab === 'code');
         elements.tabDesign.classList.toggle('active', tab === 'design');
@@ -1587,7 +1652,6 @@
         state.designMode = true;
         elements.designModeBtn.classList.add('active');
         elements.previewPanel.classList.add('design-active');
-        elements.tabDesign.disabled = false;
         switchTab('design');
         elements.dtHint.style.display = '';
         elements.dtControls.style.display = 'none';
@@ -1614,7 +1678,6 @@
         state.designMode = false;
         elements.designModeBtn.classList.remove('active');
         elements.previewPanel.classList.remove('design-active');
-        elements.tabDesign.disabled = true;
         switchTab('code');
 
         // Re-render preview from editor (clean state)
@@ -1635,7 +1698,16 @@
         style.textContent =
           '[data-designer-selected]{outline:2px dashed #4a9eff!important;outline-offset:2px!important}' +
           '.designer-hover-overlay{position:fixed;pointer-events:none;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.4);z-index:99998;transition:all 50ms}' +
-          '.designer-hover-label{position:fixed;pointer-events:none;background:#1e1f25;color:#e2e4ec;font:11px/1.3 "Noto Sans Mono",Consolas,monospace;padding:2px 6px;border-radius:3px;z-index:99999;white-space:nowrap}';
+          '.designer-hover-label{position:fixed;pointer-events:none;background:#1e1f25;color:#e2e4ec;font:11px/1.3 "Noto Sans Mono",Consolas,monospace;padding:2px 6px;border-radius:3px;z-index:99999;white-space:nowrap}' +
+          '[draggable="true"]{cursor:grab}' +
+          '.designer-dragging{opacity:0.3!important}' +
+          '.designer-drop-before{box-shadow:inset 0 3px 0 0 #4a9eff!important}' +
+          '.designer-drop-after{box-shadow:inset 0 -3px 0 0 #4a9eff!important}' +
+          '.designer-drop-inside{outline:2px solid #4a9eff!important;background:rgba(74,158,255,0.06)!important}' +
+          '.designer-action-bar{position:fixed;display:flex;gap:2px;background:#1e1f25;border:1px solid #353842;border-radius:6px;padding:3px;z-index:99997;box-shadow:0 4px 12px rgba(0,0,0,0.3)}' +
+          '.designer-action-bar button{background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 6px;border-radius:4px;line-height:1;display:flex;align-items:center;justify-content:center;min-width:26px;min-height:26px}' +
+          '.designer-action-bar button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+          '.designer-action-bar button:hover{background:#353842;color:#f0f1f5}';
         (iframeDoc.head || iframeDoc.documentElement).appendChild(style);
 
         // Inject interaction script
@@ -1679,7 +1751,11 @@
 
           // Helper: check if element is injected
           'function isInjected(el){' +
-            'return el&&(el.hasAttribute&&el.hasAttribute("data-designer-injected"));' +
+            'while(el){' +
+              'if(el.hasAttribute&&el.hasAttribute("data-designer-injected"))return true;' +
+              'el=el.parentElement;' +
+            '}' +
+            'return false;' +
           '}' +
 
           // Helper: check if element should be excluded
@@ -1746,7 +1822,15 @@
               'display:cs.display,' +
               'overflow:cs.overflow' +
             '};' +
-            'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(el),styles:styles},"*");' +
+            // Build ancestors array
+            'var ancestors=[];' +
+            'var p=el.parentElement;' +
+            'while(p&&p.tagName&&!EXCLUDED.has(p.tagName)){' +
+              'ancestors.unshift(tagInfo(p));' +
+              'p=p.parentElement;' +
+            '}' +
+            'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(el),styles:styles,ancestors:ancestors},"*");' +
+            'showActionBar(el);' +
           '},true);' +
 
           // Double-click - enable contentEditable for text editing
@@ -1768,20 +1852,166 @@
             '});' +
           '});' +
 
-          // Escape - deselect
+          // Escape - deselect, Delete - remove
           'document.addEventListener("keydown",function(e){' +
             'if(e.key==="Escape"&&selected){' +
               'selected.removeAttribute("data-designer-selected");' +
               'selected=null;' +
               'parent.postMessage({type:"__design_deselect__",token:TOKEN},"*");' +
             '}' +
+            'if(e.key==="Delete"&&selected&&!selected.isContentEditable){' +
+              'e.preventDefault();' +
+              'var toRemove=selected;' +
+              'selected.removeAttribute("data-designer-selected");' +
+              'selected=null;' +
+              'toRemove.remove();' +
+              'parent.postMessage({type:"__design_deselect__",token:TOKEN},"*");' +
+              'parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+            '}' +
+          '});' +
+
+          // Floating action bar
+          'var actionBar=document.createElement("div");' +
+          'actionBar.className="designer-action-bar";' +
+          'actionBar.setAttribute("data-designer-injected","true");' +
+          'actionBar.style.display="none";' +
+          'actionBar.innerHTML=' +
+            '"<button data-action=\\"delete\\" title=\\"Delete\\"><svg viewBox=\\"0 0 24 24\\"><polyline points=\\"3 6 5 6 21 6\\"/><path d=\\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\\"/><line x1=\\"10\\" y1=\\"11\\" x2=\\"10\\" y2=\\"17\\"/><line x1=\\"14\\" y1=\\"11\\" x2=\\"14\\" y2=\\"17\\"/></svg></button>"' +
+            '+"<button data-action=\\"duplicate\\" title=\\"Duplicate\\"><svg viewBox=\\"0 0 24 24\\"><rect x=\\"9\\" y=\\"9\\" width=\\"13\\" height=\\"13\\" rx=\\"2\\" ry=\\"2\\"/><path d=\\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\\"/></svg></button>"' +
+            '+"<button data-action=\\"move-up\\" title=\\"Move Up\\"><svg viewBox=\\"0 0 24 24\\"><polyline points=\\"18 15 12 9 6 15\\"/></svg></button>"' +
+            '+"<button data-action=\\"move-down\\" title=\\"Move Down\\"><svg viewBox=\\"0 0 24 24\\"><polyline points=\\"6 9 12 15 18 9\\"/></svg></button>";' +
+          'document.body.appendChild(actionBar);' +
+
+          'function showActionBar(el){' +
+            'if(!el){actionBar.style.display="none";return;}' +
+            'var r=el.getBoundingClientRect();' +
+            'actionBar.style.display="flex";' +
+            'var barTop=r.top-34;' +
+            'if(barTop<4)barTop=r.bottom+4;' +
+            'actionBar.style.left=Math.max(4,r.left)+"px";' +
+            'actionBar.style.top=barTop+"px";' +
+          '}' +
+
+          'document.addEventListener("scroll",function(){' +
+            'if(selected)showActionBar(selected);' +
+          '},true);' +
+
+          'actionBar.addEventListener("click",function(e){' +
+            'var btn=e.target.closest("[data-action]");' +
+            'if(!btn||!selected)return;' +
+            'e.preventDefault();e.stopPropagation();' +
+            'parent.postMessage({type:"__design_action__",token:TOKEN,action:btn.getAttribute("data-action")},"*");' +
+          '});' +
+
+          // Listen for select-ancestor from parent
+          'window.addEventListener("message",function(e){' +
+            'if(!e.data||e.data.token!==TOKEN)return;' +
+            'if(e.data.type==="__design_select_ancestor__"){' +
+              'var depth=e.data.depth;' +
+              'if(!selected)return;' +
+              'var target=selected;' +
+              'for(var i=0;i<depth;i++){' +
+                'if(target.parentElement&&!EXCLUDED.has(target.parentElement.tagName))target=target.parentElement;' +
+                'else break;' +
+              '}' +
+              'if(isExcluded(target))return;' +
+              'if(selected)selected.removeAttribute("data-designer-selected");' +
+              'selected=target;' +
+              'target.setAttribute("data-designer-selected","true");' +
+              'var cs=window.getComputedStyle(target);' +
+              'var styles={' +
+                'backgroundColor:cs.backgroundColor,color:cs.color,borderColor:cs.borderColor,' +
+                'fontSize:cs.fontSize,fontWeight:cs.fontWeight,textAlign:cs.textAlign,' +
+                'lineHeight:cs.lineHeight,' +
+                'paddingTop:cs.paddingTop,paddingRight:cs.paddingRight,paddingBottom:cs.paddingBottom,paddingLeft:cs.paddingLeft,' +
+                'marginTop:cs.marginTop,marginRight:cs.marginRight,marginBottom:cs.marginBottom,marginLeft:cs.marginLeft,' +
+                'width:cs.width,height:cs.height,borderRadius:cs.borderRadius,opacity:cs.opacity,display:cs.display,overflow:cs.overflow' +
+              '};' +
+              'var ancestors=[];' +
+              'var p=target.parentElement;' +
+              'while(p&&p.tagName&&!EXCLUDED.has(p.tagName)){ancestors.unshift(tagInfo(p));p=p.parentElement;}' +
+              'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(target),styles:styles,ancestors:ancestors},"*");' +
+              'showActionBar(target);' +
+            '}' +
+          '});' +
+
+          // Drag and Drop
+          'var dragEl=null;' +
+          'var dropTarget=null;' +
+          'var dropPosition=null;' +
+
+          'document.addEventListener("mousedown",function(e){' +
+            'var el=e.target;' +
+            'if(isExcluded(el)||isInjected(el))return;' +
+            'if(el.isContentEditable)return;' +
+            'el.setAttribute("draggable","true");' +
+          '});' +
+
+          'document.addEventListener("mouseup",function(e){' +
+            'if(!dragEl){' +
+              'var el=e.target;' +
+              'if(el.hasAttribute&&el.hasAttribute("draggable"))el.removeAttribute("draggable");' +
+            '}' +
+          '});' +
+
+          'document.addEventListener("dragstart",function(e){' +
+            'var el=e.target;' +
+            'if(isExcluded(el)||isInjected(el)){e.preventDefault();return;}' +
+            'dragEl=el;' +
+            'el.classList.add("designer-dragging");' +
+            'e.dataTransfer.effectAllowed="move";' +
+            'e.dataTransfer.setData("text/plain","");' +
+          '});' +
+
+          'var prevDropTarget=null;' +
+          'function clearDropIndicators(){' +
+            'if(prevDropTarget){prevDropTarget.classList.remove("designer-drop-before","designer-drop-after","designer-drop-inside");prevDropTarget=null;}' +
+          '}' +
+
+          'document.addEventListener("dragover",function(e){' +
+            'if(!dragEl)return;' +
+            'e.preventDefault();' +
+            'e.dataTransfer.dropEffect="move";' +
+            'var target=e.target;' +
+            'if(isExcluded(target)||isInjected(target)||target===dragEl){clearDropIndicators();dropTarget=null;return;}' +
+            'if(dragEl.contains(target)){clearDropIndicators();dropTarget=null;return;}' +
+            'clearDropIndicators();' +
+            'var r=target.getBoundingClientRect();' +
+            'var y=e.clientY-r.top;' +
+            'var third=r.height/3;' +
+            'if(y<third){target.classList.add("designer-drop-before");dropPosition="before";}' +
+            'else if(y>third*2){target.classList.add("designer-drop-after");dropPosition="after";}' +
+            'else{target.classList.add("designer-drop-inside");dropPosition="inside";}' +
+            'dropTarget=target;' +
+            'prevDropTarget=target;' +
+          '});' +
+
+          'document.addEventListener("drop",function(e){' +
+            'e.preventDefault();' +
+            'if(!dragEl||!dropTarget)return;' +
+            'if(dragEl.contains(dropTarget))return;' +
+            'clearDropIndicators();' +
+            'if(dropPosition==="before"){' +
+              'dropTarget.parentNode.insertBefore(dragEl,dropTarget);' +
+            '}else if(dropPosition==="after"){' +
+              'dropTarget.parentNode.insertBefore(dragEl,dropTarget.nextSibling);' +
+            '}else if(dropPosition==="inside"){' +
+              'dropTarget.appendChild(dragEl);' +
+            '}' +
+            'parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+          '});' +
+
+          'document.addEventListener("dragend",function(e){' +
+            'clearDropIndicators();' +
+            'if(dragEl){dragEl.classList.remove("designer-dragging");dragEl.removeAttribute("draggable");}' +
+            'dragEl=null;dropTarget=null;dropPosition=null;' +
           '});' +
 
           // MutationObserver - detect real DOM changes
           'var observer=new MutationObserver(function(mutations){' +
             'var hasReal=mutations.some(function(m){' +
               'if(m.target&&m.target.hasAttribute&&m.target.hasAttribute("data-designer-injected"))return false;' +
-              'if(m.type==="attributes"&&(m.attributeName==="data-designer-injected"||m.attributeName==="data-designer-selected"||m.attributeName==="contenteditable"))return false;' +
+              'if(m.type==="attributes"&&(m.attributeName==="data-designer-injected"||m.attributeName==="data-designer-selected"||m.attributeName==="contenteditable"||m.attributeName==="draggable"))return false;' +
               'if(m.type==="childList"){' +
                 'var added=Array.from(m.addedNodes).some(function(n){return n.nodeType===1&&!n.hasAttribute("data-designer-injected");});' +
                 'var removed=Array.from(m.removedNodes).some(function(n){return n.nodeType===1&&!n.hasAttribute("data-designer-injected");});' +
@@ -1808,7 +2038,7 @@
 
         switch (e.data.type) {
           case '__design_click__':
-            onDesignElementSelected(e.data.tag, e.data.styles);
+            onDesignElementSelected(e.data.tag, e.data.styles, e.data.ancestors);
             break;
           case '__design_change__':
             debouncedDesignSync();
@@ -1816,14 +2046,74 @@
           case '__design_deselect__':
             onDesignElementDeselected();
             break;
+          case '__design_action__':
+            handleDesignAction(e.data.action);
+            break;
         }
       }
 
-      function onDesignElementSelected(tag, styles) {
+      function handleDesignAction(action) {
+        var el = getSelectedElement();
+        if (!el) return;
+        switch (action) {
+          case 'delete':
+            el.remove();
+            onDesignElementDeselected();
+            debouncedDesignSync();
+            break;
+          case 'duplicate':
+            var clone = el.cloneNode(true);
+            clone.removeAttribute('data-designer-selected');
+            el.parentNode.insertBefore(clone, el.nextSibling);
+            debouncedDesignSync();
+            break;
+          case 'move-up':
+            var prev = el.previousElementSibling;
+            while (prev && prev.hasAttribute('data-designer-injected')) prev = prev.previousElementSibling;
+            if (!prev) return;
+            el.parentNode.insertBefore(el, prev);
+            debouncedDesignSync();
+            break;
+          case 'move-down':
+            var next = el.nextElementSibling;
+            while (next && next.hasAttribute('data-designer-injected')) next = next.nextElementSibling;
+            if (!next) return;
+            el.parentNode.insertBefore(next, el);
+            debouncedDesignSync();
+            break;
+        }
+      }
+
+      function onDesignElementSelected(tag, styles, ancestors) {
         elements.dtElementTag.textContent = tag;
         elements.dtHint.style.display = 'none';
         elements.dtControls.style.display = '';
         elements.dtActions.style.display = 'flex';
+
+        // Render breadcrumb
+        elements.dtBreadcrumb.innerHTML = '';
+        if (ancestors && ancestors.length > 0) {
+          ancestors.forEach(function(anc, idx) {
+            var span = document.createElement('span');
+            span.className = 'dt-breadcrumb-item';
+            span.textContent = anc;
+            span.title = anc;
+            var depth = ancestors.length - idx;
+            span.addEventListener('click', function() {
+              var iframe = elements.previewContainer.contentWindow;
+              if (iframe) iframe.postMessage({ type: '__design_select_ancestor__', token: state.designToken, depth: depth }, '*');
+            });
+            elements.dtBreadcrumb.appendChild(span);
+            var sep = document.createElement('span');
+            sep.className = 'dt-breadcrumb-sep';
+            sep.textContent = '\u203A';
+            elements.dtBreadcrumb.appendChild(sep);
+          });
+          var current = document.createElement('span');
+          current.className = 'dt-breadcrumb-item active';
+          current.textContent = tag;
+          elements.dtBreadcrumb.appendChild(current);
+        }
 
         // Fill color values
         var bgHex = colorToHex(styles.backgroundColor);
@@ -1886,6 +2176,7 @@
         elements.dtControls.style.display = 'none';
         elements.dtActions.style.display = 'none';
         elements.dtElementTag.textContent = '--';
+        elements.dtBreadcrumb.innerHTML = '';
       }
 
       // ========================================
@@ -2106,32 +2397,143 @@
           state.addDropdownOpen = !state.addDropdownOpen;
           elements.dtAddDropdown.style.display = state.addDropdownOpen ? '' : 'none';
         });
+        var INSERT_TEMPLATES = {
+          'container': function(doc) {
+            var d = doc.createElement('div');
+            d.style.cssText = 'max-width:800px;margin:0 auto;padding:16px';
+            d.textContent = 'Container';
+            return d;
+          },
+          'section': function(doc) {
+            var s = doc.createElement('section');
+            s.style.cssText = 'padding:24px 0';
+            s.textContent = 'Section';
+            return s;
+          },
+          'flex-row': function(doc) {
+            var d = doc.createElement('div');
+            d.style.cssText = 'display:flex;gap:8px';
+            for (var i = 1; i <= 3; i++) {
+              var item = doc.createElement('div');
+              item.style.cssText = 'flex:1;padding:12px;background:#f0f1f5;border-radius:4px;text-align:center';
+              item.textContent = 'Item ' + i;
+              d.appendChild(item);
+            }
+            return d;
+          },
+          'flex-col': function(doc) {
+            var d = doc.createElement('div');
+            d.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+            for (var i = 1; i <= 3; i++) {
+              var item = doc.createElement('div');
+              item.style.cssText = 'padding:12px;background:#f0f1f5;border-radius:4px';
+              item.textContent = 'Item ' + i;
+              d.appendChild(item);
+            }
+            return d;
+          },
+          'grid-2col': function(doc) {
+            var d = doc.createElement('div');
+            d.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px';
+            for (var i = 1; i <= 4; i++) {
+              var cell = doc.createElement('div');
+              cell.style.cssText = 'padding:12px;background:#f0f1f5;border-radius:4px;text-align:center';
+              cell.textContent = 'Cell ' + i;
+              d.appendChild(cell);
+            }
+            return d;
+          },
+          'divider': function(doc) {
+            return doc.createElement('hr');
+          },
+          'heading': function(doc) {
+            var h = doc.createElement('h2');
+            h.textContent = 'Heading';
+            return h;
+          },
+          'text': function(doc) {
+            var p = doc.createElement('p');
+            p.textContent = 'Text block content goes here.';
+            return p;
+          },
+          'list': function(doc) {
+            var ul = doc.createElement('ul');
+            for (var i = 1; i <= 3; i++) {
+              var li = doc.createElement('li');
+              li.textContent = 'List item ' + i;
+              ul.appendChild(li);
+            }
+            return ul;
+          },
+          'image': function(doc) {
+            var d = doc.createElement('div');
+            d.style.cssText = 'width:200px;height:150px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#999;font-size:14px;border-radius:4px';
+            d.textContent = 'Image';
+            return d;
+          },
+          'button': function(doc) {
+            var btn = doc.createElement('button');
+            btn.textContent = 'Button';
+            btn.style.cssText = 'background:#3b82f6;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font:inherit';
+            return btn;
+          },
+          'link': function(doc) {
+            var a = doc.createElement('a');
+            a.href = '#';
+            a.textContent = 'Link text';
+            a.style.cssText = 'color:#3b82f6;text-decoration:underline';
+            return a;
+          }
+        };
+
         elements.dtAddDropdown.addEventListener('click', function(e) {
-          var btn = e.target.closest('[data-tag]');
+          var btn = e.target.closest('[data-template]');
           if (!btn) return;
-          var tag = btn.getAttribute('data-tag');
+          var tmpl = btn.getAttribute('data-template');
           var el = getSelectedElement();
           if (!el) return;
           var iframeDoc = elements.previewContainer.contentDocument;
-          var newEl;
-          if (tag === 'img') {
-            newEl = iframeDoc.createElement('img');
-            newEl.setAttribute('src', '');
-            newEl.setAttribute('alt', 'image');
-            newEl.style.cssText = 'width:100px;height:100px;background:#ddd;display:inline-block';
-          } else if (tag === 'ul') {
-            newEl = iframeDoc.createElement('ul');
-            var li = iframeDoc.createElement('li');
-            li.textContent = 'Item';
-            newEl.appendChild(li);
-          } else {
-            newEl = iframeDoc.createElement(tag);
-            newEl.textContent = tag;
-          }
+          var factory = INSERT_TEMPLATES[tmpl];
+          if (!factory) return;
+          var newEl = factory(iframeDoc);
           el.appendChild(newEl);
           elements.dtAddDropdown.style.display = 'none';
           state.addDropdownOpen = false;
           debouncedDesignSync();
+        });
+
+        // Style copy/paste
+        var COPY_STYLE_PROPS = [
+          'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle',
+          'fontSize', 'fontWeight', 'fontFamily', 'textAlign', 'lineHeight',
+          'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+          'borderRadius', 'opacity'
+        ];
+
+        document.getElementById('dt-copy-style').addEventListener('click', function() {
+          var el = getSelectedElement();
+          if (!el) return;
+          var iframeWin = elements.previewContainer.contentWindow;
+          if (!iframeWin) return;
+          var cs = iframeWin.getComputedStyle(el);
+          var copied = {};
+          COPY_STYLE_PROPS.forEach(function(prop) {
+            copied[prop] = cs[prop];
+          });
+          state.copiedStyles = copied;
+          showTemporaryMessage('Style copied');
+        });
+
+        document.getElementById('dt-paste-style').addEventListener('click', function() {
+          if (!state.copiedStyles) { showTemporaryMessage('No style copied', 'error'); return; }
+          var el = getSelectedElement();
+          if (!el) return;
+          var styles = state.copiedStyles;
+          Object.keys(styles).forEach(function(prop) {
+            el.style[prop] = styles[prop];
+          });
+          debouncedDesignSync();
+          showTemporaryMessage('Style pasted');
         });
       }
 
@@ -2149,9 +2551,12 @@
           el.removeAttribute('data-designer-selected');
         });
 
-        // Remove contenteditable attributes
+        // Remove contenteditable and draggable attributes
         clone.querySelectorAll('[contenteditable]').forEach(function(el) {
           el.removeAttribute('contenteditable');
+        });
+        clone.querySelectorAll('[draggable]').forEach(function(el) {
+          el.removeAttribute('draggable');
         });
 
         return '<!DOCTYPE html>\n' + clone.outerHTML;
