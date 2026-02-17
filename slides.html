@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visual HTML Designer</title>
+    <title>Slide Presentation Editor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,6 +22,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/markdown/markdown.min.js"></script>
     <!-- CodeMirror addons: fold -->
     <link
       rel="stylesheet"
@@ -40,9 +41,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/searchcursor.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/search.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/search/jump-to-line.min.js"></script>
-    <!-- CodeMirror addons: active line -->
+    <!-- CodeMirror addons: active line, continuelist -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/selection/active-line.min.js"></script>
-    <!-- js-beautify for HTML formatting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/edit/continuelist.min.js"></script>
+    <!-- marked, DOMPurify, js-beautify -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
     <style>
     :root {
@@ -147,19 +151,11 @@
       min-height: 48px;
     }
 
-    .toolbar-title {
-      font-weight: 500;
-      font-size: 15px;
-      line-height: 1.4;
-      margin-right: auto;
-      color: var(--app-toolbar-text);
-      letter-spacing: 0.05em;
-    }
-
     .toolbar-menu {
       display: flex;
       align-items: center;
       gap: 8px;
+      width: 100%;
     }
 
     .btn-group {
@@ -209,6 +205,25 @@
       height: 24px;
       background: var(--da-graphite);
       margin: 0 4px;
+    }
+
+    .toolbar-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--da-cloud);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .slide-counter {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--da-snow);
+      min-width: 60px;
+      text-align: center;
+      white-space: nowrap;
+      user-select: none;
+      font-variant-numeric: tabular-nums;
     }
 
     @media (max-width: 600px) {
@@ -332,6 +347,16 @@
     #html-editor::placeholder {
       color: var(--app-editor-placeholder);
       font-style: italic;
+    }
+
+    /* CodeMirror slide separator decoration */
+    .cm-slide-separator {
+      background: var(--da-graphite) !important;
+      border-top: 1px solid var(--da-secondary) !important;
+      border-bottom: 1px solid var(--da-secondary) !important;
+    }
+    .cm-slide-separator .CodeMirror-linenumber {
+      color: var(--da-secondary) !important;
     }
 
     .panel-content {
@@ -458,6 +483,51 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
       }
+    }
+
+    /* ======== Slide Navigator / Thumbnail Strip ======== */
+    .slide-navigator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      background: var(--app-bg-secondary);
+      border-top: 1px solid var(--app-border-default);
+      border-bottom: 1px solid var(--app-border-default);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .slide-navigator::-webkit-scrollbar { height: 4px; }
+    .slide-navigator::-webkit-scrollbar-track { background: transparent; }
+    .slide-navigator::-webkit-scrollbar-thumb {
+      background: var(--da-ash);
+      border-radius: 2px;
+    }
+    .slide-nav-item {
+      min-width: 32px;
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid var(--app-border-default);
+      border-radius: 4px;
+      background: var(--app-bg-primary);
+      color: var(--app-text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--duration-fast);
+      flex-shrink: 0;
+    }
+    .slide-nav-item:hover {
+      border-color: var(--app-border-hover);
+      color: var(--app-text-primary);
+    }
+    .slide-nav-item.active {
+      background: var(--da-accent-muted);
+      border-color: var(--da-secondary);
+      color: var(--da-secondary);
     }
 
     /* ======== Design Toolbar ======== */
@@ -782,11 +852,63 @@
     .dt-breadcrumb-item:hover { background: var(--da-accent-muted); color: var(--da-snow); }
     .dt-breadcrumb-item.active { color: var(--da-secondary); }
     .dt-breadcrumb-sep { color: var(--da-ash); font-size: 9px; }
+
+    /* ======== Presentation Overlay ======== */
+    .presentation-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .presentation-overlay iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #000;
+    }
+    .presentation-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      z-index: 100001;
+      opacity: 0;
+      transition: opacity 300ms;
+    }
+    .presentation-overlay:hover .presentation-controls {
+      opacity: 1;
+    }
+    .presentation-controls button {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .presentation-controls button:hover {
+      background: rgba(255,255,255,0.15);
+    }
     </style>
   </head>
   <body>
     <div class="toolbar">
-      <span class="toolbar-title">Visual HTML Designer</span>
       <div class="toolbar-menu">
         <div class="btn-group" role="group" aria-label="編集操作">
           <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" tabindex="0">
@@ -805,18 +927,41 @@
             <i data-feather="trash-2"></i>
           </button>
         </div>
+        <div class="toolbar-separator"></div>
         <div class="btn-group" role="group" aria-label="レイアウト切り替え">
-          <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト" aria-label="左右分割" tabindex="0">
+          <button class="toolbar-button" id="layout-lr-btn" title="左右分割レイアウト (Ctrl+1)" aria-label="左右分割" tabindex="0">
             <i data-feather="columns"></i>
           </button>
-          <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト" aria-label="上下分割" tabindex="0">
+          <button class="toolbar-button" id="layout-tb-btn" title="上下分割レイアウト (Ctrl+2)" aria-label="上下分割" tabindex="0">
             <i data-feather="minimize-2"></i>
           </button>
-          <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ" aria-label="プレビューのみ" tabindex="0">
+          <button class="toolbar-button" id="layout-po-btn" title="プレビューのみ (Ctrl+3)" aria-label="プレビューのみ" tabindex="0">
             <i data-feather="eye"></i>
           </button>
           <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" tabindex="0">
             <i data-feather="moon" id="theme-toggle-icon"></i>
+          </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="btn-group" role="group" aria-label="スライド操作">
+          <button class="toolbar-button" id="prev-slide-btn" title="前のスライド (Ctrl+Shift+Enter)" aria-label="前のスライド" tabindex="0">
+            <i data-feather="chevron-left"></i>
+          </button>
+          <span class="slide-counter" id="slide-counter">0 / 0</span>
+          <button class="toolbar-button" id="next-slide-btn" title="次のスライド (Ctrl+Enter)" aria-label="次のスライド" tabindex="0">
+            <i data-feather="chevron-right"></i>
+          </button>
+          <button class="toolbar-button" id="add-slide-btn" title="スライド追加" aria-label="スライド追加" tabindex="0">
+            <i data-feather="plus"></i>
+          </button>
+        </div>
+        <div class="toolbar-separator"></div>
+        <div class="btn-group" role="group" aria-label="アスペクト比">
+          <button class="toolbar-button" id="aspect-16-9-btn" title="16:9" aria-label="16:9" tabindex="0">
+            <span class="toolbar-label">16:9</span>
+          </button>
+          <button class="toolbar-button" id="aspect-4-3-btn" title="4:3" aria-label="4:3" tabindex="0">
+            <span class="toolbar-label">4:3</span>
           </button>
         </div>
         <div class="toolbar-separator"></div>
@@ -825,21 +970,30 @@
             <i data-feather="edit-3"></i>
           </button>
         </div>
+        <div class="toolbar-separator"></div>
+        <div class="btn-group" role="group" aria-label="プレゼンテーション">
+          <button class="toolbar-button" id="present-btn" title="プレゼンテーション (F5)" aria-label="プレゼンテーション" tabindex="0">
+            <i data-feather="play"></i>
+          </button>
+          <button class="toolbar-button" id="print-btn" title="印刷 (Ctrl+P)" aria-label="印刷" tabindex="0">
+            <i data-feather="printer"></i>
+          </button>
+        </div>
         <div style="flex-grow: 1" aria-hidden="true"></div>
         <div class="btn-group" role="group" aria-label="ファイル操作">
-          <button class="toolbar-button" id="open-btn" title="HTMLファイルを開く" aria-label="開く" tabindex="0">
+          <button class="toolbar-button" id="open-btn" title="ファイルを開く" aria-label="開く" tabindex="0">
             <i data-feather="upload"></i>
           </button>
-          <input type="file" id="file-input" accept=".html,.htm,text/html" style="display: none;" />
-          <button class="toolbar-button" id="save-btn" title="HTMLファイルをダウンロード (Ctrl+S)" aria-label="保存" tabindex="0">
+          <input type="file" id="file-input" accept=".html,.htm,.md" style="display: none;" />
+          <button class="toolbar-button" id="save-btn" title="ファイルをダウンロード (Ctrl+S)" aria-label="保存" tabindex="0">
             <i data-feather="download"></i>
           </button>
         </div>
         <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
           <a href="index.html">HTML</a>
-          <a href="designer.html" class="nav-active">Designer</a>
+          <a href="designer.html">Designer</a>
           <a href="markdown_preview.html">MD</a>
-          <a href="slides.html">Slides</a>
+          <a href="slides.html" class="nav-active">Slides</a>
           <a href="loom.html">Loom</a>
           <a href="shelf.html">Shelf</a>
           <a href="tangle.html">Tangle</a>
@@ -854,13 +1008,14 @@
         <div class="panel-header panel-tabs">
           <button class="panel-tab active" id="tab-code" data-tab="code">Code</button>
           <button class="panel-tab" id="tab-design" data-tab="design">Design</button>
+          <button class="panel-tab" id="tab-settings" data-tab="settings">Settings</button>
         </div>
         <div class="editor-content-wrapper" id="code-panel">
           <textarea
             id="html-editor"
-            placeholder="HTMLコードをここに入力..."
+            placeholder="スライド内容を入力... (--- で区切り)"
             wrap="soft"
-            aria-label="HTMLコードエディター"
+            aria-label="スライドエディター"
             role="textbox"
             aria-multiline="true"
             spellcheck="false"
@@ -869,12 +1024,7 @@
             autocapitalize="off"
           ></textarea>
         </div>
-      </div>
-      <div class="gutter" id="gutter"></div>
-      <div class="preview-panel" id="preview-panel">
-        <div class="panel-header">Preview</div>
-
-        <!-- Design Toolbar -->
+        <!-- Design Toolbar (Phase 4 placeholder) -->
         <div id="design-toolbar" class="design-toolbar" style="display: none;">
           <div class="dt-header">
             <span class="dt-element-tag" id="dt-element-tag">--</span>
@@ -1062,10 +1212,127 @@
             </div>
           </div>
         </div>
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="design-toolbar" style="display: none;">
+          <div class="dt-section-header" data-section="st-theme">
+            <span>Theme</span>
+            <i data-feather="chevron-down" class="dt-chevron"></i>
+          </div>
+          <div class="dt-section-body" id="st-theme">
+            <div class="dt-row">
+              <label>Preset</label>
+              <select id="st-theme-preset" class="dt-select" style="width:auto">
+                <option value="default">Default</option>
+                <option value="dark">Dark</option>
+                <option value="corporate">Corporate</option>
+                <option value="minimal">Minimal</option>
+                <option value="warm">Warm</option>
+                <option value="ocean">Ocean</option>
+              </select>
+            </div>
+            <div class="dt-color-row">
+              <label>Background</label>
+              <input type="color" id="st-bg-color" value="#ffffff" />
+              <input type="text" id="st-bg-color-text" class="dt-input-sm" />
+            </div>
+            <div class="dt-color-row">
+              <label>Text</label>
+              <input type="color" id="st-text-color" value="#1e1f25" />
+              <input type="text" id="st-text-color-text" class="dt-input-sm" />
+            </div>
+            <div class="dt-color-row">
+              <label>Heading</label>
+              <input type="color" id="st-heading-color" value="#1e1f25" />
+              <input type="text" id="st-heading-color-text" class="dt-input-sm" />
+            </div>
+            <div class="dt-color-row">
+              <label>Accent</label>
+              <input type="color" id="st-accent-color" value="#5b8fcc" />
+              <input type="text" id="st-accent-color-text" class="dt-input-sm" />
+            </div>
+            <div class="dt-row">
+              <label>Font</label>
+              <select id="st-font-family" class="dt-select" style="width:auto">
+                <option value="&quot;Noto Sans JP&quot;, system-ui, sans-serif">Noto Sans JP</option>
+                <option value="system-ui, sans-serif">System UI</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="&quot;Helvetica Neue&quot;, Arial, sans-serif">Helvetica</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="panel-content">
-          <iframe id="preview-container" frameborder="0" aria-label="HTMLプレビュー" title="HTMLコードのプレビュー結果"></iframe>
+          <div class="dt-section-header" data-section="st-page-numbers">
+            <span>Page Numbers</span>
+            <i data-feather="chevron-down" class="dt-chevron"></i>
+          </div>
+          <div class="dt-section-body" id="st-page-numbers">
+            <div class="dt-row">
+              <label>Show</label>
+              <input type="checkbox" id="st-page-show" style="accent-color:var(--da-secondary)" />
+            </div>
+            <div class="dt-row">
+              <label>Position</label>
+              <select id="st-page-position" class="dt-select">
+                <option value="bottom-left">Bottom Left</option>
+                <option value="bottom-center">Bottom Center</option>
+                <option value="bottom-right" selected>Bottom Right</option>
+              </select>
+            </div>
+            <div class="dt-row">
+              <label>Format</label>
+              <input type="text" id="st-page-format" class="dt-input" value="{n} / {total}" style="width:auto;flex:1" />
+            </div>
+          </div>
+
+          <div class="dt-section-header collapsed" data-section="st-header">
+            <span>Header</span>
+            <i data-feather="chevron-down" class="dt-chevron"></i>
+          </div>
+          <div class="dt-section-body collapsed" id="st-header">
+            <div class="dt-row">
+              <label>Show</label>
+              <input type="checkbox" id="st-header-show" style="accent-color:var(--da-secondary)" />
+            </div>
+            <div class="dt-row">
+              <label>Text</label>
+              <input type="text" id="st-header-text" class="dt-input" placeholder="Header text" style="width:auto;flex:1" />
+            </div>
+          </div>
+
+          <div class="dt-section-header collapsed" data-section="st-footer">
+            <span>Footer</span>
+            <i data-feather="chevron-down" class="dt-chevron"></i>
+          </div>
+          <div class="dt-section-body collapsed" id="st-footer">
+            <div class="dt-row">
+              <label>Show</label>
+              <input type="checkbox" id="st-footer-show" style="accent-color:var(--da-secondary)" />
+            </div>
+            <div class="dt-row">
+              <label>Text</label>
+              <input type="text" id="st-footer-text" class="dt-input" placeholder="Footer text" style="width:auto;flex:1" />
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="gutter" id="gutter"></div>
+      <div class="preview-panel" id="preview-panel">
+        <div class="panel-header">Preview</div>
+        <div class="slide-navigator" id="slide-navigator"></div>
+        <div class="panel-content">
+          <iframe id="preview-container" frameborder="0" aria-label="スライドプレビュー" title="スライドプレビュー"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Presentation Overlay (hidden by default) -->
+    <div class="presentation-overlay" id="presentation-overlay" style="display: none;">
+      <iframe id="presentation-iframe" frameborder="0"></iframe>
+      <div class="presentation-controls">
+        <button id="pres-prev-btn" title="前のスライド">Prev</button>
+        <span id="pres-counter">0 / 0</span>
+        <button id="pres-next-btn" title="次のスライド">Next</button>
+        <button id="pres-exit-btn" title="終了 (Esc)">Exit</button>
       </div>
     </div>
 
@@ -1078,12 +1345,15 @@
       // ========================================
       var CONFIG = {
         defaultLayout: 'lr',
-        storageKey: 'designerCode',
-        layoutStorageKey: 'designerLayout',
-        themeStorageKey: 'designerTheme',
+        storageKey: 'slidesCode',
+        layoutStorageKey: 'slidesLayout',
+        themeStorageKey: 'slidesTheme',
+        aspectRatioStorageKey: 'slidesAspectRatio',
+        settingsStorageKey: 'slidesSettings',
         debounceDelay: 300,
         designSyncDelay: 600,
-        layouts: { lr: 'Left-Right', tb: 'Top-Bottom', po: 'Preview Only' }
+        layouts: { lr: 'Left-Right', tb: 'Top-Bottom', po: 'Preview Only' },
+        defaultTemplate: '# Presentation Title\n\nYour Name \u2014 Date\n\n---\n\n## Table of Contents\n\n1. Introduction\n2. Main Topic\n3. Details\n4. Summary\n\n---\n\n## Introduction\n\n- Background context here\n- Key motivation\n- What we\'ll cover\n\n---\n\n## Main Content\n\n### Key Point\n\nDetailed explanation goes here.\n\n- Supporting point 1\n- Supporting point 2\n- Supporting point 3\n\n---\n\n## Thank You\n\nQuestions & Discussion'
       };
 
       // ========================================
@@ -1091,7 +1361,7 @@
       // ========================================
       var ErrorHandler = {
         log: function(error, context) {
-          console.error('[Designer' + (context ? ' - ' + context : '') + ']', error);
+          console.error('[Slides' + (context ? ' - ' + context : '') + ']', error);
         },
         showPreviewError: function(error) {
           var iframeDoc = elements.previewContainer.contentDocument ||
@@ -1125,6 +1395,8 @@
         return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       }
 
+      function doTouchDrag(ev) { doDrag(ev.touches[0]); }
+
       function colorToHex(color) {
         if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return '';
         var match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -1150,8 +1422,6 @@
         }
         return html;
       }
-
-      function doTouchDrag(ev) { doDrag(ev.touches[0]); }
 
       // ========================================
       // DOM ELEMENTS
@@ -1181,6 +1451,27 @@
         tabDesign: document.getElementById('tab-design'),
         codePanel: document.getElementById('code-panel'),
         designToolbar: document.getElementById('design-toolbar'),
+        tabSettings: document.getElementById('tab-settings'),
+        settingsPanel: document.getElementById('settings-panel'),
+        // Settings panel elements
+        stThemePreset: document.getElementById('st-theme-preset'),
+        stBgColor: document.getElementById('st-bg-color'),
+        stBgColorText: document.getElementById('st-bg-color-text'),
+        stTextColor: document.getElementById('st-text-color'),
+        stTextColorText: document.getElementById('st-text-color-text'),
+        stHeadingColor: document.getElementById('st-heading-color'),
+        stHeadingColorText: document.getElementById('st-heading-color-text'),
+        stAccentColor: document.getElementById('st-accent-color'),
+        stAccentColorText: document.getElementById('st-accent-color-text'),
+        stFontFamily: document.getElementById('st-font-family'),
+        stPageShow: document.getElementById('st-page-show'),
+        stPagePosition: document.getElementById('st-page-position'),
+        stPageFormat: document.getElementById('st-page-format'),
+        stHeaderShow: document.getElementById('st-header-show'),
+        stHeaderText: document.getElementById('st-header-text'),
+        stFooterShow: document.getElementById('st-footer-show'),
+        stFooterText: document.getElementById('st-footer-text'),
+        // Design toolbar elements
         dtElementTag: document.getElementById('dt-element-tag'),
         dtActions: document.getElementById('dt-actions'),
         dtHint: document.getElementById('dt-hint'),
@@ -1221,12 +1512,54 @@
         dtOpacitySlider: document.getElementById('dt-opacity-slider'),
         dtOpacityValue: document.getElementById('dt-opacity-value'),
         dtDisplay: document.getElementById('dt-display'),
-        dtOverflow: document.getElementById('dt-overflow')
+        dtOverflow: document.getElementById('dt-overflow'),
+        // Slide-specific
+        prevSlideBtn: document.getElementById('prev-slide-btn'),
+        nextSlideBtn: document.getElementById('next-slide-btn'),
+        addSlideBtn: document.getElementById('add-slide-btn'),
+        slideCounter: document.getElementById('slide-counter'),
+        slideNavigator: document.getElementById('slide-navigator'),
+        aspect169Btn: document.getElementById('aspect-16-9-btn'),
+        aspect43Btn: document.getElementById('aspect-4-3-btn'),
+        presentBtn: document.getElementById('present-btn'),
+        printBtn: document.getElementById('print-btn'),
+        // Presentation overlay
+        presentationOverlay: document.getElementById('presentation-overlay'),
+        presentationIframe: document.getElementById('presentation-iframe'),
+        presCounter: document.getElementById('pres-counter'),
+        presPrevBtn: document.getElementById('pres-prev-btn'),
+        presNextBtn: document.getElementById('pres-next-btn'),
+        presExitBtn: document.getElementById('pres-exit-btn')
       };
 
       // ========================================
       // STATE
       // ========================================
+      var THEME_PRESETS = {
+        'default':   { backgroundColor: '#ffffff', textColor: '#1e1f25', headingColor: '#1e1f25', accentColor: '#5b8fcc' },
+        'dark':      { backgroundColor: '#1e1f25', textColor: '#e2e4ec', headingColor: '#f0f1f5', accentColor: '#6fa8e0' },
+        'corporate': { backgroundColor: '#ffffff', textColor: '#2d3748', headingColor: '#1a365d', accentColor: '#2b6cb0' },
+        'minimal':   { backgroundColor: '#fafafa', textColor: '#333333', headingColor: '#111111', accentColor: '#888888' },
+        'warm':      { backgroundColor: '#fef8f0', textColor: '#4a3728', headingColor: '#2d1f12', accentColor: '#c57b3a' },
+        'ocean':     { backgroundColor: '#f0f7ff', textColor: '#1a3a5c', headingColor: '#0d2137', accentColor: '#1e88e5' }
+      };
+
+      function getDefaultSlideSettings() {
+        return {
+          theme: 'default',
+          backgroundColor: '#ffffff',
+          fontFamily: '"Noto Sans JP", system-ui, sans-serif',
+          textColor: '#1e1f25',
+          headingColor: '#1e1f25',
+          accentColor: '#5b8fcc',
+          showPageNumbers: false,
+          pageNumberPosition: 'bottom-right',
+          pageNumberFormat: '{n} / {total}',
+          header: { text: '', show: false },
+          footer: { text: '', show: false }
+        };
+      }
+
       var state = {
         currentLayout: CONFIG.defaultLayout,
         currentTheme: 'light',
@@ -1234,12 +1567,19 @@
         dragContext: {},
         designMode: false,
         activeTab: 'code',
+        currentSlide: 0,
+        slides: [],
+        aspectRatio: '16:9',
+        separatorLines: [],
+        presenting: false,
+        presentationSlide: 0,
         syncingFromDesign: false,
         designToken: (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2),
         paddingLinked: false,
         marginLinked: false,
         addDropdownOpen: false,
-        copiedStyles: null
+        copiedStyles: null,
+        slideSettings: getDefaultSlideSettings()
       };
 
       // ========================================
@@ -1248,12 +1588,15 @@
       function initialize() {
         elements.htmlEditor = CodeMirror.fromTextArea(elements.htmlEditor, {
           lineNumbers: true,
-          mode: 'htmlmixed',
+          mode: 'markdown',
           lineWrapping: true,
           foldGutter: true,
           gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
           styleActiveLine: true,
-          extraKeys: { 'Alt-F': 'findPersistent' }
+          extraKeys: {
+            'Enter': 'newlineAndIndentContinueMarkdownList',
+            'Alt-F': 'findPersistent'
+          }
         });
         loadSavedCode();
 
@@ -1266,10 +1609,21 @@
           if (savedLayout && CONFIG.layouts[savedLayout]) state.currentLayout = savedLayout;
         } catch(e) {}
         applyLayout(state.currentLayout);
+
+        // Load aspect ratio
+        try {
+          var savedAspect = localStorage.getItem(CONFIG.aspectRatioStorageKey);
+          if (savedAspect === '4:3') state.aspectRatio = '4:3';
+        } catch(e) {}
+        updateAspectRatioButtons();
+
         updatePreview();
 
         // Editor change handler
         elements.htmlEditor.on('change', handleEditorInput);
+
+        // Cursor activity handler for slide tracking
+        elements.htmlEditor.on('cursorActivity', handleCursorActivity);
 
         // Gutter resize
         elements.gutter.addEventListener('mousedown', startDrag);
@@ -1305,17 +1659,44 @@
           applyTheme(state.currentTheme === 'dark' ? 'light' : 'dark');
         });
 
-        // Design Mode
-        elements.designModeBtn.addEventListener('click', toggleDesignMode);
-        initDesignToolbarEvents();
+        // Slide navigation
+        elements.prevSlideBtn.addEventListener('click', function() { navigateSlide(-1); });
+        elements.nextSlideBtn.addEventListener('click', function() { navigateSlide(1); });
+        elements.addSlideBtn.addEventListener('click', addSlide);
 
-        // Move design toolbar to editor container & tab events
-        elements.editorContainer.appendChild(elements.designToolbar);
+        // Aspect ratio
+        elements.aspect169Btn.addEventListener('click', function() { setAspectRatio('16:9'); });
+        elements.aspect43Btn.addEventListener('click', function() { setAspectRatio('4:3'); });
+
+        // Design Mode (Phase 4 placeholder)
+        elements.designModeBtn.addEventListener('click', toggleDesignMode);
+
+        // Tab switching
         elements.tabCode.addEventListener('click', function() { switchTab('code'); });
         elements.tabDesign.addEventListener('click', function() { switchTab('design'); });
+        elements.tabSettings.addEventListener('click', function() { switchTab('settings'); });
 
-        // Keyboard
-        document.addEventListener('keydown', handleKeyboard, true);
+        // Move design toolbar and settings panel into editor container
+        elements.editorContainer.appendChild(elements.designToolbar);
+        elements.editorContainer.appendChild(elements.settingsPanel);
+
+        // Load slide settings
+        loadSlideSettings();
+        initSettingsEvents();
+
+        // Presentation / Print
+        elements.presentBtn.addEventListener('click', enterPresentationMode);
+        elements.printBtn.addEventListener('click', handlePrint);
+        elements.presExitBtn.addEventListener('click', exitPresentationMode);
+        elements.presPrevBtn.addEventListener('click', function() {
+          navigatePresentationSlide(-1);
+        });
+        elements.presNextBtn.addEventListener('click', function() {
+          navigatePresentationSlide(1);
+        });
+
+        // Design toolbar events
+        initDesignToolbarEvents();
 
         // postMessage listener for design mode
         window.addEventListener('message', handleDesignMessage);
@@ -1328,6 +1709,9 @@
           }
         });
 
+        // Keyboard
+        document.addEventListener('keydown', handleKeyboard, true);
+
         // Toolbar button keyboard support
         var allButtons = document.querySelectorAll('.toolbar-button');
         allButtons.forEach(function(btn) {
@@ -1338,6 +1722,7 @@
       }
 
       var debouncedSaveCode = debounce(saveCode, CONFIG.debounceDelay);
+      var debouncedUpdatePreview = debounce(updatePreview, CONFIG.debounceDelay);
       var debouncedDesignSync = debounce(syncDesignToEditor, CONFIG.designSyncDelay);
 
       // ========================================
@@ -1348,38 +1733,95 @@
           state.syncingFromDesign = false;
           return;
         }
-        updatePreview();
+        debouncedUpdatePreview();
         debouncedSaveCode();
+      }
+
+      // ========================================
+      // CURSOR ACTIVITY
+      // ========================================
+      function handleCursorActivity() {
+        var cursor = elements.htmlEditor.getCursor();
+        var line = cursor.line;
+        var slideIndex = 0;
+        for (var i = 0; i < state.slides.length; i++) {
+          if (line >= state.slides[i].startLine && line <= state.slides[i].endLine) {
+            slideIndex = i;
+            break;
+          }
+        }
+        if (slideIndex !== state.currentSlide) {
+          state.currentSlide = slideIndex;
+          updateSlideCounter();
+          updateSlideNavigator();
+          scrollToCurrentSlide();
+        }
       }
 
       // ========================================
       // KEYBOARD SHORTCUTS
       // ========================================
       function handleKeyboard(e) {
-        if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveToFile(); }
-        else if (e.ctrlKey && e.shiftKey && e.key === 'C') { e.preventDefault(); copyEditor(); }
-        else if (e.ctrlKey && e.shiftKey && e.key === 'V') { e.preventDefault(); pasteEditor(); }
-        else if (e.ctrlKey && !e.shiftKey && e.key === 'z') { e.preventDefault(); undoEditor(); }
-        else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) { e.preventDefault(); redoEditor(); }
-        else if (e.ctrlKey && e.key === 'Delete') { e.preventDefault(); clearEditor(); }
-        else if (e.ctrlKey && e.key === '1') { e.preventDefault(); applyLayout('lr'); }
-        else if (e.ctrlKey && e.key === '2') { e.preventDefault(); applyLayout('tb'); }
-        else if (e.ctrlKey && e.key === '3') { e.preventDefault(); applyLayout('po'); }
-        else if (e.ctrlKey && !e.shiftKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); e.stopPropagation(); toggleDesignMode(); }
-        else if (e.key === 'Delete' && !e.ctrlKey && state.designMode && state.activeTab === 'design') {
-          var activeEl = document.activeElement;
-          if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA')) return;
-          if (activeEl === elements.previewContainer) {
-            var iframeDoc = elements.previewContainer.contentDocument;
-            var iframeActive = iframeDoc && iframeDoc.activeElement;
-            if (iframeActive && iframeActive.isContentEditable) return;
-          }
-          var el = getSelectedElement();
-          if (!el) return;
+        if (e.ctrlKey && e.key === 's') {
           e.preventDefault();
-          el.remove();
-          onDesignElementDeselected();
-          debouncedDesignSync();
+          saveToFile();
+        }
+        else if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+          e.preventDefault();
+          copyEditor();
+        }
+        else if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+          e.preventDefault();
+          undoEditor();
+        }
+        else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+          e.preventDefault();
+          redoEditor();
+        }
+        else if (e.ctrlKey && e.key === 'Delete') {
+          e.preventDefault();
+          clearEditor();
+        }
+        else if (e.ctrlKey && e.key === '1') {
+          e.preventDefault();
+          applyLayout('lr');
+        }
+        else if (e.ctrlKey && e.key === '2') {
+          e.preventDefault();
+          applyLayout('tb');
+        }
+        else if (e.ctrlKey && e.key === '3') {
+          e.preventDefault();
+          applyLayout('po');
+        }
+        else if (e.ctrlKey && !e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleDesignMode();
+        }
+        else if (e.key === 'F5') {
+          e.preventDefault();
+          if (state.presenting) {
+            exitPresentationMode();
+          } else {
+            enterPresentationMode();
+          }
+        }
+        else if (e.ctrlKey && (e.key === 'p' || e.key === 'P') && !e.shiftKey) {
+          e.preventDefault();
+          handlePrint();
+        }
+        else if (e.ctrlKey && !e.shiftKey && e.key === 'Enter') {
+          e.preventDefault();
+          navigateSlide(1);
+        }
+        else if (e.ctrlKey && e.shiftKey && e.key === 'Enter') {
+          e.preventDefault();
+          navigateSlide(-1);
+        }
+        else if (e.key === 'Escape' && state.presenting) {
+          e.preventDefault();
+          exitPresentationMode();
         }
       }
 
@@ -1422,24 +1864,419 @@
       }
 
       // ========================================
+      // SLIDE ENGINE (Phase 2)
+      // ========================================
+
+      /**
+       * Parse editor content into slides split by --- separator lines.
+       * Returns array of { content, type, startLine, endLine }.
+       */
+      function parseSlides() {
+        var code = elements.htmlEditor.getValue();
+        var lines = code.split('\n');
+        var slides = [];
+        var currentContent = [];
+        var startLine = 0;
+        var separatorRegex = /^\s*---\s*$/;
+
+        for (var i = 0; i < lines.length; i++) {
+          if (separatorRegex.test(lines[i])) {
+            // End current slide
+            slides.push({
+              content: currentContent.join('\n'),
+              type: detectSlideType(currentContent.join('\n')),
+              startLine: startLine,
+              endLine: i > 0 ? i - 1 : 0
+            });
+            currentContent = [];
+            startLine = i + 1;
+          } else {
+            currentContent.push(lines[i]);
+          }
+        }
+
+        // Push remaining content as last slide
+        if (currentContent.length > 0 || startLine <= lines.length - 1) {
+          slides.push({
+            content: currentContent.join('\n'),
+            type: detectSlideType(currentContent.join('\n')),
+            startLine: startLine,
+            endLine: lines.length - 1
+          });
+        }
+
+        // Ensure at least one slide
+        if (slides.length === 0) {
+          slides.push({
+            content: '',
+            type: 'md',
+            startLine: 0,
+            endLine: 0
+          });
+        }
+
+        return slides;
+      }
+
+      /**
+       * Detect if slide content is HTML or Markdown.
+       */
+      function detectSlideType(content) {
+        var htmlTagPattern = /<(div|p|h[1-6]|style|span|section|article|header|footer|nav|main|table|ul|ol|form|input|button|img|a|br|hr)\b/i;
+        if (htmlTagPattern.test(content)) {
+          return 'html';
+        }
+        return 'md';
+      }
+
+      /**
+       * Render slide content based on its type.
+       */
+      function renderSlideContent(content, type) {
+        if (type === 'html') {
+          return content;
+        }
+        // Markdown rendering
+        var hasMarked = typeof window.marked !== 'undefined';
+        var hasDOMPurify = typeof window.DOMPurify !== 'undefined';
+        if (hasMarked && hasDOMPurify) {
+          var raw = marked.parse(content, { breaks: true, gfm: true });
+          return DOMPurify.sanitize(raw);
+        }
+        if (hasMarked) {
+          return marked.parse(content, { breaks: true, gfm: true });
+        }
+        // Fallback: escape and wrap in paragraphs
+        return '<p>' + escHtml(content).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+      }
+
+      /**
+       * Build CSS overrides from slide settings.
+       */
+      var ALLOWED_FONTS = {
+        '"Noto Sans JP", system-ui, sans-serif': true,
+        'system-ui, sans-serif': true,
+        'Georgia, serif': true,
+        '"Helvetica Neue", Arial, sans-serif': true
+      };
+
+      function safeFontFamily(val) {
+        return ALLOWED_FONTS[val] ? val : '"Noto Sans JP", system-ui, sans-serif';
+      }
+
+      function escCssValue(val) {
+        return String(val || '').replace(/[{};\\<>"'()]/g, '');
+      }
+
+      function buildSlideSettingsCSS() {
+        var s = state.slideSettings;
+        var css = '';
+        css += '.slide{background:' + escCssValue(s.backgroundColor) + ';color:' + escCssValue(s.textColor) + ';font-family:' + safeFontFamily(s.fontFamily) + '}\n';
+        css += '.slide h1,.slide h2,.slide h3,.slide h4{color:' + escCssValue(s.headingColor) + '}\n';
+        css += '.slide a{color:' + escCssValue(s.accentColor) + '}\n';
+        css += '.slide blockquote{border-left-color:' + escCssValue(s.accentColor) + '}\n';
+        css += '.slide th{background:' + escCssValue(s.accentColor) + '18}\n';
+        css += '.slide-chrome{position:absolute;font-size:12px;color:' + escCssValue(s.textColor) + ';opacity:0.5;pointer-events:none;z-index:1}\n';
+        css += '.slide-chrome-header{top:12px;left:64px;right:64px;text-align:center}\n';
+        css += '.slide-chrome-footer{bottom:12px;left:64px;right:64px;text-align:center}\n';
+        css += '.slide-chrome-page-number{bottom:12px;font-variant-numeric:tabular-nums}\n';
+        css += '.slide-chrome-page-number.pos-bottom-left{left:64px}\n';
+        css += '.slide-chrome-page-number.pos-bottom-center{left:50%;transform:translateX(-50%)}\n';
+        css += '.slide-chrome-page-number.pos-bottom-right{right:64px}\n';
+        return css;
+      }
+
+      /**
+       * Build a complete HTML document for the iframe with all slides.
+       */
+      function buildIframeDocument(slides, aspectRatio) {
+        var slideHeight = aspectRatio === '4:3' ? '7.5in' : '5.625in';
+        var printPageSize = aspectRatio === '4:3' ? '10in 7.5in' : '10in 5.625in';
+
+        var html = '<!DOCTYPE html>\n<html lang="ja">\n<head>\n' +
+          '<meta charset="UTF-8">\n' +
+          '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+          '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+          '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">\n' +
+          '<style>\n' +
+          '* { margin: 0; padding: 0; box-sizing: border-box; }\n' +
+          'body { background: #e8e8e8; font-family: "Noto Sans JP", system-ui, sans-serif; }\n' +
+          '.slide {\n' +
+          '  width: 10in;\n' +
+          '  height: ' + slideHeight + ';\n' +
+          '  background: #fff;\n' +
+          '  overflow: hidden;\n' +
+          '  box-sizing: border-box;\n' +
+          '  padding: 48px 64px;\n' +
+          '  box-shadow: 0 4px 16px rgba(0,0,0,0.15);\n' +
+          '  position: relative;\n' +
+          '  font-size: 20px;\n' +
+          '  line-height: 1.6;\n' +
+          '  font-family: "Noto Sans JP", system-ui, sans-serif;\n' +
+          '  margin: 20px auto;\n' +
+          '}\n' +
+          '.slide h1 { font-size: 2em; margin-bottom: 0.5em; font-weight: 700; color: #1e1f25; }\n' +
+          '.slide h2 { font-size: 1.5em; margin-bottom: 0.4em; font-weight: 600; color: #282a32; }\n' +
+          '.slide h3 { font-size: 1.2em; margin-bottom: 0.3em; font-weight: 600; color: #353842; }\n' +
+          '.slide h4 { font-size: 1.05em; margin-bottom: 0.3em; font-weight: 500; }\n' +
+          '.slide ul, .slide ol { margin-left: 1.5em; margin-bottom: 0.5em; }\n' +
+          '.slide li { margin-bottom: 0.3em; }\n' +
+          '.slide p { margin-bottom: 0.6em; }\n' +
+          '.slide code { background: #f0f1f5; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; font-family: "Noto Sans Mono", Consolas, monospace; }\n' +
+          '.slide pre { background: #1e1f25; color: #f0f1f5; padding: 16px; border-radius: 8px; overflow-x: auto; margin-bottom: 0.6em; }\n' +
+          '.slide pre code { background: none; padding: 0; color: inherit; }\n' +
+          '.slide img { max-width: 100%; border-radius: 4px; }\n' +
+          '.slide blockquote { border-left: 4px solid #5b8fcc; padding-left: 16px; color: #4a4e5c; margin-bottom: 0.6em; }\n' +
+          '.slide table { border-collapse: collapse; width: 100%; margin-bottom: 0.6em; }\n' +
+          '.slide th, .slide td { border: 1px solid #e2e4ec; padding: 8px 12px; text-align: left; }\n' +
+          '.slide th { background: #f0f1f5; font-weight: 600; }\n' +
+          '.slide a { color: #5b8fcc; text-decoration: none; }\n' +
+          '.slide a:hover { text-decoration: underline; }\n' +
+          '.slide hr { border: none; border-top: 1px solid #e2e4ec; margin: 1em 0; }\n' +
+          '.slide strong { font-weight: 700; }\n' +
+          '.slide em { font-style: italic; }\n' +
+          '@media print {\n' +
+          '  body { background: #fff; }\n' +
+          '  @page { size: ' + printPageSize + '; margin: 0; }\n' +
+          '  .slide {\n' +
+          '    break-after: page;\n' +
+          '    page-break-after: always;\n' +
+          '    -webkit-print-color-adjust: exact;\n' +
+          '    print-color-adjust: exact;\n' +
+          '    box-shadow: none;\n' +
+          '    margin: 0;\n' +
+          '  }\n' +
+          '  .slide:last-child {\n' +
+          '    break-after: auto;\n' +
+          '    page-break-after: auto;\n' +
+          '  }\n' +
+          '}\n' +
+          '</style>\n' +
+          '<style>\n' + buildSlideSettingsCSS() + '</style>\n' +
+          '</head>\n<body>\n';
+
+        var ss = state.slideSettings;
+        for (var i = 0; i < slides.length; i++) {
+          var slideContent = renderSlideContent(slides[i].content, slides[i].type);
+          var activeAttr = i === state.currentSlide ? ' data-slide-active="true"' : '';
+          var chromeHtml = '';
+          if (ss.header.show && ss.header.text) {
+            chromeHtml += '<div class="slide-chrome slide-chrome-header" data-slide-chrome="true">' + escHtml(ss.header.text) + '</div>';
+          }
+          if (ss.footer.show && ss.footer.text) {
+            chromeHtml += '<div class="slide-chrome slide-chrome-footer" data-slide-chrome="true">' + escHtml(ss.footer.text) + '</div>';
+          }
+          if (ss.showPageNumbers) {
+            var pageText = ss.pageNumberFormat.replace('{n}', String(i + 1)).replace('{total}', String(slides.length));
+            chromeHtml += '<div class="slide-chrome slide-chrome-page-number pos-' + escHtml(ss.pageNumberPosition) + '" data-slide-chrome="true">' + escHtml(pageText) + '</div>';
+          }
+          html += '<div class="slide" data-slide-index="' + i + '"' + activeAttr + '>\n' +
+            slideContent + '\n' + chromeHtml + '</div>\n';
+        }
+
+        html += '</body>\n</html>';
+        return html;
+      }
+
+      // ========================================
       // PREVIEW
       // ========================================
       function updatePreview() {
-        var htmlCode = elements.htmlEditor.getValue();
+        state.slides = parseSlides();
+
+        // Clamp current slide index
+        if (state.currentSlide >= state.slides.length) {
+          state.currentSlide = state.slides.length - 1;
+        }
+        if (state.currentSlide < 0) {
+          state.currentSlide = 0;
+        }
+
         var iframeDoc = elements.previewContainer.contentDocument ||
           (elements.previewContainer.contentWindow && elements.previewContainer.contentWindow.document);
         if (!iframeDoc) return;
+
         try {
+          var htmlDoc = buildIframeDocument(state.slides, state.aspectRatio);
           iframeDoc.open();
-          iframeDoc.write(htmlCode);
+          iframeDoc.write(htmlDoc);
           iframeDoc.close();
         } catch(error) {
           ErrorHandler.handle(error, 'preview', true);
         }
-        // Re-inject design script if Design Mode is active
+
+        // Re-inject design script if design mode is active
         if (state.designMode) {
-          injectDesignScript(iframeDoc);
+          var freshDoc = elements.previewContainer.contentDocument;
+          if (freshDoc && freshDoc.body) {
+            injectDesignScript(freshDoc);
+          }
         }
+
+        // Decorate separator lines in CodeMirror
+        decorateSeparatorLines();
+
+        // Update UI
+        updateSlideCounter();
+        updateSlideNavigator();
+
+        // Scroll preview to current slide
+        scrollToCurrentSlide();
+      }
+
+      /**
+       * Decorate --- separator lines in CodeMirror with a visual style.
+       */
+      function decorateSeparatorLines() {
+        var cm = elements.htmlEditor;
+        var separatorRegex = /^\s*---\s*$/;
+
+        // Remove previous decorations
+        for (var i = 0; i < state.separatorLines.length; i++) {
+          cm.removeLineClass(state.separatorLines[i], 'wrap', 'cm-slide-separator');
+        }
+        state.separatorLines = [];
+
+        // Add new decorations
+        var lineCount = cm.lineCount();
+        for (var j = 0; j < lineCount; j++) {
+          var lineText = cm.getLine(j);
+          if (separatorRegex.test(lineText)) {
+            cm.addLineClass(j, 'wrap', 'cm-slide-separator');
+            state.separatorLines.push(j);
+          }
+        }
+      }
+
+      // ========================================
+      // SLIDE NAVIGATION (Phase 3)
+      // ========================================
+
+      /**
+       * Update the slide counter display in the toolbar.
+       */
+      function updateSlideCounter() {
+        var total = state.slides.length;
+        var current = state.currentSlide + 1;
+        elements.slideCounter.textContent = current + ' / ' + total;
+      }
+
+      /**
+       * Update the slide navigator thumbnail strip.
+       */
+      function updateSlideNavigator() {
+        var nav = elements.slideNavigator;
+        nav.innerHTML = '';
+        for (var i = 0; i < state.slides.length; i++) {
+          var item = document.createElement('button');
+          item.className = 'slide-nav-item' + (i === state.currentSlide ? ' active' : '');
+          item.textContent = String(i + 1);
+          item.title = 'Slide ' + (i + 1);
+          item.setAttribute('data-slide-index', String(i));
+          item.addEventListener('click', (function(idx) {
+            return function() { goToSlide(idx); };
+          })(i));
+          nav.appendChild(item);
+        }
+      }
+
+      /**
+       * Navigate to the previous or next slide.
+       */
+      function navigateSlide(direction) {
+        var newIndex = state.currentSlide + direction;
+        if (newIndex < 0 || newIndex >= state.slides.length) return;
+        goToSlide(newIndex);
+      }
+
+      /**
+       * Go to a specific slide by index.
+       */
+      function goToSlide(index) {
+        if (index < 0 || index >= state.slides.length) return;
+        state.currentSlide = index;
+        updateSlideCounter();
+        updateSlideNavigator();
+        scrollToCurrentSlide();
+        scrollEditorToSlide(index);
+        // Update active attribute in iframe
+        updateActiveSlideInIframe();
+      }
+
+      /**
+       * Update the data-slide-active attribute in the preview iframe.
+       */
+      function updateActiveSlideInIframe() {
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (!iframeDoc) return;
+        var allSlides = iframeDoc.querySelectorAll('.slide');
+        for (var i = 0; i < allSlides.length; i++) {
+          if (i === state.currentSlide) {
+            allSlides[i].setAttribute('data-slide-active', 'true');
+          } else {
+            allSlides[i].removeAttribute('data-slide-active');
+          }
+        }
+      }
+
+      /**
+       * Scroll the preview iframe to show the current slide.
+       */
+      function scrollToCurrentSlide() {
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (!iframeDoc) return;
+        var slideEl = iframeDoc.querySelector('.slide[data-slide-index="' + state.currentSlide + '"]');
+        if (slideEl) {
+          slideEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+
+      /**
+       * Scroll the CodeMirror editor to show the start of the given slide.
+       */
+      function scrollEditorToSlide(index) {
+        if (index < 0 || index >= state.slides.length) return;
+        var startLine = state.slides[index].startLine;
+        elements.htmlEditor.scrollIntoView({ line: startLine, ch: 0 }, 80);
+      }
+
+      /**
+       * Insert a new slide separator at the cursor position.
+       */
+      function addSlide() {
+        var cursor = elements.htmlEditor.getCursor();
+        var line = cursor.line;
+        var lineText = elements.htmlEditor.getLine(line);
+        var insertPos;
+
+        // Insert after the current line
+        insertPos = { line: line, ch: lineText.length };
+        elements.htmlEditor.replaceRange('\n\n---\n\n', insertPos);
+
+        // Move cursor to the new slide content area
+        elements.htmlEditor.setCursor({ line: line + 4, ch: 0 });
+        elements.htmlEditor.focus();
+        showTemporaryMessage('Slide added');
+      }
+
+      /**
+       * Set the aspect ratio and re-render.
+       */
+      function setAspectRatio(ratio) {
+        state.aspectRatio = ratio;
+        try { localStorage.setItem(CONFIG.aspectRatioStorageKey, ratio); } catch(e) {}
+        updateAspectRatioButtons();
+        updatePreview();
+        showTemporaryMessage('Aspect ratio: ' + ratio);
+      }
+
+      /**
+       * Update the aspect ratio button active states.
+       */
+      function updateAspectRatioButtons() {
+        elements.aspect169Btn.classList.toggle('active', state.aspectRatio === '16:9');
+        elements.aspect43Btn.classList.toggle('active', state.aspectRatio === '4:3');
       }
 
       // ========================================
@@ -1460,7 +2297,7 @@
           if (saved !== null) {
             elements.htmlEditor.setValue(saved);
           } else {
-            elements.htmlEditor.setValue('<!DOCTYPE html>\n<html lang="ja">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Sample Page</title>\n  <style>\n    body {\n      font-family: system-ui, sans-serif;\n      margin: 0;\n      padding: 24px;\n      background: #f9fafb;\n      color: #111827;\n    }\n    .container {\n      max-width: 800px;\n      margin: 0 auto;\n      padding: 32px;\n      background: #fff;\n      border-radius: 8px;\n      box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);\n    }\n    h1 {\n      font-size: 32px;\n      color: #1f2937;\n      border-bottom: 2px solid #3b82f6;\n      padding-bottom: 12px;\n      margin-bottom: 24px;\n    }\n    p { margin-bottom: 16px; }\n    .btn {\n      background: #3b82f6;\n      color: #fff;\n      border: none;\n      padding: 12px 24px;\n      border-radius: 6px;\n      cursor: pointer;\n      font: inherit;\n      transition: all .2s;\n    }\n    .btn:hover {\n      background: #2563eb;\n      transform: translateY(-1px);\n    }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>Visual HTML Designer</h1>\n    <p>Design Mode (Ctrl+D) to visually edit elements.</p>\n    <p>Click elements to change colors, typography, spacing, and more.</p>\n    <button class="btn">Click me</button>\n  </div>\n</body>\n</html>');
+            elements.htmlEditor.setValue(CONFIG.defaultTemplate);
           }
         } catch(error) {
           ErrorHandler.handle(error, 'load', false);
@@ -1513,37 +2350,29 @@
         if (!file) return;
         if (file.size > 5 * 1024 * 1024) { showTemporaryMessage('File too large (>5MB)', 'error'); return; }
         var ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-        if (ext !== '.html' && ext !== '.htm') { showTemporaryMessage('HTML files only', 'error'); return; }
+        if (ext !== '.html' && ext !== '.htm' && ext !== '.md') { showTemporaryMessage('HTML/MD files only', 'error'); return; }
         var reader = new FileReader();
         reader.onload = function(e) {
           elements.htmlEditor.setValue(e.target.result);
           updatePreview();
           debouncedSaveCode();
+          showTemporaryMessage('File loaded');
         };
         reader.onerror = function() { showTemporaryMessage('Read failed', 'error'); };
         reader.readAsText(file);
       }
 
-      function getTitleFromHtml(html) {
-        var m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-        if (m && m[1]) {
-          var fn = m[1].trim().replace(/[^a-z0-9_\-\s\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]+/gi, '_').replace(/\s+/g, '_');
-          if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(fn)) fn = '_' + fn;
-          return fn + '.html';
-        }
-        return 'designer_output.html';
-      }
-
       function saveToFile() {
-        var html = elements.htmlEditor.getValue();
-        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        var content = elements.htmlEditor.getValue();
+        var blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = getTitleFromHtml(html);
+        link.download = 'slides.md';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
+        showTemporaryMessage('File saved');
       }
 
       // ========================================
@@ -1624,7 +2453,25 @@
       }
 
       // ========================================
-      // DESIGN MODE
+      // TAB SWITCHING
+      // ========================================
+      function switchTab(tab) {
+        if (tab === 'design' && !state.designMode) {
+          enableDesignMode();
+          return;
+        }
+        state.activeTab = tab;
+        elements.tabCode.classList.toggle('active', tab === 'code');
+        elements.tabDesign.classList.toggle('active', tab === 'design');
+        elements.tabSettings.classList.toggle('active', tab === 'settings');
+        elements.codePanel.style.display = tab === 'code' ? '' : 'none';
+        elements.designToolbar.style.display = tab === 'design' ? '' : 'none';
+        elements.settingsPanel.style.display = tab === 'settings' ? '' : 'none';
+        if (tab === 'code') elements.htmlEditor.refresh();
+      }
+
+      // ========================================
+      // DESIGN MODE (Phase 4)
       // ========================================
       var EXCLUDED_TAGS = ['HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT', 'BR'];
 
@@ -1634,19 +2481,6 @@
         } else {
           enableDesignMode();
         }
-      }
-
-      function switchTab(tab) {
-        if (tab === 'design' && !state.designMode) {
-          enableDesignMode();
-          return;
-        }
-        state.activeTab = tab;
-        elements.tabCode.classList.toggle('active', tab === 'code');
-        elements.tabDesign.classList.toggle('active', tab === 'design');
-        elements.codePanel.style.display = tab === 'code' ? '' : 'none';
-        elements.designToolbar.style.display = tab === 'design' ? '' : 'none';
-        if (tab === 'code') elements.htmlEditor.refresh();
       }
 
       function enableDesignMode() {
@@ -1724,6 +2558,17 @@
           'var TOKEN="' + token + '";' +
           'var EXCLUDED=new Set(["HTML","HEAD","BODY","SCRIPT","STYLE","LINK","META","TITLE","NOSCRIPT","BR"]);' +
 
+          // Scope check - only active slide elements
+          'function isInScope(el){' +
+            'while(el){' +
+              'if(el.classList&&el.classList.contains("slide")){' +
+                'return el.hasAttribute("data-slide-active");' +
+              '}' +
+              'el=el.parentElement;' +
+            '}' +
+            'return false;' +
+          '}' +
+
           // Create overlay elements
           'var hoverOverlay=document.createElement("div");' +
           'hoverOverlay.className="designer-hover-overlay";' +
@@ -1761,21 +2606,24 @@
 
           // Helper: check if element should be excluded
           'function isExcluded(el){' +
-            'return !el||!el.tagName||EXCLUDED.has(el.tagName)||isInjected(el);' +
+            'return !el||!el.tagName||EXCLUDED.has(el.tagName)||isInjected(el)||(el.hasAttribute&&el.hasAttribute("data-slide-chrome"));' +
           '}' +
 
           // Hover handler
           'document.addEventListener("mouseover",function(e){' +
             'var el=e.target;' +
             'if(isExcluded(el)){hoverOverlay.style.display="none";hoverLabel.style.display="none";return;}' +
+            'var inScope=isInScope(el);' +
+            'if(!inScope&&!el.closest(".slide[data-slide-index]")){hoverOverlay.style.display="none";hoverLabel.style.display="none";return;}' +
             'var r=el.getBoundingClientRect();' +
             'hoverOverlay.style.display="block";' +
             'hoverOverlay.style.left=r.left+"px";' +
             'hoverOverlay.style.top=r.top+"px";' +
             'hoverOverlay.style.width=r.width+"px";' +
             'hoverOverlay.style.height=r.height+"px";' +
+            'hoverOverlay.style.opacity=inScope?"1":"0.4";' +
             'hoverLabel.style.display="block";' +
-            'hoverLabel.textContent=tagInfo(el);' +
+            'hoverLabel.textContent=tagInfo(el)+(inScope?"":"  \\u2192 click");' +
             'var lTop=r.top-20;' +
             'if(lTop<2)lTop=r.bottom+4;' +
             'hoverLabel.style.left=Math.max(0,r.left)+"px";' +
@@ -1792,8 +2640,25 @@
           'document.addEventListener("click",function(e){' +
             'var el=e.target;' +
             'if(isInjected(el))return;' +
-            'if(isExcluded(el)){return;}' +
+            'if(isExcluded(el))return;' +
             'e.preventDefault();e.stopPropagation();' +
+            // Navigate to non-active slide on click
+            'if(!isInScope(el)){' +
+              'var slideEl=el.closest(".slide[data-slide-index]");' +
+              'if(!slideEl)return;' +
+              'var idx=parseInt(slideEl.getAttribute("data-slide-index"));' +
+              'if(isNaN(idx))return;' +
+              'var path=[];var cur=el;var pathValid=true;' +
+              'while(cur&&cur!==slideEl){' +
+                'var par=cur.parentElement;if(!par)break;' +
+                'var ch=Array.from(par.children).filter(function(c){return !c.hasAttribute("data-designer-injected")&&!c.hasAttribute("data-slide-chrome");});' +
+                'var ci=ch.indexOf(cur);if(ci===-1){pathValid=false;break;}' +
+                'path.unshift(ci);cur=par;' +
+              '}' +
+              'if(!pathValid)return;' +
+              'parent.postMessage({type:"__design_navigate__",token:TOKEN,slideIndex:idx,elementPath:path},"*");' +
+              'return;' +
+            '}' +
             // Deselect previous
             'if(selected)selected.removeAttribute("data-designer-selected");' +
             'selected=el;' +
@@ -1838,6 +2703,7 @@
           'document.addEventListener("dblclick",function(e){' +
             'var el=e.target;' +
             'if(isExcluded(el)||isInjected(el))return;' +
+            'if(!isInScope(el))return;' +
             'e.preventDefault();' +
             'el.contentEditable="true";' +
             'el.focus();' +
@@ -1934,6 +2800,33 @@
               'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(target),styles:styles,ancestors:ancestors},"*");' +
               'showActionBar(target);' +
             '}' +
+            // Navigate to element after slide switch
+            'if(e.data.type==="__design_navigate_to__"){' +
+              'var navPath=e.data.elementPath;' +
+              'var navSlide=document.querySelector(".slide[data-slide-active=\\"true\\"]");' +
+              'if(!navSlide||!navPath)return;' +
+              'var navTarget=navSlide;' +
+              'for(var ni=0;ni<navPath.length;ni++){' +
+                'var navCh=Array.from(navTarget.children).filter(function(c){return !c.hasAttribute("data-designer-injected")&&!c.hasAttribute("data-slide-chrome");});' +
+                'if(navPath[ni]>=0&&navPath[ni]<navCh.length){navTarget=navCh[navPath[ni]];}' +
+                'else break;' +
+              '}' +
+              'if(navTarget!==navSlide&&!isExcluded(navTarget)){' +
+                'if(selected)selected.removeAttribute("data-designer-selected");' +
+                'selected=navTarget;' +
+                'navTarget.setAttribute("data-designer-selected","true");' +
+                'var ncs=window.getComputedStyle(navTarget);' +
+                'var nstyles={backgroundColor:ncs.backgroundColor,color:ncs.color,borderColor:ncs.borderColor,' +
+                  'fontSize:ncs.fontSize,fontWeight:ncs.fontWeight,textAlign:ncs.textAlign,lineHeight:ncs.lineHeight,' +
+                  'paddingTop:ncs.paddingTop,paddingRight:ncs.paddingRight,paddingBottom:ncs.paddingBottom,paddingLeft:ncs.paddingLeft,' +
+                  'marginTop:ncs.marginTop,marginRight:ncs.marginRight,marginBottom:ncs.marginBottom,marginLeft:ncs.marginLeft,' +
+                  'width:ncs.width,height:ncs.height,borderRadius:ncs.borderRadius,opacity:ncs.opacity,display:ncs.display,overflow:ncs.overflow};' +
+                'var nanc=[];var np=navTarget.parentElement;' +
+                'while(np&&np.tagName&&!EXCLUDED.has(np.tagName)){nanc.unshift(tagInfo(np));np=np.parentElement;}' +
+                'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(navTarget),styles:nstyles,ancestors:nanc},"*");' +
+                'showActionBar(navTarget);' +
+              '}' +
+            '}' +
           '});' +
 
           // Drag and Drop
@@ -1944,6 +2837,7 @@
           'document.addEventListener("mousedown",function(e){' +
             'var el=e.target;' +
             'if(isExcluded(el)||isInjected(el))return;' +
+            'if(!isInScope(el))return;' +
             'if(el.isContentEditable)return;' +
             'el.setAttribute("draggable","true");' +
           '});' +
@@ -2049,6 +2943,21 @@
             break;
           case '__design_action__':
             handleDesignAction(e.data.action);
+            break;
+          case '__design_navigate__':
+            syncDesignToEditor();
+            goToSlide(e.data.slideIndex);
+            var navElementPath = e.data.elementPath;
+            setTimeout(function() {
+              var iframeWin = elements.previewContainer.contentWindow;
+              if (iframeWin) {
+                iframeWin.postMessage({
+                  type: '__design_navigate_to__',
+                  token: state.designToken,
+                  elementPath: navElementPath
+                }, '*');
+              }
+            }, 400);
             break;
         }
       }
@@ -2202,8 +3111,8 @@
       // DESIGN TOOLBAR EVENT SETUP
       // ========================================
       function initDesignToolbarEvents() {
-        // Section accordion
-        var headers = document.querySelectorAll('.dt-section-header');
+        // Section accordion (scoped to design toolbar only)
+        var headers = elements.designToolbar.querySelectorAll('.dt-section-header');
         headers.forEach(function(header) {
           header.addEventListener('click', function() {
             var sectionId = header.getAttribute('data-section');
@@ -2539,13 +3448,23 @@
       }
 
       // ========================================
-      // DOM -> SOURCE SYNC
+      // SLIDE-SCOPED DOM -> SOURCE SYNC
       // ========================================
-      function serializeCleanHtml(iframeDoc) {
-        var clone = iframeDoc.documentElement.cloneNode(true);
+      function syncDesignToEditor() {
+        if (!state.designMode) return;
+        var iframeDoc = elements.previewContainer.contentDocument;
+        if (!iframeDoc || !iframeDoc.body) return;
 
-        // Remove designer-injected elements
+        // Find the active slide element in iframe
+        var activeSlide = iframeDoc.querySelector('.slide[data-slide-active="true"]');
+        if (!activeSlide) return;
+
+        // Get the slide's innerHTML and clean it
+        var clone = activeSlide.cloneNode(true);
+
+        // Remove designer-injected elements and slide chrome
         clone.querySelectorAll('[data-designer-injected]').forEach(function(el) { el.remove(); });
+        clone.querySelectorAll('[data-slide-chrome]').forEach(function(el) { el.remove(); });
 
         // Remove designer-selected attributes
         clone.querySelectorAll('[data-designer-selected]').forEach(function(el) {
@@ -2560,29 +3479,326 @@
           el.removeAttribute('draggable');
         });
 
-        return '<!DOCTYPE html>\n' + clone.outerHTML;
-      }
+        // Remove slide-specific attributes from the clone itself
+        clone.removeAttribute('data-slide-active');
+        clone.removeAttribute('data-slide-index');
 
-      function syncDesignToEditor() {
-        if (!state.designMode) return;
-        var iframeDoc = elements.previewContainer.contentDocument;
-        if (!iframeDoc || !iframeDoc.documentElement) return;
+        var cleanHtml = clone.innerHTML;
+        cleanHtml = beautifyHtml(cleanHtml);
 
-        var html = serializeCleanHtml(iframeDoc);
-        html = beautifyHtml(html);
+        // Get the current slide's line range
+        var slide = state.slides[state.currentSlide];
+        if (!slide) return;
 
         state.syncingFromDesign = true;
         // Safety reset: ensure flag clears even if change event is missed
         setTimeout(function() { state.syncingFromDesign = false; }, 100);
+
         elements.htmlEditor.operation(function() {
-          var last = elements.htmlEditor.lastLine();
+          var startLine = slide.startLine;
+          var endLine = slide.endLine;
+          var endLineText = elements.htmlEditor.getLine(endLine);
+          var endCh = endLineText ? endLineText.length : 0;
+
           elements.htmlEditor.replaceRange(
-            html,
-            { line: 0, ch: 0 },
-            { line: last, ch: elements.htmlEditor.getLine(last).length }
+            cleanHtml,
+            { line: startLine, ch: 0 },
+            { line: endLine, ch: endCh }
           );
         });
+
+        // Re-parse slides after sync to update line ranges
+        state.slides = parseSlides();
         debouncedSaveCode();
+      }
+
+      // ========================================
+      // PRESENTATION MODE (Phase 5)
+      // ========================================
+      function enterPresentationMode() {
+        if (state.slides.length === 0) return;
+        state.presenting = true;
+        state.presentationSlide = state.currentSlide;
+        elements.presentationOverlay.style.display = 'flex';
+        renderPresentationSlide();
+        document.addEventListener('keydown', handlePresentationKeydown);
+      }
+
+      function exitPresentationMode() {
+        state.presenting = false;
+        elements.presentationOverlay.style.display = 'none';
+        document.removeEventListener('keydown', handlePresentationKeydown);
+      }
+
+      function renderPresentationSlide() {
+        var slide = state.slides[state.presentationSlide];
+        if (!slide) return;
+        var content = renderSlideContent(slide.content, slide.type);
+        var ss = state.slideSettings;
+        var isWide = state.aspectRatio === '16:9';
+        var slideW = 960;
+        var slideH = isWide ? 540 : 720;
+
+        // Build chrome elements for presentation
+        var presChrome = '';
+        if (ss.header.show && ss.header.text) {
+          presChrome += '<div style="position:absolute;top:12px;left:64px;right:64px;text-align:center;font-size:12px;color:' + escHtml(ss.textColor) + ';opacity:0.5">' + escHtml(ss.header.text) + '</div>';
+        }
+        if (ss.footer.show && ss.footer.text) {
+          presChrome += '<div style="position:absolute;bottom:12px;left:64px;right:64px;text-align:center;font-size:12px;color:' + escHtml(ss.textColor) + ';opacity:0.5">' + escHtml(ss.footer.text) + '</div>';
+        }
+        if (ss.showPageNumbers) {
+          var pageText = ss.pageNumberFormat.replace('{n}', String(state.presentationSlide + 1)).replace('{total}', String(state.slides.length));
+          var posStyle = 'position:absolute;bottom:12px;font-size:12px;color:' + escHtml(ss.textColor) + ';opacity:0.5;font-variant-numeric:tabular-nums;';
+          if (ss.pageNumberPosition === 'bottom-left') posStyle += 'left:64px';
+          else if (ss.pageNumberPosition === 'bottom-center') posStyle += 'left:50%;transform:translateX(-50%)';
+          else posStyle += 'right:64px';
+          presChrome += '<div style="' + posStyle + '">' + escHtml(pageText) + '</div>';
+        }
+
+        var iframeDoc = elements.presentationIframe.contentDocument;
+        if (!iframeDoc) return;
+        iframeDoc.open();
+        iframeDoc.write(
+          '<!DOCTYPE html><html><head>' +
+          '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">' +
+          '<style>' +
+          'html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}' +
+          '.slide{width:' + slideW + 'px;height:' + slideH + 'px;background:' + escCssValue(ss.backgroundColor) + ';color:' + escCssValue(ss.textColor) + ';padding:48px 64px;box-sizing:border-box;position:relative;' +
+          'font-family:' + safeFontFamily(ss.fontFamily) + ';font-size:20px;line-height:1.6;overflow:hidden}' +
+          'h1{font-size:2em;margin-bottom:0.5em;color:' + escCssValue(ss.headingColor) + '}' +
+          'h2{font-size:1.5em;margin-bottom:0.4em;color:' + escCssValue(ss.headingColor) + '}' +
+          'h3{font-size:1.2em;margin-bottom:0.3em;color:' + escCssValue(ss.headingColor) + '}' +
+          'ul,ol{margin-left:1.5em}li{margin-bottom:0.3em}' +
+          'p{margin-bottom:0.6em}' +
+          'code{background:#f0f1f5;padding:2px 6px;border-radius:3px;font-size:0.85em}' +
+          'pre{background:#1e1f25;color:#f0f1f5;padding:16px;border-radius:8px;overflow-x:auto}' +
+          'pre code{background:none;padding:0;color:inherit}' +
+          'img{max-width:100%;height:auto}' +
+          'blockquote{border-left:4px solid ' + escCssValue(ss.accentColor) + ';padding-left:16px;color:' + escCssValue(ss.textColor) + ';opacity:0.8;margin-bottom:0.6em}' +
+          'table{border-collapse:collapse;width:100%;margin-bottom:0.6em}' +
+          'th,td{border:1px solid #e2e4ec;padding:8px 12px;text-align:left}' +
+          'th{background:#f0f1f5;font-weight:600}' +
+          'a{color:' + escCssValue(ss.accentColor) + ';text-decoration:none}' +
+          'strong{font-weight:700}em{font-style:italic}' +
+          '</style></head><body><div class="slide">' + content + presChrome + '</div></body></html>'
+        );
+        iframeDoc.close();
+        elements.presCounter.textContent = (state.presentationSlide + 1) + ' / ' + state.slides.length;
+      }
+
+      function navigatePresentationSlide(dir) {
+        var newIdx = state.presentationSlide + dir;
+        if (newIdx < 0 || newIdx >= state.slides.length) return;
+        state.presentationSlide = newIdx;
+        renderPresentationSlide();
+      }
+
+      function handlePresentationKeydown(e) {
+        if (e.key === 'Escape') { exitPresentationMode(); return; }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
+          e.preventDefault(); navigatePresentationSlide(1);
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault(); navigatePresentationSlide(-1);
+        }
+        if (e.key === 'Home') { e.preventDefault(); state.presentationSlide = 0; renderPresentationSlide(); }
+        if (e.key === 'End') { e.preventDefault(); state.presentationSlide = state.slides.length - 1; renderPresentationSlide(); }
+      }
+
+      function handlePrint() {
+        var iframeWin = elements.previewContainer.contentWindow;
+        if (iframeWin) {
+          iframeWin.focus();
+          iframeWin.print();
+        }
+      }
+
+      // ========================================
+      // SLIDE SETTINGS
+      // ========================================
+      var SETTINGS_WHITELIST = ['theme','backgroundColor','fontFamily','textColor','headingColor','accentColor',
+        'showPageNumbers','pageNumberPosition','pageNumberFormat','header','footer'];
+
+      var debouncedSaveSettings = debounce(saveSlideSettings, CONFIG.debounceDelay);
+
+      function loadSlideSettings() {
+        try {
+          var raw = localStorage.getItem(CONFIG.settingsStorageKey);
+          if (!raw) return;
+          var parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object') return;
+          var defaults = getDefaultSlideSettings();
+          var validated = {};
+          SETTINGS_WHITELIST.forEach(function(key) {
+            if (Object.hasOwn(parsed, key)) {
+              validated[key] = parsed[key];
+            } else {
+              validated[key] = defaults[key];
+            }
+          });
+          // Validate sub-objects with property whitelisting
+          function validateSubObj(obj, def) {
+            if (typeof obj !== 'object' || obj === null) return def;
+            return {
+              text: typeof obj.text === 'string' ? obj.text : def.text,
+              show: typeof obj.show === 'boolean' ? obj.show : def.show
+            };
+          }
+          validated.header = validateSubObj(validated.header, defaults.header);
+          validated.footer = validateSubObj(validated.footer, defaults.footer);
+          // Validate enum values
+          var validPositions = ['bottom-left', 'bottom-center', 'bottom-right'];
+          if (validPositions.indexOf(validated.pageNumberPosition) === -1) validated.pageNumberPosition = defaults.pageNumberPosition;
+          if (typeof validated.showPageNumbers !== 'boolean') validated.showPageNumbers = defaults.showPageNumbers;
+          // Validate font family
+          validated.fontFamily = ALLOWED_FONTS[validated.fontFamily] ? validated.fontFamily : defaults.fontFamily;
+          state.slideSettings = validated;
+        } catch(e) {
+          ErrorHandler.log(e, 'loadSettings');
+        }
+        syncSettingsToUI();
+      }
+
+      function saveSlideSettings() {
+        try {
+          localStorage.setItem(CONFIG.settingsStorageKey, JSON.stringify(state.slideSettings));
+        } catch(e) {
+          if (e.name === 'QuotaExceededError') showTemporaryMessage('Storage full', 'error');
+        }
+      }
+
+      function syncSettingsToUI() {
+        var s = state.slideSettings;
+        elements.stThemePreset.value = s.theme || 'default';
+        elements.stBgColor.value = s.backgroundColor;
+        elements.stBgColorText.value = s.backgroundColor;
+        elements.stTextColor.value = s.textColor;
+        elements.stTextColorText.value = s.textColor;
+        elements.stHeadingColor.value = s.headingColor;
+        elements.stHeadingColorText.value = s.headingColor;
+        elements.stAccentColor.value = s.accentColor;
+        elements.stAccentColorText.value = s.accentColor;
+        // Find matching font option
+        var fontOpts = elements.stFontFamily.options;
+        var fontMatched = false;
+        for (var fi = 0; fi < fontOpts.length; fi++) {
+          if (fontOpts[fi].value === s.fontFamily) {
+            elements.stFontFamily.selectedIndex = fi;
+            fontMatched = true;
+            break;
+          }
+        }
+        if (!fontMatched) elements.stFontFamily.selectedIndex = 0;
+        elements.stPageShow.checked = s.showPageNumbers;
+        elements.stPagePosition.value = s.pageNumberPosition;
+        elements.stPageFormat.value = s.pageNumberFormat;
+        elements.stHeaderShow.checked = s.header.show;
+        elements.stHeaderText.value = s.header.text;
+        elements.stFooterShow.checked = s.footer.show;
+        elements.stFooterText.value = s.footer.text;
+      }
+
+      function applySettingsChange() {
+        debouncedSaveSettings();
+        updatePreview();
+      }
+
+      function initSettingsEvents() {
+        // Settings panel section accordion
+        var stHeaders = elements.settingsPanel.querySelectorAll('.dt-section-header');
+        stHeaders.forEach(function(header) {
+          header.addEventListener('click', function() {
+            var sectionId = header.getAttribute('data-section');
+            var body = document.getElementById(sectionId);
+            if (!body) return;
+            var isCollapsed = header.classList.contains('collapsed');
+            if (isCollapsed) {
+              header.classList.remove('collapsed');
+              body.classList.remove('collapsed');
+            } else {
+              header.classList.add('collapsed');
+              body.classList.add('collapsed');
+            }
+          });
+        });
+
+        // Theme preset
+        elements.stThemePreset.addEventListener('change', function() {
+          var preset = THEME_PRESETS[this.value];
+          if (!preset) return;
+          state.slideSettings.theme = this.value;
+          state.slideSettings.backgroundColor = preset.backgroundColor;
+          state.slideSettings.textColor = preset.textColor;
+          state.slideSettings.headingColor = preset.headingColor;
+          state.slideSettings.accentColor = preset.accentColor;
+          syncSettingsToUI();
+          applySettingsChange();
+          showTemporaryMessage('Theme: ' + this.value);
+        });
+
+        // Color pickers
+        function bindColorPicker(picker, textInput, settingsKey) {
+          picker.addEventListener('input', function() {
+            textInput.value = this.value;
+            state.slideSettings[settingsKey] = this.value;
+            applySettingsChange();
+          });
+          textInput.addEventListener('change', function() {
+            var v = this.value.trim();
+            if (v) {
+              picker.value = v;
+              state.slideSettings[settingsKey] = v;
+              state.slideSettings.theme = 'default';
+              elements.stThemePreset.value = 'default';
+              applySettingsChange();
+            }
+          });
+        }
+        bindColorPicker(elements.stBgColor, elements.stBgColorText, 'backgroundColor');
+        bindColorPicker(elements.stTextColor, elements.stTextColorText, 'textColor');
+        bindColorPicker(elements.stHeadingColor, elements.stHeadingColorText, 'headingColor');
+        bindColorPicker(elements.stAccentColor, elements.stAccentColorText, 'accentColor');
+
+        // Font family
+        elements.stFontFamily.addEventListener('change', function() {
+          state.slideSettings.fontFamily = this.value;
+          applySettingsChange();
+        });
+
+        // Page numbers
+        elements.stPageShow.addEventListener('change', function() {
+          state.slideSettings.showPageNumbers = this.checked;
+          applySettingsChange();
+        });
+        elements.stPagePosition.addEventListener('change', function() {
+          state.slideSettings.pageNumberPosition = this.value;
+          applySettingsChange();
+        });
+        elements.stPageFormat.addEventListener('change', function() {
+          state.slideSettings.pageNumberFormat = this.value;
+          applySettingsChange();
+        });
+
+        // Header
+        elements.stHeaderShow.addEventListener('change', function() {
+          state.slideSettings.header.show = this.checked;
+          applySettingsChange();
+        });
+        elements.stHeaderText.addEventListener('input', function() {
+          state.slideSettings.header.text = this.value;
+          applySettingsChange();
+        });
+
+        // Footer
+        elements.stFooterShow.addEventListener('change', function() {
+          state.slideSettings.footer.show = this.checked;
+          applySettingsChange();
+        });
+        elements.stFooterText.addEventListener('input', function() {
+          state.slideSettings.footer.text = this.value;
+          applySettingsChange();
+        });
       }
 
       // ========================================

@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 - **シングルファイル構成**: 各HTMLファイルが独立した完結アプリケーション。ビルド不要
-- **共通パターン**: `index.html`, `markdown_preview.html`, `shelf.html`, `tangle.html`, `nexus.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は全ファイルを確認する
+- **共通パターン**: `index.html`, `markdown_preview.html`, `slides.html`, `shelf.html`, `tangle.html`, `nexus.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は全ファイルを確認する
 - **エディタ**: CodeMirror 5.65.7（CDN）を使用。`elements.htmlEditor`は初期化後CodeMirrorインスタンスに置き換わる（`getValue()` / `setValue()` / `replaceRange()`等のAPIを使用）
 - **外部CDN依存**: Feather Icons, lodash (debounce), CodeMirror, Noto Sans JP。Loomは外部依存なし（JetBrains Mono fontのみ）。Shelf/TangleはCodeMirror不使用。NexusはCodeMirror使用（Markdownモード）
 - **ツール間導線**: 全ファイルのツールバーに相互リンクナビゲーション（`.toolbar-nav` / Loomは`.header-nav`）
@@ -24,6 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `loom.html` | AI出力ワークベンチ（Context Builder + Output Assembler） | `loom_state` |
 | `shelf.html` | AIナレッジクリッパー | `shelf_data`, `shelfTheme`, `shelfView` |
 | `tangle.html` | 思考アウトライナー | `tangle_data`, `tangleTheme` |
+| `slides.html` | HTMLスライドプレゼンテーションエディタ | `slidesCode`, `slidesLayout`, `slidesTheme`, `slidesAspectRatio` |
 | `nexus.html` | 領域横断メモワークスペース | `nexus_data`, `nexusTheme` |
 
 ## Development
@@ -58,6 +59,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ノード: `{ id, text, aiResponse, collapsed, aiCollapsed, children: Node[] }`
 - ドラッグ&ドロップ（before/after/inside）、フォーカスモード（サブツリー表示）
 - エクスポート: Markdown / PlainText / JSON
+
+## Slides固有の設計
+
+- セパレータ方式: 単一CodeMirrorエディタで `---` 区切り（Marp/Slidev互換）、スライド内の水平線は `***` / `___` / `<hr>` を使用
+- HTML + Markdown両対応: `detectSlideType()` でHTMLタグ有無を判定、Markdown → `marked.parse()` + `DOMPurify.sanitize()` パイプライン
+- `parseSlides()`: `/^\s*---\s*$/m` で分割 → `[{content, type, startLine, endLine}]`
+- `buildIframeDocument()`: `.slide` div で包んでiframe描画。CSS `@page { size: 10in 5.625in; }` + `break-after: page` で1スライド=1ページPDF出力
+- アスペクト比: 16:9（10in × 5.625in）/ 4:3（10in × 7.5in）切替
+- Designモード: designer.htmlから移植。`isInScope(el)` でアクティブスライド内のみ操作可能にスコープ限定
+- `syncDesignToEditor()`: アクティブスライドの `innerHTML` → `replaceRange()` で該当行範囲のみ置換
+- プレゼンモード: `.presentation-overlay` (fixed, z-index: 100000) にスライド1枚表示、`transform: scale()` でビューポートフィット
+- CodeMirrorセパレータ装飾: `addLineClass` で `---` 行を視覚的に強調
 
 ## Nexus固有の設計
 
