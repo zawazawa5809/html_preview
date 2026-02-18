@@ -358,6 +358,9 @@
     .cm-slide-separator .CodeMirror-linenumber {
       color: var(--da-secondary) !important;
     }
+    .cm-design-highlight {
+      background: rgba(91, 143, 204, 0.15) !important;
+    }
 
     .panel-content {
       flex-grow: 1;
@@ -1297,6 +1300,16 @@
               <label>Text</label>
               <input type="text" id="st-header-text" class="dt-input" placeholder="Header text" style="width:auto;flex:1" />
             </div>
+            <div class="dt-color-row">
+              <label>Bg Color</label>
+              <input type="color" id="st-header-bg-color" value="#ffffff" />
+              <input type="text" id="st-header-bg-color-text" class="dt-input-sm" placeholder="transparent" />
+            </div>
+            <div class="dt-row">
+              <label>Font Size</label>
+              <input type="number" id="st-header-font-size" class="dt-input-sm" min="8" max="36" value="12" />
+              <span style="font-size:11px;color:var(--app-text-secondary)">px</span>
+            </div>
           </div>
 
           <div class="dt-section-header collapsed" data-section="st-footer">
@@ -1311,6 +1324,16 @@
             <div class="dt-row">
               <label>Text</label>
               <input type="text" id="st-footer-text" class="dt-input" placeholder="Footer text" style="width:auto;flex:1" />
+            </div>
+            <div class="dt-color-row">
+              <label>Bg Color</label>
+              <input type="color" id="st-footer-bg-color" value="#ffffff" />
+              <input type="text" id="st-footer-bg-color-text" class="dt-input-sm" placeholder="transparent" />
+            </div>
+            <div class="dt-row">
+              <label>Font Size</label>
+              <input type="number" id="st-footer-font-size" class="dt-input-sm" min="8" max="36" value="12" />
+              <span style="font-size:11px;color:var(--app-text-secondary)">px</span>
             </div>
           </div>
         </div>
@@ -1469,8 +1492,14 @@
         stPageFormat: document.getElementById('st-page-format'),
         stHeaderShow: document.getElementById('st-header-show'),
         stHeaderText: document.getElementById('st-header-text'),
+        stHeaderBgColor: document.getElementById('st-header-bg-color'),
+        stHeaderBgColorText: document.getElementById('st-header-bg-color-text'),
+        stHeaderFontSize: document.getElementById('st-header-font-size'),
         stFooterShow: document.getElementById('st-footer-show'),
         stFooterText: document.getElementById('st-footer-text'),
+        stFooterBgColor: document.getElementById('st-footer-bg-color'),
+        stFooterBgColorText: document.getElementById('st-footer-bg-color-text'),
+        stFooterFontSize: document.getElementById('st-footer-font-size'),
         // Design toolbar elements
         dtElementTag: document.getElementById('dt-element-tag'),
         dtActions: document.getElementById('dt-actions'),
@@ -1555,8 +1584,8 @@
           showPageNumbers: false,
           pageNumberPosition: 'bottom-right',
           pageNumberFormat: '{n} / {total}',
-          header: { text: '', show: false },
-          footer: { text: '', show: false }
+          header: { text: '', show: false, backgroundColor: 'transparent', fontSize: 12 },
+          footer: { text: '', show: false, backgroundColor: 'transparent', fontSize: 12 }
         };
       }
 
@@ -1579,6 +1608,7 @@
         marginLinked: false,
         addDropdownOpen: false,
         copiedStyles: null,
+        designHighlightMarks: [],
         slideSettings: getDefaultSlideSettings()
       };
 
@@ -1741,6 +1771,7 @@
       // CURSOR ACTIVITY
       // ========================================
       function handleCursorActivity() {
+        if (state.designMode) return;
         var cursor = elements.htmlEditor.getCursor();
         var line = cursor.line;
         var slideIndex = 0;
@@ -1933,15 +1964,15 @@
        * Render slide content based on its type.
        */
       function renderSlideContent(content, type) {
-        if (type === 'html') {
-          return content;
-        }
-        // Markdown rendering
         var hasMarked = typeof window.marked !== 'undefined';
         var hasDOMPurify = typeof window.DOMPurify !== 'undefined';
         if (hasMarked && hasDOMPurify) {
           var raw = marked.parse(content, { breaks: true, gfm: true });
-          return DOMPurify.sanitize(raw);
+          return DOMPurify.sanitize(raw, {
+            ADD_TAGS: ['style'],
+            ADD_ATTR: ['style'],
+            FORCE_BODY: true
+          });
         }
         if (hasMarked) {
           return marked.parse(content, { breaks: true, gfm: true });
@@ -1976,10 +2007,20 @@
         css += '.slide a{color:' + escCssValue(s.accentColor) + '}\n';
         css += '.slide blockquote{border-left-color:' + escCssValue(s.accentColor) + '}\n';
         css += '.slide th{background:' + escCssValue(s.accentColor) + '18}\n';
-        css += '.slide-chrome{position:absolute;font-size:12px;color:' + escCssValue(s.textColor) + ';opacity:0.5;pointer-events:none;z-index:1}\n';
-        css += '.slide-chrome-header{top:12px;left:64px;right:64px;text-align:center}\n';
-        css += '.slide-chrome-footer{bottom:12px;left:64px;right:64px;text-align:center}\n';
-        css += '.slide-chrome-page-number{bottom:12px;font-variant-numeric:tabular-nums}\n';
+        css += '.slide-chrome{position:absolute;color:' + escCssValue(s.textColor) + ';opacity:0.5;pointer-events:none;z-index:1}\n';
+        var headerFs = parseInt(s.header.fontSize, 10) || 12;
+        var headerBg = s.header.backgroundColor && s.header.backgroundColor !== 'transparent'
+          ? 'background:' + escCssValue(s.header.backgroundColor) + ';padding:4px 12px;border-radius:4px;' : '';
+        css += '.slide-chrome-header{top:12px;left:64px;right:64px;text-align:center;font-size:' + headerFs + 'px;' + headerBg + '}\n';
+        var footerFs = parseInt(s.footer.fontSize, 10) || 12;
+        var footerBg = s.footer.backgroundColor && s.footer.backgroundColor !== 'transparent'
+          ? 'background:' + escCssValue(s.footer.backgroundColor) + ';padding:4px 12px;border-radius:4px;' : '';
+        var footerBottom = 12;
+        if (s.showPageNumbers && s.pageNumberPosition === 'bottom-center') {
+          footerBottom = 28;
+        }
+        css += '.slide-chrome-footer{bottom:' + footerBottom + 'px;left:64px;right:64px;text-align:center;font-size:' + footerFs + 'px;' + footerBg + '}\n';
+        css += '.slide-chrome-page-number{bottom:12px;font-size:12px;font-variant-numeric:tabular-nums}\n';
         css += '.slide-chrome-page-number.pos-bottom-left{left:64px}\n';
         css += '.slide-chrome-page-number.pos-bottom-center{left:50%;transform:translateX(-50%)}\n';
         css += '.slide-chrome-page-number.pos-bottom-right{right:64px}\n';
@@ -2502,6 +2543,7 @@
       }
 
       function disableDesignMode() {
+        clearDesignHighlights();
         // Final sync before disabling
         var iframeDoc = elements.previewContainer.contentDocument;
         if (iframeDoc && iframeDoc.body) {
@@ -2695,7 +2737,7 @@
               'ancestors.unshift(tagInfo(p));' +
               'p=p.parentElement;' +
             '}' +
-            'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(el),styles:styles,ancestors:ancestors},"*");' +
+            'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(el),styles:styles,ancestors:ancestors,outerHTML:el.outerHTML.substring(0,300),textContent:(el.textContent||"").substring(0,100)},"*");' +
             'showActionBar(el);' +
           '},true);' +
 
@@ -2797,7 +2839,7 @@
               'var ancestors=[];' +
               'var p=target.parentElement;' +
               'while(p&&p.tagName&&!EXCLUDED.has(p.tagName)){ancestors.unshift(tagInfo(p));p=p.parentElement;}' +
-              'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(target),styles:styles,ancestors:ancestors},"*");' +
+              'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(target),styles:styles,ancestors:ancestors,outerHTML:target.outerHTML.substring(0,300),textContent:(target.textContent||"").substring(0,100)},"*");' +
               'showActionBar(target);' +
             '}' +
             // Navigate to element after slide switch
@@ -2823,7 +2865,7 @@
                   'width:ncs.width,height:ncs.height,borderRadius:ncs.borderRadius,opacity:ncs.opacity,display:ncs.display,overflow:ncs.overflow};' +
                 'var nanc=[];var np=navTarget.parentElement;' +
                 'while(np&&np.tagName&&!EXCLUDED.has(np.tagName)){nanc.unshift(tagInfo(np));np=np.parentElement;}' +
-                'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(navTarget),styles:nstyles,ancestors:nanc},"*");' +
+                'parent.postMessage({type:"__design_click__",token:TOKEN,tag:tagInfo(navTarget),styles:nstyles,ancestors:nanc,outerHTML:navTarget.outerHTML.substring(0,300),textContent:(navTarget.textContent||"").substring(0,100)},"*");' +
                 'showActionBar(navTarget);' +
               '}' +
             '}' +
@@ -2933,7 +2975,7 @@
 
         switch (e.data.type) {
           case '__design_click__':
-            onDesignElementSelected(e.data.tag, e.data.styles, e.data.ancestors);
+            onDesignElementSelected(e.data.tag, e.data.styles, e.data.ancestors, e.data.outerHTML, e.data.textContent);
             break;
           case '__design_change__':
             debouncedDesignSync();
@@ -2994,7 +3036,93 @@
         }
       }
 
-      function onDesignElementSelected(tag, styles, ancestors) {
+      function clearDesignHighlights() {
+        var cm = elements.htmlEditor;
+        for (var i = 0; i < state.designHighlightMarks.length; i++) {
+          cm.removeLineClass(state.designHighlightMarks[i], 'wrap', 'cm-design-highlight');
+        }
+        state.designHighlightMarks = [];
+      }
+
+      function highlightDesignElementInEditor(outerHTML, textContent) {
+        clearDesignHighlights();
+
+        var slide = state.slides[state.currentSlide];
+        if (!slide) return;
+
+        var cm = elements.htmlEditor;
+        var startLine = slide.startLine;
+        var endLine = slide.endLine;
+
+        // Extract opening tag from outerHTML
+        var tagMatch = outerHTML ? outerHTML.match(/^<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/) : null;
+        var searchTag = tagMatch ? tagMatch[0] : null;
+        var tagName = tagMatch ? tagMatch[1] : null;
+        var foundLine = -1;
+
+        // Strategy 1: Search for the opening tag in source lines
+        if (searchTag) {
+          // Clean the tag for search (remove designer attributes)
+          var cleanTag = searchTag.replace(/\s*data-designer-[a-z]+="[^"]*"/g, '');
+          for (var i = startLine; i <= endLine; i++) {
+            var lineText = cm.getLine(i);
+            if (lineText && lineText.indexOf(cleanTag) !== -1) {
+              foundLine = i;
+              break;
+            }
+          }
+          // Fallback: search for just the tag name with attributes prefix
+          if (foundLine === -1 && tagName) {
+            var tagPrefix = '<' + tagName;
+            for (var i = startLine; i <= endLine; i++) {
+              var lineText = cm.getLine(i);
+              if (lineText && lineText.indexOf(tagPrefix) !== -1) {
+                foundLine = i;
+                break;
+              }
+            }
+          }
+        }
+
+        // Strategy 2: Search for text content in source (for markdown sources)
+        if (foundLine === -1 && textContent) {
+          var trimmedText = textContent.trim().substring(0, 50);
+          if (trimmedText) {
+            for (var i = startLine; i <= endLine; i++) {
+              var lineText = cm.getLine(i);
+              if (lineText && lineText.indexOf(trimmedText) !== -1) {
+                foundLine = i;
+                break;
+              }
+            }
+          }
+        }
+
+        if (foundLine === -1) return;
+
+        // Highlight the found line
+        cm.addLineClass(foundLine, 'wrap', 'cm-design-highlight');
+        state.designHighlightMarks.push(foundLine);
+
+        // For multi-line elements, highlight until closing tag
+        if (tagName) {
+          var lineText = cm.getLine(foundLine);
+          var closingTag = '</' + tagName;
+          if (lineText && lineText.indexOf(closingTag) === -1) {
+            for (var j = foundLine + 1; j <= endLine; j++) {
+              var nextLine = cm.getLine(j);
+              cm.addLineClass(j, 'wrap', 'cm-design-highlight');
+              state.designHighlightMarks.push(j);
+              if (nextLine && nextLine.indexOf(closingTag) !== -1) break;
+            }
+          }
+        }
+
+        // Scroll editor to show highlighted line
+        cm.scrollIntoView({ line: foundLine, ch: 0 }, 80);
+      }
+
+      function onDesignElementSelected(tag, styles, ancestors, outerHTML, textContent) {
         elements.dtElementTag.textContent = tag;
         elements.dtHint.style.display = 'none';
         elements.dtControls.style.display = '';
@@ -3079,9 +3207,15 @@
         elements.dtOpacityValue.textContent = isNaN(op) ? '1' : op.toFixed(2);
         elements.dtDisplay.value = styles.display || 'block';
         elements.dtOverflow.value = styles.overflow || 'visible';
+
+        // Highlight corresponding source lines in editor
+        if (outerHTML) {
+          highlightDesignElementInEditor(outerHTML, textContent);
+        }
       }
 
       function onDesignElementDeselected() {
+        clearDesignHighlights();
         elements.dtHint.style.display = '';
         elements.dtControls.style.display = 'none';
         elements.dtActions.style.display = 'none';
@@ -3542,10 +3676,20 @@
         // Build chrome elements for presentation
         var presChrome = '';
         if (ss.header.show && ss.header.text) {
-          presChrome += '<div style="position:absolute;top:12px;left:64px;right:64px;text-align:center;font-size:12px;color:' + escHtml(ss.textColor) + ';opacity:0.5">' + escHtml(ss.header.text) + '</div>';
+          var presHeaderFs = parseInt(ss.header.fontSize, 10) || 12;
+          var presHeaderBg = ss.header.backgroundColor && ss.header.backgroundColor !== 'transparent'
+            ? 'background:' + escCssValue(ss.header.backgroundColor) + ';padding:4px 12px;border-radius:4px;' : '';
+          presChrome += '<div style="position:absolute;top:12px;left:64px;right:64px;text-align:center;font-size:' + presHeaderFs + 'px;color:' + escHtml(ss.textColor) + ';opacity:0.5;' + presHeaderBg + '">' + escHtml(ss.header.text) + '</div>';
         }
         if (ss.footer.show && ss.footer.text) {
-          presChrome += '<div style="position:absolute;bottom:12px;left:64px;right:64px;text-align:center;font-size:12px;color:' + escHtml(ss.textColor) + ';opacity:0.5">' + escHtml(ss.footer.text) + '</div>';
+          var presFooterBottom = 12;
+          if (ss.showPageNumbers && ss.pageNumberPosition === 'bottom-center') {
+            presFooterBottom = 28;
+          }
+          var presFooterFs = parseInt(ss.footer.fontSize, 10) || 12;
+          var presFooterBg = ss.footer.backgroundColor && ss.footer.backgroundColor !== 'transparent'
+            ? 'background:' + escCssValue(ss.footer.backgroundColor) + ';padding:4px 12px;border-radius:4px;' : '';
+          presChrome += '<div style="position:absolute;bottom:' + presFooterBottom + 'px;left:64px;right:64px;text-align:center;font-size:' + presFooterFs + 'px;color:' + escHtml(ss.textColor) + ';opacity:0.5;' + presFooterBg + '">' + escHtml(ss.footer.text) + '</div>';
         }
         if (ss.showPageNumbers) {
           var pageText = ss.pageNumberFormat.replace('{n}', String(state.presentationSlide + 1)).replace('{total}', String(state.slides.length));
@@ -3642,7 +3786,9 @@
             if (typeof obj !== 'object' || obj === null) return def;
             return {
               text: typeof obj.text === 'string' ? obj.text : def.text,
-              show: typeof obj.show === 'boolean' ? obj.show : def.show
+              show: typeof obj.show === 'boolean' ? obj.show : def.show,
+              backgroundColor: typeof obj.backgroundColor === 'string' ? obj.backgroundColor : def.backgroundColor,
+              fontSize: typeof obj.fontSize === 'number' && obj.fontSize >= 8 && obj.fontSize <= 36 ? obj.fontSize : def.fontSize
             };
           }
           validated.header = validateSubObj(validated.header, defaults.header);
@@ -3695,8 +3841,14 @@
         elements.stPageFormat.value = s.pageNumberFormat;
         elements.stHeaderShow.checked = s.header.show;
         elements.stHeaderText.value = s.header.text;
+        elements.stHeaderBgColor.value = s.header.backgroundColor && s.header.backgroundColor !== 'transparent' ? s.header.backgroundColor : '#ffffff';
+        elements.stHeaderBgColorText.value = s.header.backgroundColor || 'transparent';
+        elements.stHeaderFontSize.value = s.header.fontSize || 12;
         elements.stFooterShow.checked = s.footer.show;
         elements.stFooterText.value = s.footer.text;
+        elements.stFooterBgColor.value = s.footer.backgroundColor && s.footer.backgroundColor !== 'transparent' ? s.footer.backgroundColor : '#ffffff';
+        elements.stFooterBgColorText.value = s.footer.backgroundColor || 'transparent';
+        elements.stFooterFontSize.value = s.footer.fontSize || 12;
       }
 
       function applySettingsChange() {
@@ -3789,6 +3941,29 @@
           state.slideSettings.header.text = this.value;
           applySettingsChange();
         });
+        elements.stHeaderBgColor.addEventListener('input', function() {
+          elements.stHeaderBgColorText.value = this.value;
+          state.slideSettings.header.backgroundColor = this.value;
+          applySettingsChange();
+        });
+        elements.stHeaderBgColorText.addEventListener('change', function() {
+          var v = this.value.trim();
+          if (v === '' || v === 'transparent') {
+            state.slideSettings.header.backgroundColor = 'transparent';
+            elements.stHeaderBgColor.value = '#ffffff';
+          } else {
+            elements.stHeaderBgColor.value = v;
+            state.slideSettings.header.backgroundColor = v;
+          }
+          applySettingsChange();
+        });
+        elements.stHeaderFontSize.addEventListener('input', function() {
+          var val = parseInt(this.value, 10);
+          if (val >= 8 && val <= 36) {
+            state.slideSettings.header.fontSize = val;
+            applySettingsChange();
+          }
+        });
 
         // Footer
         elements.stFooterShow.addEventListener('change', function() {
@@ -3798,6 +3973,29 @@
         elements.stFooterText.addEventListener('input', function() {
           state.slideSettings.footer.text = this.value;
           applySettingsChange();
+        });
+        elements.stFooterBgColor.addEventListener('input', function() {
+          elements.stFooterBgColorText.value = this.value;
+          state.slideSettings.footer.backgroundColor = this.value;
+          applySettingsChange();
+        });
+        elements.stFooterBgColorText.addEventListener('change', function() {
+          var v = this.value.trim();
+          if (v === '' || v === 'transparent') {
+            state.slideSettings.footer.backgroundColor = 'transparent';
+            elements.stFooterBgColor.value = '#ffffff';
+          } else {
+            elements.stFooterBgColor.value = v;
+            state.slideSettings.footer.backgroundColor = v;
+          }
+          applySettingsChange();
+        });
+        elements.stFooterFontSize.addEventListener('input', function() {
+          var val = parseInt(this.value, 10);
+          if (val >= 8 && val <= 36) {
+            state.slideSettings.footer.fontSize = val;
+            applySettingsChange();
+          }
         });
       }
 
