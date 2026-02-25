@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 - **シングルファイル構成**: 各HTMLファイルが独立した完結アプリケーション。ビルド不要
-- **共通パターン**: `index.html`, `markdown_preview.html`, `slides.html`, `shelf.html`, `tangle.html`, `nexus.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は全ファイルを確認する
+- **共通パターン**: `index.html`, `markdown_preview.html`, `slides.html`, `shelf.html`, `tangle.html`, `nexus.html`, `doceditor.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は全ファイルを確認する
 - **エディタ**: CodeMirror 5.65.7（CDN）を使用。`elements.htmlEditor`は初期化後CodeMirrorインスタンスに置き換わる（`getValue()` / `setValue()` / `replaceRange()`等のAPIを使用）
 - **外部CDN依存**: Feather Icons, lodash (debounce), CodeMirror, Noto Sans JP。Loomは外部依存なし（JetBrains Mono fontのみ）。Shelf/TangleはCodeMirror不使用。NexusはCodeMirror使用（Markdownモード）
 - **ツール間導線**: 全ファイルのツールバーに相互リンクナビゲーション（`.toolbar-nav` / Loomは`.header-nav`）
@@ -26,6 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tangle.html` | 思考アウトライナー | `tangle_data`, `tangleTheme` |
 | `slides.html` | HTMLスライドプレゼンテーションエディタ | `slidesCode`, `slidesLayout`, `slidesTheme`, `slidesAspectRatio` |
 | `nexus.html` | 領域横断メモワークスペース | `nexus_data`, `nexusTheme` |
+| `doceditor.html` | AI生成HTMLドキュメント修正エディタ | `docEditorCode`, `docEditorLayout`, `docEditorTheme` |
 
 ## Development
 
@@ -86,3 +87,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - JSON/Markdownエクスポート、JSONインポート（v1後方互換マイグレーション + 統合/置換選択）
 - `validateData()` でloadData時の検証、`validateImport()` でインポート時の厳密検証（ホワイトリスト適用）
 - CDNフォールバック: CodeMirror読み込み失敗時はplain textareaにフォールバック
+
+## DocEditor固有の設計
+
+- AI生成HTMLドキュメントのGUI修正に特化。designer.htmlをベースにドキュメント編集機能を拡張
+- **Design Modeがデフォルト起動**: 起動時から視覚編集モード。Code/Design/Outlineの3タブ切替
+- designer.htmlの全機能を継承: 要素選択、スタイル編集パネル（Colors/Typography/Spacing/Box）、ブレッドクラム、アクションバー、D&D並べ替え、8方向リサイズハンドル、要素テンプレート挿入、スタイルコピー/ペースト
+- **インライン文字装飾ツールバー**: プレビュー上でテキスト選択→フローティングツールバー（太字/斜体/下線/取消線/文字色/背景色/リンク/書式クリア）。`document.execCommand()` で即座に適用
+- **テーブル視覚編集**: テーブル要素選択時にTableセクション表示。行追加（上/下）、列追加（左/右）、行削除、列削除。`table.insertRow()` / `row.insertCell()` でDOM直接操作
+- **画像ドラッグ&ドロップ**: プレビューiframeに画像ファイルをドロップ → `FileReader.readAsDataURL()` でbase64変換 → `<img>` 要素として挿入（2MB上限警告）
+- **ドキュメントアウトライン**: iframe DOMの `h1`〜`h6` を解析し見出し構造ツリー表示。クリックでスクロール
+- **ソース行ハイライト**: Design Mode要素選択時、CodeMirror内の対応行をハイライト+スクロール
+- **印刷**: ツールバーのプリンターボタンで `iframe.contentWindow.print()` を呼出
+- `syncDesignToEditor()`: `serializeCleanHtml()` でdesigner injected要素を除去 → `beautifyHtml()` で整形 → `replaceRange(0..end)` でCodeMirror全体置換
+- CodeMirror拡張: fold(xml-fold/brace-fold) + search(dialog/searchcursor) + active-line + js-beautify

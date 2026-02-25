@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visual HTML Designer</title>
+    <title>DocEditor - ドキュメント修正エディタ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -782,11 +782,38 @@
     .dt-breadcrumb-item:hover { background: var(--da-accent-muted); color: var(--da-snow); }
     .dt-breadcrumb-item.active { color: var(--da-secondary); }
     .dt-breadcrumb-sep { color: var(--da-ash); font-size: 9px; }
+
+    /* Outline panel items */
+    .outline-item {
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--app-text-secondary);
+      border-left: 2px solid transparent;
+      transition: all var(--duration-fast);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .outline-item:hover {
+      background: var(--da-accent-glow);
+      color: var(--app-text-primary);
+      border-left-color: var(--da-secondary);
+    }
+    .outline-item[data-level="1"] { padding-left: 12px; font-weight: 600; font-size: 13px; }
+    .outline-item[data-level="2"] { padding-left: 24px; font-weight: 500; }
+    .outline-item[data-level="3"] { padding-left: 36px; }
+    .outline-item[data-level="4"] { padding-left: 48px; font-size: 11px; }
+    .outline-item[data-level="5"] { padding-left: 60px; font-size: 11px; }
+    .outline-item[data-level="6"] { padding-left: 72px; font-size: 11px; }
+
+    /* Source line highlight for design mode */
+    .cm-design-highlight { background: rgba(74, 158, 255, 0.12) !important; }
     </style>
   </head>
   <body>
     <div class="toolbar">
-      <span class="toolbar-title">Visual HTML Designer</span>
+      <span class="toolbar-title">DocEditor - ドキュメント修正エディタ</span>
       <div class="toolbar-menu">
         <div class="btn-group" role="group" aria-label="編集操作">
           <button class="toolbar-button" id="undo-btn" title="元に戻す (Ctrl+Z)" aria-label="元に戻す" tabindex="0">
@@ -825,6 +852,11 @@
             <i data-feather="edit-3"></i>
           </button>
         </div>
+        <div class="btn-group" role="group" aria-label="印刷">
+          <button class="toolbar-button" id="print-btn" title="印刷" aria-label="印刷" tabindex="0">
+            <i data-feather="printer"></i>
+          </button>
+        </div>
         <div style="flex-grow: 1" aria-hidden="true"></div>
         <div class="btn-group" role="group" aria-label="ファイル操作">
           <button class="toolbar-button" id="open-btn" title="HTMLファイルを開く" aria-label="開く" tabindex="0">
@@ -837,8 +869,8 @@
         </div>
         <nav class="toolbar-nav" role="navigation" aria-label="ツール切り替え">
           <a href="index.html">HTML</a>
-          <a href="designer.html" class="nav-active">Designer</a>
-          <a href="doceditor.html">DocEditor</a>
+          <a href="designer.html">Designer</a>
+          <a href="doceditor.html" class="nav-active">DocEditor</a>
           <a href="markdown_preview.html">MD</a>
           <a href="slides.html">Slides</a>
           <a href="loom.html">Loom</a>
@@ -855,6 +887,7 @@
         <div class="panel-header panel-tabs">
           <button class="panel-tab active" id="tab-code" data-tab="code">Code</button>
           <button class="panel-tab" id="tab-design" data-tab="design">Design</button>
+          <button class="panel-tab" id="tab-outline" data-tab="outline">Outline</button>
         </div>
         <div class="editor-content-wrapper" id="code-panel">
           <textarea
@@ -1064,7 +1097,31 @@
                 </select>
               </div>
             </div>
+
+            <!-- Table -->
+            <div class="dt-section-header" data-section="dt-table" id="dt-table-header" style="display:none">
+              <span>Table</span>
+              <i data-feather="chevron-down" class="dt-chevron"></i>
+            </div>
+            <div class="dt-section-body" id="dt-table" style="display:none">
+              <div class="dt-row" style="flex-wrap:wrap;gap:4px">
+                <button class="dt-btn" id="dt-row-above" title="行を上に追加"><i data-feather="arrow-up"></i><span style="font-size:10px;margin-left:2px">行</span></button>
+                <button class="dt-btn" id="dt-row-below" title="行を下に追加"><i data-feather="arrow-down"></i><span style="font-size:10px;margin-left:2px">行</span></button>
+                <button class="dt-btn" id="dt-col-left" title="列を左に追加"><i data-feather="arrow-left"></i><span style="font-size:10px;margin-left:2px">列</span></button>
+                <button class="dt-btn" id="dt-col-right" title="列を右に追加"><i data-feather="arrow-right"></i><span style="font-size:10px;margin-left:2px">列</span></button>
+                <button class="dt-btn" id="dt-del-row" title="行を削除" style="color:var(--da-error)"><i data-feather="minus"></i><span style="font-size:10px;margin-left:2px">行</span></button>
+                <button class="dt-btn" id="dt-del-col" title="列を削除" style="color:var(--da-error)"><i data-feather="minus"></i><span style="font-size:10px;margin-left:2px">列</span></button>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div id="outline-panel" class="design-toolbar" style="display: none;">
+          <div class="dt-header">
+            <span class="dt-element-tag">Document Outline</span>
+          </div>
+          <div id="outline-list" style="padding:8px 0;"></div>
+          <div id="outline-empty" class="dt-hint">見出し要素がありません</div>
         </div>
 
         <div class="panel-content">
@@ -1082,9 +1139,9 @@
       // ========================================
       var CONFIG = {
         defaultLayout: 'lr',
-        storageKey: 'designerCode',
-        layoutStorageKey: 'designerLayout',
-        themeStorageKey: 'designerTheme',
+        storageKey: 'docEditorCode',
+        layoutStorageKey: 'docEditorLayout',
+        themeStorageKey: 'docEditorTheme',
         debounceDelay: 300,
         designSyncDelay: 600,
         layouts: { lr: 'Left-Right', tb: 'Top-Bottom', po: 'Preview Only' }
@@ -1095,7 +1152,7 @@
       // ========================================
       var ErrorHandler = {
         log: function(error, context) {
-          console.error('[Designer' + (context ? ' - ' + context : '') + ']', error);
+          console.error('[DocEditor' + (context ? ' - ' + context : '') + ']', error);
         },
         showPreviewError: function(error) {
           var iframeDoc = elements.previewContainer.contentDocument ||
@@ -1183,8 +1240,11 @@
         designModeBtn: document.getElementById('design-mode-btn'),
         tabCode: document.getElementById('tab-code'),
         tabDesign: document.getElementById('tab-design'),
+        tabOutline: document.getElementById('tab-outline'),
         codePanel: document.getElementById('code-panel'),
         designToolbar: document.getElementById('design-toolbar'),
+        outlinePanel: document.getElementById('outline-panel'),
+        printBtn: document.getElementById('print-btn'),
         dtElementTag: document.getElementById('dt-element-tag'),
         dtActions: document.getElementById('dt-actions'),
         dtHint: document.getElementById('dt-hint'),
@@ -1243,7 +1303,8 @@
         paddingLinked: false,
         marginLinked: false,
         addDropdownOpen: false,
-        copiedStyles: null
+        copiedStyles: null,
+        designHighlightMarks: []
       };
 
       // ========================================
@@ -1313,10 +1374,18 @@
         elements.designModeBtn.addEventListener('click', toggleDesignMode);
         initDesignToolbarEvents();
 
-        // Move design toolbar to editor container & tab events
+        // Move design toolbar and outline panel to editor container & tab events
         elements.editorContainer.appendChild(elements.designToolbar);
+        elements.editorContainer.appendChild(elements.outlinePanel);
         elements.tabCode.addEventListener('click', function() { switchTab('code'); });
         elements.tabDesign.addEventListener('click', function() { switchTab('design'); });
+        elements.tabOutline.addEventListener('click', function() { switchTab('outline'); });
+
+        // Print button
+        elements.printBtn.addEventListener('click', function() {
+          var win = elements.previewContainer.contentWindow;
+          if (win) win.print();
+        });
 
         // Keyboard
         document.addEventListener('keydown', handleKeyboard, true);
@@ -1339,6 +1408,9 @@
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
           });
         });
+
+        // Auto-enable Design Mode
+        enableDesignMode();
       }
 
       var debouncedSaveCode = debounce(saveCode, CONFIG.debounceDelay);
@@ -1444,6 +1516,7 @@
         if (state.designMode) {
           injectDesignScript(iframeDoc);
         }
+        debouncedBuildOutline();
       }
 
       // ========================================
@@ -1464,7 +1537,7 @@
           if (saved !== null) {
             elements.htmlEditor.setValue(saved);
           } else {
-            elements.htmlEditor.setValue('<!DOCTYPE html>\n<html lang="ja">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Sample Page</title>\n  <style>\n    body {\n      font-family: system-ui, sans-serif;\n      margin: 0;\n      padding: 24px;\n      background: #f9fafb;\n      color: #111827;\n    }\n    .container {\n      max-width: 800px;\n      margin: 0 auto;\n      padding: 32px;\n      background: #fff;\n      border-radius: 8px;\n      box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);\n    }\n    h1 {\n      font-size: 32px;\n      color: #1f2937;\n      border-bottom: 2px solid #3b82f6;\n      padding-bottom: 12px;\n      margin-bottom: 24px;\n    }\n    p { margin-bottom: 16px; }\n    .btn {\n      background: #3b82f6;\n      color: #fff;\n      border: none;\n      padding: 12px 24px;\n      border-radius: 6px;\n      cursor: pointer;\n      font: inherit;\n      transition: all .2s;\n    }\n    .btn:hover {\n      background: #2563eb;\n      transform: translateY(-1px);\n    }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>Visual HTML Designer</h1>\n    <p>Design Mode (Ctrl+D) to visually edit elements.</p>\n    <p>Click elements to change colors, typography, spacing, and more.</p>\n    <button class="btn">Click me</button>\n  </div>\n</body>\n</html>');
+            elements.htmlEditor.setValue('<!DOCTYPE html>\n<html lang="ja">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>サンプルドキュメント</title>\n  <style>\n    body {\n      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;\n      margin: 0;\n      padding: 32px;\n      background: #f9fafb;\n      color: #1f2937;\n      line-height: 1.8;\n    }\n    .container {\n      max-width: 800px;\n      margin: 0 auto;\n      background: #fff;\n      padding: 48px;\n      border-radius: 8px;\n      box-shadow: 0 1px 3px rgba(0,0,0,0.1);\n    }\n    h1 { font-size: 28px; border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 24px; }\n    h2 { font-size: 22px; color: #1e40af; margin-top: 32px; margin-bottom: 16px; }\n    h3 { font-size: 18px; color: #374151; margin-top: 24px; margin-bottom: 12px; }\n    p { margin-bottom: 16px; }\n    table { width: 100%; border-collapse: collapse; margin: 16px 0; }\n    th, td { border: 1px solid #d1d5db; padding: 10px 14px; text-align: left; }\n    th { background: #f3f4f6; font-weight: 600; }\n    .highlight { background: #fef3c7; padding: 16px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 16px 0; }\n    ul, ol { margin: 16px 0; padding-left: 24px; }\n    li { margin-bottom: 8px; }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>プロジェクト報告書</h1>\n    <p>このドキュメントはDocEditorのサンプルです。プレビューをクリックして要素を選択し、テキストをダブルクリックで編集できます。</p>\n\n    <h2>概要</h2>\n    <p>DocEditorは、AIが生成したHTMLドキュメントを<strong>GUIで直感的に修正</strong>できるツールです。</p>\n\n    <div class="highlight">\n      <strong>ポイント:</strong> テキストを選択すると書式設定ツールバーが表示されます。太字・斜体・下線・文字色などを変更できます。\n    </div>\n\n    <h2>進捗状況</h2>\n    <table>\n      <thead>\n        <tr>\n          <th>タスク</th>\n          <th>担当</th>\n          <th>状況</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>要件定義</td>\n          <td>田中</td>\n          <td>完了</td>\n        </tr>\n        <tr>\n          <td>設計</td>\n          <td>佐藤</td>\n          <td>進行中</td>\n        </tr>\n        <tr>\n          <td>実装</td>\n          <td>鈴木</td>\n          <td>未着手</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h2>次のステップ</h2>\n    <ol>\n      <li>デザインレビューの実施</li>\n      <li>テスト計画の策定</li>\n      <li>リリース準備</li>\n    </ol>\n\n    <h3>備考</h3>\n    <p>画像はデスクトップからドラッグ&ドロップで挿入できます。テーブルの行列追加はDesignパネルのTableセクションから操作できます。</p>\n  </div>\n</body>\n</html>');
           }
         } catch(error) {
           ErrorHandler.handle(error, 'load', false);
@@ -1548,7 +1621,7 @@
           if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(fn)) fn = '_' + fn;
           return fn + '_' + ts + '.html';
         }
-        return 'designer_output_' + ts + '.html';
+        return 'doceditor_output_' + ts + '.html';
       }
 
       function saveToFile() {
@@ -1661,9 +1734,12 @@
         state.activeTab = tab;
         elements.tabCode.classList.toggle('active', tab === 'code');
         elements.tabDesign.classList.toggle('active', tab === 'design');
+        elements.tabOutline.classList.toggle('active', tab === 'outline');
         elements.codePanel.style.display = tab === 'code' ? '' : 'none';
         elements.designToolbar.style.display = tab === 'design' ? '' : 'none';
+        elements.outlinePanel.style.display = tab === 'outline' ? '' : 'none';
         if (tab === 'code') elements.htmlEditor.refresh();
+        if (tab === 'outline') buildOutline();
       }
 
       function enableDesignMode() {
@@ -2181,6 +2257,119 @@
             'characterData:true' +
           '});' +
 
+          // Floating text format toolbar
+          'var formatBar=document.createElement("div");' +
+          'formatBar.setAttribute("data-designer-injected","true");' +
+          'formatBar.style.cssText="position:fixed;display:none;background:#1e1f25;border:1px solid #353842;border-radius:6px;padding:3px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);gap:1px;flex-wrap:nowrap";' +
+          'formatBar.innerHTML=' +
+            '"<button data-cmd=\\"bold\\" title=\\"太字\\" style=\\"background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 7px;border-radius:4px;font-weight:bold;font-size:13px;min-width:26px;min-height:26px\\">B</button>"' +
+            '+"<button data-cmd=\\"italic\\" title=\\"斜体\\" style=\\"background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 7px;border-radius:4px;font-style:italic;font-size:13px;min-width:26px;min-height:26px\\">I</button>"' +
+            '+"<button data-cmd=\\"underline\\" title=\\"下線\\" style=\\"background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 7px;border-radius:4px;text-decoration:underline;font-size:13px;min-width:26px;min-height:26px\\">U</button>"' +
+            '+"<button data-cmd=\\"strikeThrough\\" title=\\"取消線\\" style=\\"background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 7px;border-radius:4px;text-decoration:line-through;font-size:13px;min-width:26px;min-height:26px\\">S</button>"' +
+            '+"<span style=\\"width:1px;background:#353842;margin:2px 2px;align-self:stretch\\"></span>"' +
+            '+"<button data-cmd=\\"foreColor\\" title=\\"文字色\\" style=\\"background:none;border:none;color:#c4c8d6;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:11px;min-width:26px;min-height:26px;position:relative\\">A<input type=\\"color\\" data-for=\\"foreColor\\" value=\\"#ff0000\\" style=\\"position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%\\"/></button>"' +
+            '+"<button data-cmd=\\"hiliteColor\\" title=\\"背景色\\" style=\\"background:none;border:none;color:#1e1f25;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:11px;min-width:26px;min-height:26px;background:#ffeb3b;position:relative\\">H<input type=\\"color\\" data-for=\\"hiliteColor\\" value=\\"#ffeb3b\\" style=\\"position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%\\"/></button>"' +
+            '+"<span style=\\"width:1px;background:#353842;margin:2px 2px;align-self:stretch\\"></span>"' +
+            '+"<button data-cmd=\\"createLink\\" title=\\"リンク\\" style=\\"background:none;border:none;color:#5b8fcc;cursor:pointer;padding:4px 7px;border-radius:4px;font-size:12px;min-width:26px;min-height:26px;text-decoration:underline\\">Link</button>"' +
+            '+"<button data-cmd=\\"removeFormat\\" title=\\"書式クリア\\" style=\\"background:none;border:none;color:#d45a5a;cursor:pointer;padding:4px 7px;border-radius:4px;font-size:12px;min-width:26px;min-height:26px\\">\\u2715</button>";' +
+          'document.body.appendChild(formatBar);' +
+
+          // Show/hide on text selection
+          'var formatBarTimeout=null;' +
+          'document.addEventListener("mouseup",function(e){' +
+            'if(e.target.closest("[data-designer-injected]"))return;' +
+            'clearTimeout(formatBarTimeout);' +
+            'formatBarTimeout=setTimeout(function(){' +
+              'var sel=window.getSelection();' +
+              'if(!sel||sel.isCollapsed||!sel.toString().trim()){formatBar.style.display="none";return;}' +
+              'var range=sel.getRangeAt(0);' +
+              'var rect=range.getBoundingClientRect();' +
+              'if(rect.width<2){formatBar.style.display="none";return;}' +
+              'formatBar.style.display="flex";' +
+              'var barTop=rect.top-38;' +
+              'if(barTop<4)barTop=rect.bottom+6;' +
+              'formatBar.style.left=Math.max(4,rect.left+(rect.width/2)-100)+"px";' +
+              'formatBar.style.top=barTop+"px";' +
+            '},50);' +
+          '});' +
+
+          // Handle format button clicks
+          'formatBar.addEventListener("mousedown",function(e){e.preventDefault();});' +
+          'formatBar.addEventListener("click",function(e){' +
+            'var btn=e.target.closest("[data-cmd]");' +
+            'if(!btn)return;' +
+            'var cmd=btn.getAttribute("data-cmd");' +
+            'if(cmd==="createLink"){' +
+              'var url=prompt("URL:");' +
+              'if(url)document.execCommand("createLink",false,url);' +
+            '}else if(cmd==="foreColor"||cmd==="hiliteColor"){' +
+              'return;' +
+            '}else{' +
+              'document.execCommand(cmd,false,null);' +
+            '}' +
+            'parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+          '});' +
+
+          // Color input handlers
+          'formatBar.querySelectorAll("input[type=color]").forEach(function(inp){' +
+            'inp.addEventListener("input",function(e){' +
+              'var cmd=this.getAttribute("data-for");' +
+              'document.execCommand(cmd,false,this.value);' +
+              'parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+            '});' +
+          '});' +
+
+          // Hide format bar on click elsewhere
+          'document.addEventListener("mousedown",function(e){' +
+            'if(!e.target.closest("[data-designer-injected]")){' +
+              'setTimeout(function(){' +
+                'var sel=window.getSelection();' +
+                'if(!sel||sel.isCollapsed)formatBar.style.display="none";' +
+              '},10);' +
+            '}' +
+          '});' +
+
+          // Image drag & drop
+          'document.addEventListener("dragover",function(e){' +
+            'if(dragEl)return;' +
+            'if(e.dataTransfer&&e.dataTransfer.types&&e.dataTransfer.types.indexOf("Files")!==-1){' +
+              'e.preventDefault();' +
+              'e.dataTransfer.dropEffect="copy";' +
+            '}' +
+          '});' +
+
+          'document.addEventListener("drop",function(e){' +
+            'if(dragEl)return;' +
+            'if(!e.dataTransfer||!e.dataTransfer.files||!e.dataTransfer.files.length)return;' +
+            'var file=e.dataTransfer.files[0];' +
+            'if(!file.type.startsWith("image/"))return;' +
+            'e.preventDefault();' +
+            'if(file.size>2*1024*1024){' +
+              'parent.postMessage({type:"__design_toast__",token:TOKEN,msg:"画像が2MBを超えています",err:true},"*");' +
+              'return;' +
+            '}' +
+            'var reader=new FileReader();' +
+            'reader.onload=function(ev){' +
+              'var img=document.createElement("img");' +
+              'img.src=ev.target.result;' +
+              'img.style.cssText="max-width:100%;height:auto;display:block;margin:8px 0";' +
+              'img.alt="Dropped image";' +
+              'var target=document.elementFromPoint(e.clientX,e.clientY);' +
+              'if(target&&!isExcluded(target)&&!isInjected(target)){' +
+                'if(target.tagName==="IMG"||target.tagName==="BR"){' +
+                  'target.parentNode.insertBefore(img,target.nextSibling);' +
+                '}else{' +
+                  'target.appendChild(img);' +
+                '}' +
+              '}else{' +
+                'document.body.appendChild(img);' +
+              '}' +
+              'parent.postMessage({type:"__design_change__",token:TOKEN},"*");' +
+              'parent.postMessage({type:"__design_toast__",token:TOKEN,msg:"画像を挿入しました"},"*");' +
+            '};' +
+            'reader.readAsDataURL(file);' +
+          '});' +
+
         '})();';
       }
 
@@ -2202,6 +2391,9 @@
             break;
           case '__design_action__':
             handleDesignAction(e.data.action);
+            break;
+          case '__design_toast__':
+            showTemporaryMessage(e.data.msg, e.data.err ? 'error' : undefined);
             break;
         }
       }
@@ -2323,6 +2515,18 @@
         elements.dtOpacityValue.textContent = isNaN(op) ? '1' : op.toFixed(2);
         elements.dtDisplay.value = styles.display || 'block';
         elements.dtOverflow.value = styles.overflow || 'visible';
+
+        // Table section visibility
+        var isTableElement = ['TABLE','TR','TD','TH','THEAD','TBODY','TFOOT'].indexOf(tag.split(/[#.]/)[0].toUpperCase()) !== -1;
+        var tableHeader = document.getElementById('dt-table-header');
+        var tableBody = document.getElementById('dt-table');
+        if (tableHeader && tableBody) {
+          tableHeader.style.display = isTableElement ? '' : 'none';
+          tableBody.style.display = isTableElement ? '' : 'none';
+        }
+
+        // Source line highlighting
+        highlightDesignElementInEditor(tag);
       }
 
       function onDesignElementDeselected() {
@@ -2349,6 +2553,67 @@
         var el = getSelectedElement();
         if (!el) return;
         el.style[prop] = value;
+      }
+
+      // ========================================
+      // OUTLINE
+      // ========================================
+      function buildOutline() {
+        var iframeDoc = elements.previewContainer.contentDocument;
+        var list = document.getElementById('outline-list');
+        var empty = document.getElementById('outline-empty');
+        if (!list || !iframeDoc) return;
+        list.innerHTML = '';
+        var headings = iframeDoc.querySelectorAll('h1,h2,h3,h4,h5,h6');
+        if (headings.length === 0) {
+          if (empty) empty.style.display = '';
+          return;
+        }
+        if (empty) empty.style.display = 'none';
+        headings.forEach(function(h) {
+          var level = parseInt(h.tagName[1]);
+          var item = document.createElement('div');
+          item.className = 'outline-item';
+          item.setAttribute('data-level', level);
+          item.textContent = h.textContent.trim().substring(0, 60) || '(empty heading)';
+          item.title = h.textContent.trim();
+          item.addEventListener('click', function() {
+            h.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Flash highlight
+            var orig = h.style.outline;
+            h.style.outline = '2px solid #4a9eff';
+            setTimeout(function() { h.style.outline = orig; }, 1500);
+          });
+          list.appendChild(item);
+        });
+      }
+
+      var debouncedBuildOutline = debounce(buildOutline, 500);
+
+      // ========================================
+      // SOURCE LINE HIGHLIGHTING
+      // ========================================
+      function highlightDesignElementInEditor(tag) {
+        // Clear previous highlights
+        if (state.designHighlightMarks) {
+          state.designHighlightMarks.forEach(function(line) {
+            elements.htmlEditor.removeLineClass(line, 'background', 'cm-design-highlight');
+          });
+        }
+        state.designHighlightMarks = [];
+
+        // Find the element's tag in the editor
+        var tagName = tag.split(/[#.]/)[0];
+        var searchStr = '<' + tagName;
+        var cursor = elements.htmlEditor.getSearchCursor(searchStr, null, { caseFold: true });
+        if (cursor.findNext()) {
+          var line = cursor.from().line;
+          elements.htmlEditor.addLineClass(line, 'background', 'cm-design-highlight');
+          state.designHighlightMarks.push(line);
+          if (state.activeTab === 'code') {
+            elements.htmlEditor.scrollIntoView({ line: line, ch: 0 }, 100);
+          }
+        }
       }
 
       // ========================================
@@ -2709,6 +2974,96 @@
           });
           debouncedDesignSync();
           showTemporaryMessage('Style pasted');
+        });
+
+        // --- Table Operations ---
+        function getTableContext() {
+          var el = getSelectedElement();
+          if (!el) return null;
+          var td = el.closest ? el.closest('td,th') : null;
+          if (!td && (el.tagName === 'TD' || el.tagName === 'TH')) td = el;
+          var tr = td ? td.parentElement : (el.closest ? el.closest('tr') : null);
+          if (!tr && el.tagName === 'TR') tr = el;
+          var table = tr ? tr.closest('table') : (el.closest ? el.closest('table') : null);
+          if (!table && el.tagName === 'TABLE') table = el;
+          if (!table) return null;
+          var rowIndex = tr ? tr.rowIndex : -1;
+          var cellIndex = td ? td.cellIndex : -1;
+          var colCount = table.rows.length > 0 ? table.rows[0].cells.length : 0;
+          return { table: table, tr: tr, td: td, rowIndex: rowIndex, cellIndex: cellIndex, colCount: colCount };
+        }
+
+        document.getElementById('dt-row-above').addEventListener('click', function() {
+          var ctx = getTableContext();
+          if (!ctx || ctx.rowIndex < 0) return;
+          var newRow = ctx.table.insertRow(ctx.rowIndex);
+          for (var i = 0; i < ctx.colCount; i++) {
+            var cell = newRow.insertCell();
+            cell.textContent = '\u00A0';
+          }
+          debouncedDesignSync();
+        });
+
+        document.getElementById('dt-row-below').addEventListener('click', function() {
+          var ctx = getTableContext();
+          if (!ctx) return;
+          var idx = ctx.rowIndex >= 0 ? ctx.rowIndex + 1 : ctx.table.rows.length;
+          var newRow = ctx.table.insertRow(idx);
+          for (var i = 0; i < ctx.colCount; i++) {
+            var cell = newRow.insertCell();
+            cell.textContent = '\u00A0';
+          }
+          debouncedDesignSync();
+        });
+
+        document.getElementById('dt-col-left').addEventListener('click', function() {
+          var ctx = getTableContext();
+          if (!ctx || ctx.cellIndex < 0) return;
+          for (var i = 0; i < ctx.table.rows.length; i++) {
+            var cell = ctx.table.rows[i].insertCell(ctx.cellIndex);
+            cell.textContent = '\u00A0';
+            if (ctx.table.rows[i].parentElement.tagName === 'THEAD') cell.outerHTML = '<th>\u00A0</th>';
+          }
+          debouncedDesignSync();
+        });
+
+        document.getElementById('dt-col-right').addEventListener('click', function() {
+          var ctx = getTableContext();
+          if (!ctx || ctx.cellIndex < 0) return;
+          var insertAt = ctx.cellIndex + 1;
+          for (var i = 0; i < ctx.table.rows.length; i++) {
+            var row = ctx.table.rows[i];
+            if (insertAt >= row.cells.length) {
+              var cell = row.insertCell();
+              cell.textContent = '\u00A0';
+              if (row.parentElement.tagName === 'THEAD') cell.outerHTML = '<th>\u00A0</th>';
+            } else {
+              var cell = row.insertCell(insertAt);
+              cell.textContent = '\u00A0';
+              if (row.parentElement.tagName === 'THEAD') cell.outerHTML = '<th>\u00A0</th>';
+            }
+          }
+          debouncedDesignSync();
+        });
+
+        document.getElementById('dt-del-row').addEventListener('click', function() {
+          var ctx = getTableContext();
+          if (!ctx || ctx.rowIndex < 0 || ctx.table.rows.length <= 1) return;
+          ctx.table.deleteRow(ctx.rowIndex);
+          onDesignElementDeselected();
+          debouncedDesignSync();
+        });
+
+        document.getElementById('dt-del-col').addEventListener('click', function() {
+          var ctx = getTableContext();
+          if (!ctx || ctx.cellIndex < 0 || ctx.colCount <= 1) return;
+          for (var i = ctx.table.rows.length - 1; i >= 0; i--) {
+            if (ctx.table.rows[i].cells.length > ctx.cellIndex) {
+              ctx.table.rows[i].deleteCell(ctx.cellIndex);
+            }
+          }
+          onDesignElementDeselected();
+          debouncedDesignSync();
         });
       }
 
