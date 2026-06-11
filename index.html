@@ -494,6 +494,116 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
         background: var(--da-accent-muted);
       }
 
+      /* Save status indicator */
+      .save-status {
+        font-size: 11px;
+        color: var(--da-stone);
+        white-space: nowrap;
+        letter-spacing: 0.03em;
+        user-select: none;
+        transition: color var(--duration-normal) var(--ease-out-expo);
+      }
+      .save-status.is-saved { color: var(--da-success); }
+      .save-status.is-error { color: var(--da-error); }
+
+      /* Toast action button */
+      .temp-message.has-action {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .toast-action {
+        background: none;
+        border: 1px solid var(--da-secondary);
+        color: var(--da-secondary);
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color var(--duration-normal) var(--ease-out-expo);
+      }
+      .toast-action:hover {
+        background: var(--da-accent-muted);
+      }
+
+      /* CDN load failure banner */
+      .cdn-warning {
+        background: var(--da-warning);
+        color: var(--da-ink);
+        padding: 6px 16px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      /* Icon text fallback (when Feather Icons CDN fails) */
+      .icon-fallback {
+        color: var(--da-cloud);
+        font-size: 14px;
+        line-height: 1;
+        font-style: normal;
+      }
+
+      /* Keyboard shortcut help modal */
+      .help-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .help-overlay[hidden] { display: none; }
+      .help-modal {
+        background: var(--app-bg-primary);
+        color: var(--app-text-primary);
+        border: 1px solid var(--app-border-default);
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        width: min(480px, calc(100vw - 32px));
+        max-height: 80vh;
+        overflow: auto;
+        padding: 20px 24px;
+      }
+      .help-modal h2 {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+      .help-modal table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .help-modal td {
+        padding: 7px 4px;
+        border-bottom: 1px solid var(--app-border-default);
+      }
+      .help-modal td:first-child {
+        width: 45%;
+        white-space: nowrap;
+      }
+      .help-modal kbd {
+        background: var(--app-bg-secondary);
+        border: 1px solid var(--app-border-default);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 11px;
+        font-family: inherit;
+        white-space: nowrap;
+      }
+      .help-modal-footer {
+        margin-top: 14px;
+        font-size: 12px;
+        color: var(--app-text-muted);
+        text-align: right;
+      }
+
       /* Accessibility: reduced motion */
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
@@ -539,8 +649,12 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
             <button class="toolbar-button" id="theme-toggle-btn" title="テーマ切り替え" aria-label="テーマ切り替え" tabindex="0">
               <i data-feather="moon" id="theme-toggle-icon"></i>
             </button>
+            <button class="toolbar-button" id="help-btn" title="キーボードショートカット一覧 (?)" aria-label="キーボードショートカット一覧" tabindex="0">
+              <i data-feather="help-circle"></i>
+            </button>
           </div>
           <div style="flex-grow: 1" aria-hidden="true"></div>
+          <span class="save-status" id="save-status" role="status" aria-live="polite"></span>
           <div class="btn-group" role="group" aria-label="ファイル操作">
             <button class="toolbar-button" id="open-btn" title="HTMLファイルを開く" aria-label="HTMLファイルを開く" tabindex="0">
               <i data-feather="upload"></i>
@@ -584,6 +698,23 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
       </div>
     </div>
 
+    <div class="help-overlay" id="help-overlay" hidden role="dialog" aria-modal="true" aria-label="キーボードショートカット一覧">
+      <div class="help-modal">
+        <h2>キーボードショートカット</h2>
+        <table>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>HTMLファイルをダウンロード</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td><td>元に戻す</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>Y</kbd></td><td>やり直す</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></td><td>コードをコピー</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></td><td>クリップボードから貼り付け</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>Delete</kbd></td><td>エディターをクリア</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>左右分割 / 上下分割 / プレビューのみ</td></tr>
+          <tr><td><kbd>?</kbd></td><td>このヘルプを表示</td></tr>
+        </table>
+        <div class="help-modal-footer">Esc または外側クリックで閉じる</div>
+      </div>
+    </div>
+
     <script>
       (function() {
         'use strict';
@@ -594,6 +725,7 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           layoutStorageKey: "htmlPreviewerLayout",
           themeStorageKey: "htmlPreviewerTheme",
           debounceDelay: 300,
+          quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
           layouts: { lr: "左右分割", tb: "上下分割", po: "プレビューのみ" },
         };
 
@@ -664,7 +796,10 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           fileInput: document.getElementById("file-input"),
           saveBtn: document.getElementById("save-btn"),
           themeToggleBtn: document.getElementById("theme-toggle-btn"),
-          themeToggleIcon: document.getElementById("theme-toggle-icon")
+          themeToggleIcon: document.getElementById("theme-toggle-icon"),
+          helpBtn: document.getElementById("help-btn"),
+          helpOverlay: document.getElementById("help-overlay"),
+          saveStatus: document.getElementById("save-status")
         };
 
         // 状態管理
@@ -672,16 +807,47 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           currentLayout: CONFIG.defaultLayout,
           currentTheme: 'light',
           isDragging: false,
-          dragContext: {}
+          dragContext: {},
+          quotaWarned: false
         };
+
+        // CodeMirror読み込み失敗時の簡易エディタ（textareaのまま動かす）
+        function createTextareaFallback(textarea) {
+          const listeners = [];
+          textarea.addEventListener('input', () => listeners.forEach((fn) => fn()));
+          return {
+            getValue: () => textarea.value,
+            setValue: (v) => { textarea.value = v; },
+            on: (ev, fn) => { if (ev === 'change') listeners.push(fn); },
+            undo: () => { textarea.focus(); try { document.execCommand('undo'); } catch (e) {} },
+            redo: () => { textarea.focus(); try { document.execCommand('redo'); } catch (e) {} },
+            lastLine: () => textarea.value.split('\n').length - 1,
+            getLine: (n) => textarea.value.split('\n')[n] || '',
+            replaceRange: (text) => { textarea.value = text; }
+          };
+        }
+
+        function showCdnWarning(message) {
+          const div = document.createElement('div');
+          div.className = 'cdn-warning';
+          div.setAttribute('role', 'alert');
+          div.textContent = message;
+          document.body.insertBefore(div, elements.splitView);
+        }
 
         // --- 初期化 ---
         function initialize() {
-          elements.htmlEditor = CodeMirror.fromTextArea(elements.htmlEditor, {
-            lineNumbers: true,
-            mode: "htmlmixed",
-          });
+          if (typeof CodeMirror !== 'undefined') {
+            elements.htmlEditor = CodeMirror.fromTextArea(elements.htmlEditor, {
+              lineNumbers: true,
+              mode: "htmlmixed",
+            });
+          } else {
+            elements.htmlEditor = createTextareaFallback(elements.htmlEditor);
+            showCdnWarning('エディタ拡張（CodeMirror）の読み込みに失敗したため、簡易エディタで動作しています。オフラインの可能性があります。');
+          }
           loadSavedCode();
+          setSaveStatus('saved');
           let savedTheme;
           try {
             savedTheme = localStorage.getItem(CONFIG.themeStorageKey);
@@ -737,6 +903,12 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
             applyTheme(newTheme);
           });
 
+          // ヘルプモーダル
+          elements.helpBtn.addEventListener("click", toggleHelp);
+          elements.helpOverlay.addEventListener("click", (e) => {
+            if (e.target === elements.helpOverlay) closeHelp();
+          });
+
           // キーボードショートカット
           document.addEventListener("keydown", handleKeyboard);
 
@@ -752,7 +924,8 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
             elements.clearBtn,
             elements.openBtn,
             elements.saveBtn,
-            elements.themeToggleBtn
+            elements.themeToggleBtn,
+            elements.helpBtn
           ];
           toolbarButtons.forEach(btn => {
             btn.addEventListener("keydown", (e) => {
@@ -769,10 +942,30 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
 
         function handleEditorInput() {
           updatePreview();
+          setSaveStatus('saving');
           debouncedSaveCode();
         }
 
+        function isTypingContext(target) {
+          if (!target || !target.closest) return false;
+          return !!(target.closest('.CodeMirror') ||
+            target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' ||
+            target.isContentEditable);
+        }
+
         function handleKeyboard(e) {
+          // Escape: ヘルプを閉じる
+          if (e.key === 'Escape' && !elements.helpOverlay.hidden) {
+            e.preventDefault();
+            closeHelp();
+            return;
+          }
+          // ?: ヘルプ表示（入力中は除く）
+          if (e.key === '?' && !e.ctrlKey && !e.altKey && !isTypingContext(e.target)) {
+            e.preventDefault();
+            toggleHelp();
+            return;
+          }
           // Ctrl+S: 保存
           if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
@@ -869,6 +1062,9 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
             btn.appendChild(newIcon);
             feather.replace();
             setTimeout(() => btn.classList.remove('theme-icon-spin'), 400);
+          } else if (btn) {
+            const icon = btn.querySelector('.icon-fallback, [data-feather]');
+            if (icon) icon.textContent = theme === 'dark' ? '☀' : '☾';
           }
         }
 
@@ -889,14 +1085,54 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
 
         // --- ローカルストレージ ---
         function saveCode() {
+          const code = elements.htmlEditor.getValue();
           try {
-            localStorage.setItem(CONFIG.storageKey, elements.htmlEditor.getValue());
+            localStorage.setItem(CONFIG.storageKey, code);
+            setSaveStatus('saved');
+            if (code.length > CONFIG.quotaWarnChars) {
+              if (!state.quotaWarned) {
+                state.quotaWarned = true;
+                showTemporaryMessage('保存データがブラウザ保存の上限に近づいています。ファイルとして保存してください', 'error');
+              }
+            } else {
+              state.quotaWarned = false;
+            }
           } catch (error) {
+            setSaveStatus('error');
             if (error.name === 'QuotaExceededError') {
-              showTemporaryMessage('ストレージの容量が不足しています', 'error');
+              showTemporaryMessage('ストレージの容量が不足しています。ファイルとして保存してください (Ctrl+S)', 'error');
             }
             ErrorHandler.handle(error, 'ローカル保存', false);
           }
+        }
+
+        // --- 保存状態インジケータ ---
+        function setSaveStatus(status) {
+          const el = elements.saveStatus;
+          if (!el) return;
+          el.classList.remove('is-saved', 'is-error');
+          if (status === 'saving') {
+            el.textContent = '保存中…';
+          } else if (status === 'saved') {
+            el.textContent = '✓ 自動保存済み';
+            el.classList.add('is-saved');
+          } else if (status === 'error') {
+            el.textContent = '保存失敗';
+            el.classList.add('is-error');
+          }
+        }
+
+        // --- ヘルプモーダル ---
+        function toggleHelp() {
+          if (elements.helpOverlay.hidden) {
+            elements.helpOverlay.hidden = false;
+          } else {
+            closeHelp();
+          }
+        }
+
+        function closeHelp() {
+          elements.helpOverlay.hidden = true;
         }
 
         function loadSavedCode() {
@@ -923,17 +1159,30 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           showTemporaryMessage('やり直しました');
         }
 
+        function restoreContent(previousContent, message) {
+          elements.htmlEditor.setValue(previousContent);
+          updatePreview();
+          setSaveStatus('saving');
+          debouncedSaveCode();
+          showTemporaryMessage(message);
+        }
+
         function clearEditor() {
           if (elements.htmlEditor.getValue().trim() === '') {
             showTemporaryMessage('エディターは既に空です');
             return;
           }
 
+          const previousContent = elements.htmlEditor.getValue();
           const last = elements.htmlEditor.lastLine();
           elements.htmlEditor.replaceRange('', { line: 0, ch: 0 }, { line: last, ch: elements.htmlEditor.getLine(last).length });
           updatePreview();
+          setSaveStatus('saving');
           debouncedSaveCode();
-          showTemporaryMessage('エディターをクリアしました');
+          showTemporaryMessage('エディターをクリアしました', 'success', {
+            actionLabel: '元に戻す',
+            onAction: () => restoreContent(previousContent, 'クリアを元に戻しました')
+          });
         }
 
         async function copyEditor() {
@@ -972,17 +1221,22 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
               showTemporaryMessage('クリップボードが空です', 'error');
               return;
             }
+            const previousContent = elements.htmlEditor.getValue();
             elements.htmlEditor.setValue(text);
             updatePreview();
+            setSaveStatus('saving');
             debouncedSaveCode();
-            showTemporaryMessage('クリップボードから貼り付けました');
+            showTemporaryMessage('クリップボードから貼り付けました', 'success', {
+              actionLabel: '元に戻す',
+              onAction: () => restoreContent(previousContent, '貼り付けを元に戻しました')
+            });
           } catch (error) {
             ErrorHandler.handle(error, 'クリップボード貼り付け', false);
             showTemporaryMessage('貼り付けに失敗しました', 'error');
           }
         }
 
-        function showTemporaryMessage(message, type = 'success') {
+        function showTemporaryMessage(message, type = 'success', options = {}) {
           const existing = document.querySelector('.temp-message');
           if (existing) existing.remove();
           const messageDiv = document.createElement('div');
@@ -990,6 +1244,20 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           messageDiv.textContent = message;
           messageDiv.setAttribute('role', 'status');
           messageDiv.setAttribute('aria-live', 'polite');
+
+          // アクション付きトースト（「元に戻す」等）は長めに表示しクリック可能にする
+          const duration = options.duration || (options.actionLabel ? 6000 : 2000);
+          if (options.actionLabel && typeof options.onAction === 'function') {
+            messageDiv.classList.add('has-action');
+            const actionBtn = document.createElement('button');
+            actionBtn.className = 'toast-action';
+            actionBtn.textContent = options.actionLabel;
+            actionBtn.addEventListener('click', () => {
+              messageDiv.remove();
+              options.onAction();
+            });
+            messageDiv.appendChild(actionBtn);
+          }
 
           document.body.appendChild(messageDiv);
 
@@ -1000,7 +1268,7 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
                 document.body.removeChild(messageDiv);
               }
             }, 300);
-          }, 2000);
+          }, duration);
         }
 
         // --- ファイル読み込み・保存機能 ---
@@ -1019,9 +1287,15 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
           }
           const reader = new FileReader();
           reader.onload = (e) => {
+            const previousContent = elements.htmlEditor.getValue();
             elements.htmlEditor.setValue(e.target.result);
             updatePreview();
+            setSaveStatus('saving');
             debouncedSaveCode();
+            showTemporaryMessage('ファイルを読み込みました', 'success', {
+              actionLabel: '元に戻す',
+              onAction: () => restoreContent(previousContent, '読み込み前の内容に戻しました')
+            });
           };
           reader.onerror = () => showTemporaryMessage('ファイルの読み込みに失敗しました', 'error');
           reader.onabort = () => showTemporaryMessage('ファイルの読み込みが中断されました', 'error');
@@ -1152,9 +1426,23 @@ body.dragging-tb,body.dragging-tb *{cursor:row-resize!important}
         // 初期化実行
         initialize();
 
-        // Feather iconsを初期化
+        // Feather iconsを初期化（CDN失敗時はテキストフォールバック）
         if (typeof feather !== 'undefined') {
           feather.replace();
+        } else {
+          applyIconFallbacks();
+        }
+
+        function applyIconFallbacks() {
+          const ICON_FALLBACKS = {
+            'rotate-ccw': '↶', 'rotate-cw': '↷', 'copy': '⧉', 'clipboard': '⎘',
+            'trash-2': '✕', 'columns': '◫', 'minimize-2': '⬓', 'eye': '◉',
+            'moon': '☾', 'sun': '☀', 'upload': '↑', 'download': '↓', 'help-circle': '?'
+          };
+          document.querySelectorAll('[data-feather]').forEach((el) => {
+            el.textContent = ICON_FALLBACKS[el.getAttribute('data-feather')] || '•';
+            el.classList.add('icon-fallback');
+          });
         }
       })();
     </script>

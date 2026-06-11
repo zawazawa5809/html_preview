@@ -31,6 +31,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **レイアウト**: `lr`(左右分割), `tb`(上下分割), `po`(プレビューのみ)の3モード
 - **ダークテーマ**: `data-theme="dark"` on `<html>` + CSS変数のオーバーライド
 - **デバウンス保存**: lodash `_.debounce`で300ms遅延のlocalStorage書き込み
+- **保存ステータス表示**: ツールバーの`#save-status`に「保存中…/✓ 自動保存済み/保存失敗」を`setSaveStatus()`で表示
+- **Undoトースト**: 破壊的操作（クリア/貼り付け/ファイル読込/要素削除）は`showTemporaryMessage(msg, type, {actionLabel, onAction})`で「元に戻す」アクション付きトースト（6秒表示）を出す。復元は操作前の内容をクロージャで保持して`restoreContent()`
+- **容量事前警告**: `CONFIG.quotaWarnChars`(3.5M文字)超過で保存時に警告トースト（1回のみ、下回るとリセット）
+- **CDNフォールバック**: CodeMirror読み込み失敗時は`createTextareaFallback()`がCM互換アダプタを返しtextareaのまま動作+警告バナー。Feather失敗時は`applyIconFallbacks()`でUnicode文字に置換
+- **ショートカットヘルプ**: `?`キーまたはツールバーのヘルプボタンで`#help-overlay`モーダル表示。Escape/外側クリックで閉じる
 - **iframeプレビュー**: エディタ内容を`iframeDoc.open()/write()/close()`で描画
 - **gutterリサイズ**: mouse/touchイベント + overlay要素でパネル比率を変更
 
