@@ -1,0 +1,72 @@
+/*
+ * tokens.css — デザイントークン（Soft Charcoal palette）
+ *
+ * 1層目: --da-*  基礎パレット（テーマで変化しない原色定義）
+ * 2層目: --app-* セマンティックトークン（用途別。ダークテーマで上書き）
+ *
+ * 規約: アクセント色を変える場合は --da-secondary を変更すること。
+ * JS側の同値は js/pages/doceditor/design-mode.js の App.design.ACCENT。
+ */
+:root {
+  /* Foundation - warm charcoal greys */
+  --da-ink: #1e1f25;
+  --da-charcoal: #282a32;
+  --da-graphite: #353842;
+  --da-slate: #4a4e5c;
+  --da-ash: #6b7085;
+  --da-stone: #9498ab;
+  --da-cloud: #c4c8d6;
+  --da-mist: #e2e4ec;
+  --da-frost: #f0f1f5;
+  --da-snow: #f8f9fb;
+
+  /* Accent - muted blue */
+  --da-secondary: #5b8fcc;
+  --da-secondary-hover: #4a7db8;
+  --da-accent-muted: #5b8fcc26;
+  --da-accent-glow: #5b8fcc12;
+
+  /* Semantic */
+  --da-success: #4aba8a;
+  --da-warning: #d4943a;
+  --da-error: #d45a5a;
+
+  /* Motion & shadow */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+  /* App semantic tokens - light */
+  --app-text-primary: var(--da-ink);
+  --app-text-secondary: var(--da-slate);
+  --app-text-muted: var(--da-ash);
+  --app-bg-primary: var(--da-snow);
+  --app-bg-secondary: var(--da-frost);
+  --app-border-default: var(--da-mist);
+  --app-border-focus: var(--da-secondary);
+  --app-toolbar-bg: var(--da-charcoal);
+  --app-toolbar-text: var(--da-snow);
+  --app-toolbar-border: var(--da-graphite);
+  --app-panel-header-bg: var(--da-ink);
+  --app-panel-header-text: var(--da-snow);
+  --app-editor-bg: var(--da-snow);
+  --app-editor-text: var(--da-ink);
+  --app-editor-placeholder: var(--da-ash);
+  --app-gutter-bg: var(--da-ink);
+  --app-gutter-handle: var(--da-stone);
+}
+
+:root[data-theme="dark"] {
+  --app-text-primary: var(--da-frost);
+  --app-text-secondary: var(--da-stone);
+  --app-text-muted: var(--da-ash);
+  --app-bg-primary: var(--da-charcoal);
+  --app-bg-secondary: var(--da-ink);
+  --app-border-default: var(--da-graphite);
+  --app-toolbar-bg: var(--da-ink);
+  --app-toolbar-text: var(--da-frost);
+  --app-panel-header-text: var(--da-frost);
+  --app-editor-bg: var(--da-charcoal);
+  --app-editor-text: var(--da-frost);
+}

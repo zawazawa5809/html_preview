@@ -1,0 +1,622 @@
+/**
+ * pages/doceditor/main.js — DocEditor のエントリポイント
+ * （タブ切替 / Design Mode制御 / iframeメッセージ / DOM→ソース同期）
+ */
+(function () {
+  'use strict';
+  var App = window.App;
+  var design = App.design;
+
+  var CONFIG = {
+    storageKey: 'docEditorCode',
+    layoutStorageKey: 'docEditorLayout',
+    themeStorageKey: 'docEditorTheme',
+    debounceDelay: 300,
+    designSyncDelay: 600,
+    quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
+  };
+
+  var DEFAULT_CONTENT = [
+    '<!DOCTYPE html>',
+    '<html lang="ja">',
+    '<head>',
+    '  <meta charset="UTF-8">',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    '  <title>サンプルドキュメント</title>',
+    '  <style>',
+    '    body {',
+    '      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;',
+    '      margin: 0;',
+    '      padding: 32px;',
+    '      background: #f9fafb;',
+    '      color: #1f2937;',
+    '      line-height: 1.8;',
+    '    }',
+    '    .container {',
+    '      max-width: 800px;',
+    '      margin: 0 auto;',
+    '      background: #fff;',
+    '      padding: 48px;',
+    '      border-radius: 8px;',
+    '      box-shadow: 0 1px 3px rgba(0,0,0,0.1);',
+    '    }',
+    '    h1 { font-size: 28px; border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 24px; }',
+    '    h2 { font-size: 22px; color: #1e40af; margin-top: 32px; margin-bottom: 16px; }',
+    '    h3 { font-size: 18px; color: #374151; margin-top: 24px; margin-bottom: 12px; }',
+    '    p { margin-bottom: 16px; }',
+    '    table { width: 100%; border-collapse: collapse; margin: 16px 0; }',
+    '    th, td { border: 1px solid #d1d5db; padding: 10px 14px; text-align: left; }',
+    '    th { background: #f3f4f6; font-weight: 600; }',
+    '    .highlight { background: #fef3c7; padding: 16px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 16px 0; }',
+    '    ul, ol { margin: 16px 0; padding-left: 24px; }',
+    '    li { margin-bottom: 8px; }',
+    '  </style>',
+    '</head>',
+    '<body>',
+    '  <div class="container">',
+    '    <h1>プロジェクト報告書</h1>',
+    '    <p>このドキュメントはDocEditorのサンプルです。プレビューをクリックして要素を選択し、テキストをダブルクリックで編集できます。</p>',
+    '',
+    '    <h2>概要</h2>',
+    '    <p>DocEditorは、AIが生成したHTMLドキュメントを<strong>GUIで直感的に修正</strong>できるツールです。</p>',
+    '',
+    '    <div class="highlight">',
+    '      <strong>ポイント:</strong> テキストを選択すると書式設定ツールバーが表示されます。太字・斜体・下線・文字色などを変更できます。',
+    '    </div>',
+    '',
+    '    <h2>進捗状況</h2>',
+    '    <table>',
+    '      <thead>',
+    '        <tr>',
+    '          <th>タスク</th>',
+    '          <th>担当</th>',
+    '          <th>状況</th>',
+    '        </tr>',
+    '      </thead>',
+    '      <tbody>',
+    '        <tr>',
+    '          <td>要件定義</td>',
+    '          <td>田中</td>',
+    '          <td>完了</td>',
+    '        </tr>',
+    '        <tr>',
+    '          <td>設計</td>',
+    '          <td>佐藤</td>',
+    '          <td>進行中</td>',
+    '        </tr>',
+    '        <tr>',
+    '          <td>実装</td>',
+    '          <td>鈴木</td>',
+    '          <td>未着手</td>',
+    '        </tr>',
+    '      </tbody>',
+    '    </table>',
+    '',
+    '    <h2>次のステップ</h2>',
+    '    <ol>',
+    '      <li>デザインレビューの実施</li>',
+    '      <li>テスト計画の策定</li>',
+    '      <li>リリース準備</li>',
+    '    </ol>',
+    '',
+    '    <h3>備考</h3>',
+    '    <p>画像はデスクトップからドラッグ&ドロップで挿入できます。テーブルの行列追加はDesignパネルのTableセクションから操作できます。</p>',
+    '  </div>',
+    '</body>',
+    '</html>',
+  ].join('\n');
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  var iframe = $('preview-container');
+  var helpOverlay = $('help-overlay');
+
+  var state = {
+    designMode: false,
+    activeTab: 'code',
+    syncingFromDesign: false,
+    designToken:
+      window.crypto && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    highlightedLines: [],
+  };
+
+  /* ---- 基盤コントローラ ---- */
+  var setSaveStatus = App.createSaveStatus($('save-status'));
+  var store = App.createCodeStore({
+    key: CONFIG.storageKey,
+    quotaWarnChars: CONFIG.quotaWarnChars,
+    setStatus: setSaveStatus,
+    warn: function (msg) {
+      App.showToast(msg, 'error');
+    },
+  });
+  var theme = App.createTheme({
+    storageKey: CONFIG.themeStorageKey,
+    button: $('theme-toggle-btn'),
+  });
+  var layout = App.createLayout({
+    storageKey: CONFIG.layoutStorageKey,
+    splitView: $('split-view'),
+    editorPane: $('editor-container'),
+    previewPane: $('preview-panel'),
+    buttons: { lr: $('layout-lr-btn'), tb: $('layout-tb-btn'), po: $('layout-po-btn') },
+  });
+
+  var editor = App.createEditor(
+    $('html-editor'),
+    {
+      lineNumbers: true,
+      mode: 'htmlmixed',
+      lineWrapping: true,
+      foldGutter: true,
+      gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+      styleActiveLine: true,
+      extraKeys: { 'Alt-F': 'findPersistent' },
+    },
+    function onFallback() {
+      var div = document.createElement('div');
+      div.className = 'asset-warning';
+      div.setAttribute('role', 'alert');
+      div.textContent =
+        'エディタ拡張（CodeMirror）の読み込みに失敗したため、簡易エディタで動作しています。vendor/ フォルダが揃っているか確認してください。';
+      document.body.insertBefore(div, $('split-view'));
+    }
+  );
+
+  function beautifyHtml(html) {
+    if (typeof window.html_beautify === 'function') {
+      return window.html_beautify(html, {
+        indent_size: 2,
+        wrap_line_length: 0,
+        preserve_newlines: true,
+        max_preserve_newlines: 2,
+        indent_inner_html: true,
+      });
+    }
+    return html;
+  }
+
+  var scheduleSave = App.debounce(function () {
+    store.save(editor.getValue());
+  }, CONFIG.debounceDelay);
+  var scheduleSync = App.debounce(syncDesignToEditor, CONFIG.designSyncDelay);
+  var scheduleOutline = App.debounce(buildOutline, 500);
+
+  /* ---- プレビュー / 保存 ---- */
+  function updatePreview() {
+    App.renderPreview(iframe, editor.getValue());
+    if (state.designMode) design.injectInto(iframe.contentDocument, state.designToken);
+    scheduleOutline();
+  }
+
+  function commitChange() {
+    updatePreview();
+    setSaveStatus('saving');
+    scheduleSave();
+  }
+
+  function handleEditorInput() {
+    if (state.syncingFromDesign) {
+      state.syncingFromDesign = false;
+      return;
+    }
+    commitChange();
+  }
+
+  /* ---- DOM -> ソース同期 ---- */
+  function syncDesignToEditor() {
+    if (!state.designMode) return;
+    var iframeDoc = iframe.contentDocument;
+    if (!iframeDoc || !iframeDoc.documentElement) return;
+
+    var html = beautifyHtml(design.serializeCleanHtml(iframeDoc));
+
+    state.syncingFromDesign = true;
+    // changeイベントが発火しなかった場合でもフラグが残らないようにする
+    setTimeout(function () {
+      state.syncingFromDesign = false;
+    }, 100);
+    editor.operation(function () {
+      var last = editor.lastLine();
+      editor.replaceRange(html, { line: 0, ch: 0 }, { line: last, ch: editor.getLine(last).length });
+    });
+    setSaveStatus('saving');
+    scheduleSave();
+  }
+
+  /* ---- Design Mode ---- */
+  function getSelectedElement() {
+    var doc = iframe.contentDocument;
+    return doc ? doc.querySelector('[data-designer-selected]') : null;
+  }
+
+  function sendToIframe(message) {
+    var win = iframe.contentWindow;
+    if (!win) return;
+    message.token = state.designToken;
+    win.postMessage(message, '*');
+  }
+
+  /** 削除（全経路共通）。削除前のスナップショットで「元に戻す」を提供する */
+  function deleteSelected(el) {
+    scheduleSync.flush(); // 先行する編集を確定してからスナップショット
+    var previous = editor.getValue();
+    el.remove();
+    panel.clearSelection();
+    scheduleSync();
+    App.showToast('要素を削除しました', 'success', {
+      actionLabel: '元に戻す',
+      onAction: function () {
+        editor.setValue(previous);
+        commitChange();
+        App.showToast('削除を元に戻しました');
+      },
+    });
+  }
+
+  var panel = App.createDesignPanel({
+    getSelectedElement: getSelectedElement,
+    getIframeDoc: function () {
+      return iframe.contentDocument;
+    },
+    getIframeWin: function () {
+      return iframe.contentWindow;
+    },
+    scheduleSync: scheduleSync,
+    deleteSelected: deleteSelected,
+    sendToIframe: sendToIframe,
+  });
+
+  function switchTab(tab) {
+    if (tab === 'design' && !state.designMode) {
+      enableDesignMode();
+      return;
+    }
+    state.activeTab = tab;
+    $('tab-code').classList.toggle('active', tab === 'code');
+    $('tab-design').classList.toggle('active', tab === 'design');
+    $('tab-outline').classList.toggle('active', tab === 'outline');
+    $('code-panel').style.display = tab === 'code' ? '' : 'none';
+    $('design-toolbar').style.display = tab === 'design' ? '' : 'none';
+    $('outline-panel').style.display = tab === 'outline' ? '' : 'none';
+    if (tab === 'code') editor.refresh();
+    if (tab === 'outline') buildOutline();
+  }
+
+  function enableDesignMode() {
+    state.designMode = true;
+    $('design-mode-btn').classList.add('active');
+    $('preview-panel').classList.add('design-active');
+    switchTab('design');
+    panel.clearSelection();
+    var doc = iframe.contentDocument;
+    if (doc && doc.body) design.injectInto(doc, state.designToken);
+    App.showToast('デザインモード: ON');
+  }
+
+  function disableDesignMode() {
+    var doc = iframe.contentDocument;
+    if (doc && doc.body) {
+      var selected = doc.querySelector('[data-designer-selected]');
+      if (selected) selected.removeAttribute('data-designer-selected');
+    }
+    state.designMode = false;
+    $('design-mode-btn').classList.remove('active');
+    $('preview-panel').classList.remove('design-active');
+    switchTab('code');
+    updatePreview(); // designer注入物を除いたクリーンな状態で再描画
+    App.showToast('デザインモード: OFF');
+  }
+
+  function toggleDesignMode() {
+    if (state.designMode) disableDesignMode();
+    else enableDesignMode();
+  }
+
+  /* ---- iframe からのメッセージ ---- */
+  function handleDesignMessage(e) {
+    if (!e.data || e.data.token !== state.designToken) return;
+    switch (e.data.type) {
+      case '__design_click__':
+        panel.showSelection(e.data.tag, e.data.styles, e.data.ancestors);
+        highlightSourceLine(e.data.tag);
+        break;
+      case '__design_change__':
+        scheduleSync();
+        break;
+      case '__design_deselect__':
+        panel.clearSelection();
+        break;
+      case '__design_action__':
+        var el = getSelectedElement();
+        if (!el) return;
+        if (e.data.action === 'delete') {
+          deleteSelected(el);
+        } else if (design.elementAction(el, e.data.action)) {
+          scheduleSync();
+        }
+        break;
+      case '__design_toast__':
+        App.showToast(e.data.msg, e.data.err ? 'error' : undefined);
+        break;
+    }
+  }
+
+  /* ---- ソース行ハイライト ---- */
+  function highlightSourceLine(tag) {
+    state.highlightedLines.forEach(function (line) {
+      editor.removeLineClass(line, 'background', 'cm-design-highlight');
+    });
+    state.highlightedLines = [];
+
+    var tagName = tag.split(/[#.]/)[0];
+    var cursor = editor.getSearchCursor('<' + tagName, null, { caseFold: true });
+    if (cursor.findNext()) {
+      var line = cursor.from().line;
+      editor.addLineClass(line, 'background', 'cm-design-highlight');
+      state.highlightedLines.push(line);
+      if (state.activeTab === 'code') {
+        editor.scrollIntoView({ line: line, ch: 0 }, 100);
+      }
+    }
+  }
+
+  /* ---- アウトライン ---- */
+  function buildOutline() {
+    App.buildOutline(iframe.contentDocument, $('outline-list'), $('outline-empty'));
+  }
+
+  /* ---- エディター操作 ---- */
+  function setContentWithUndo(newContent, doneMessage, undoneMessage) {
+    var previous = editor.getValue();
+    editor.setValue(newContent);
+    commitChange();
+    App.showToast(doneMessage, 'success', {
+      actionLabel: '元に戻す',
+      onAction: function () {
+        editor.setValue(previous);
+        commitChange();
+        App.showToast(undoneMessage);
+      },
+    });
+  }
+
+  function clearEditor() {
+    if (editor.getValue().trim() === '') {
+      App.showToast('エディターは既に空です');
+      return;
+    }
+    setContentWithUndo('', 'エディターをクリアしました', 'クリアを元に戻しました');
+  }
+
+  function copyEditor() {
+    var content = editor.getValue();
+    if (!content.trim()) {
+      App.showToast('コピーする内容がありません');
+      return;
+    }
+    navigator.clipboard.writeText(content).then(
+      function () {
+        App.showToast('クリップボードにコピーしました');
+      },
+      function (error) {
+        App.logError('copy', error);
+        App.showToast('コピーに失敗しました', 'error');
+      }
+    );
+  }
+
+  function pasteEditor() {
+    navigator.clipboard.readText().then(
+      function (text) {
+        if (!text.trim()) {
+          App.showToast('クリップボードが空です', 'error');
+          return;
+        }
+        setContentWithUndo(text, 'クリップボードから貼り付けました', '貼り付けを元に戻しました');
+      },
+      function (error) {
+        App.logError('paste', error);
+        App.showToast('貼り付けに失敗しました', 'error');
+      }
+    );
+  }
+
+  function openFile(file) {
+    App.readHtmlFile(file, {
+      onLoad: function (text) {
+        setContentWithUndo(text, 'ファイルを読み込みました', '読み込み前の内容に戻しました');
+      },
+      onError: function (msg) {
+        App.showToast(msg, 'error');
+      },
+    });
+  }
+
+  function saveToFile() {
+    var html = editor.getValue();
+    App.downloadHtml(
+      html,
+      App.filenameFromTitle(html, {
+        fallback: 'doceditor_output',
+        suffix: '_' + App.jstTimestamp(),
+      })
+    );
+  }
+
+  /* ---- ヘルプモーダル ---- */
+  function toggleHelp() {
+    helpOverlay.hidden = !helpOverlay.hidden;
+  }
+  function closeHelp() {
+    helpOverlay.hidden = true;
+  }
+
+  /** Designタブで選択要素をDeleteキー削除してよい状況か */
+  function canDeleteByKey() {
+    if (!state.designMode || state.activeTab !== 'design') return false;
+    var active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA')) {
+      return false;
+    }
+    if (active === iframe) {
+      var doc = iframe.contentDocument;
+      var inner = doc && doc.activeElement;
+      if (inner && inner.isContentEditable) return false;
+    }
+    return !!getSelectedElement();
+  }
+
+  /* ---- キーボードショートカット（ヘルプ表もこの定義から生成） ---- */
+  var KEY_BINDINGS = [
+    {
+      key: 'Escape',
+      when: function () {
+        return !helpOverlay.hidden;
+      },
+      run: closeHelp,
+      help: null,
+    },
+    {
+      key: 'Escape',
+      when: panel.isDropdownOpen,
+      run: panel.closeDropdown,
+      help: null,
+    },
+    {
+      key: '?',
+      when: function (e) {
+        return !App.isTypingContext(e.target);
+      },
+      run: toggleHelp,
+      help: ['?', 'このヘルプを表示'],
+    },
+    { key: 's', ctrl: true, run: saveToFile, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
+    { key: 'z', ctrl: true, run: function () { editor.undo(); }, help: ['Ctrl + Z', '元に戻す'] },
+    { key: 'y', ctrl: true, run: function () { editor.redo(); }, help: ['Ctrl + Y', 'やり直す'] },
+    { key: 'Z', ctrl: true, shift: true, run: function () { editor.redo(); }, help: null },
+    { key: 'C', ctrl: true, shift: true, run: copyEditor, help: ['Ctrl + Shift + C', 'コードをコピー'] },
+    { key: 'V', ctrl: true, shift: true, run: pasteEditor, help: ['Ctrl + Shift + V', 'クリップボードから貼り付け'] },
+    { key: 'Delete', ctrl: true, run: clearEditor, help: ['Ctrl + Delete', 'エディターをクリア'] },
+    { key: '1', ctrl: true, run: function () { layout.apply('lr'); }, help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'] },
+    { key: '2', ctrl: true, run: function () { layout.apply('tb'); }, help: null },
+    { key: '3', ctrl: true, run: function () { layout.apply('po'); }, help: null },
+    {
+      key: 'd',
+      ctrl: true,
+      run: function (e) {
+        e.stopPropagation();
+        toggleDesignMode();
+      },
+      help: ['Ctrl + D', 'デザインモード切替'],
+    },
+    {
+      // CapsLock等で e.key が 'D' になるケース
+      key: 'D',
+      ctrl: true,
+      run: function (e) {
+        e.stopPropagation();
+        toggleDesignMode();
+      },
+      help: null,
+    },
+    {
+      key: 'Delete',
+      when: canDeleteByKey,
+      run: function () {
+        deleteSelected(getSelectedElement());
+      },
+      help: ['Delete', '選択中の要素を削除（デザインモード）'],
+    },
+  ];
+
+  var HELP_EXTRA_ROWS = [
+    ['Esc', '要素の選択解除・パネルを閉じる'],
+    ['Alt + F', 'コード内検索'],
+  ];
+
+  /* ---- 初期化 ---- */
+  function initialize() {
+    var saved = store.load();
+    editor.setValue(saved !== null ? saved : DEFAULT_CONTENT);
+    setSaveStatus('saved');
+    theme.init();
+    layout.init();
+    updatePreview();
+
+    editor.on('change', handleEditorInput);
+
+    App.initSplitDrag({
+      gutter: $('gutter'),
+      editorPane: $('editor-container'),
+      previewPane: $('preview-panel'),
+      getLayout: layout.current,
+    });
+
+    $('layout-lr-btn').addEventListener('click', function () { layout.apply('lr'); });
+    $('layout-tb-btn').addEventListener('click', function () { layout.apply('tb'); });
+    $('layout-po-btn').addEventListener('click', function () { layout.apply('po'); });
+    $('undo-btn').addEventListener('click', function () { editor.undo(); });
+    $('redo-btn').addEventListener('click', function () { editor.redo(); });
+    $('copy-btn').addEventListener('click', copyEditor);
+    $('paste-btn').addEventListener('click', pasteEditor);
+    $('clear-btn').addEventListener('click', clearEditor);
+    $('save-btn').addEventListener('click', saveToFile);
+    $('theme-toggle-btn').addEventListener('click', theme.toggle);
+    $('help-btn').addEventListener('click', toggleHelp);
+    $('design-mode-btn').addEventListener('click', toggleDesignMode);
+    $('print-btn').addEventListener('click', function () {
+      var win = iframe.contentWindow;
+      if (win) win.print();
+    });
+
+    $('open-btn').addEventListener('click', function () {
+      $('file-input').click();
+    });
+    $('file-input').addEventListener('change', function (e) {
+      openFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    var editorContainer = $('editor-container');
+    editorContainer.addEventListener('dragover', function (e) {
+      e.preventDefault();
+    });
+    editorContainer.addEventListener('drop', function (e) {
+      e.preventDefault();
+      openFile(e.dataTransfer.files[0]);
+    });
+
+    // タブ（design toolbar / outline panel はエディタ側カラムに移動して表示）
+    editorContainer.appendChild($('design-toolbar'));
+    editorContainer.appendChild($('outline-panel'));
+    $('tab-code').addEventListener('click', function () { switchTab('code'); });
+    $('tab-design').addEventListener('click', function () { switchTab('design'); });
+    $('tab-outline').addEventListener('click', function () { switchTab('outline'); });
+
+    helpOverlay.addEventListener('click', function (e) {
+      if (e.target === helpOverlay) closeHelp();
+    });
+    App.renderHelpRows($('help-table'), KEY_BINDINGS, HELP_EXTRA_ROWS);
+    document.addEventListener('keydown', App.createKeymap(KEY_BINDINGS), true);
+
+    window.addEventListener('message', handleDesignMessage);
+
+    // ドロップダウンの外側クリックで閉じる
+    document.addEventListener('click', function (e) {
+      if (panel.isDropdownOpen() && !e.target.closest('#dt-add-child') && !e.target.closest('#dt-add-dropdown')) {
+        panel.closeDropdown();
+      }
+    });
+
+    if (typeof window.feather !== 'undefined') window.feather.replace();
+
+    // Design Modeをデフォルト起動
+    enableDesignMode();
+  }
+
+  initialize();
+})();
