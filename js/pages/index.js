@@ -13,25 +13,13 @@
     quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
   };
 
-  var DEFAULT_CONTENT =
-    '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-    '<title>サンプルページ</title>' +
-    '<style>:root{--p:#1f2937;--s:#3b82f6;--w:#fff;--g:#f9fafb;--d:#111827}' +
-    'body{font-family:system-ui,sans-serif;font-size:16px;line-height:1.6;margin:0;padding:24px;background:var(--g);color:var(--d)}' +
-    '.c{max-width:800px;margin:0 auto;padding:32px;background:var(--w);border-radius:8px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}' +
-    'h1{font-size:32px;font-weight:700;color:var(--p);border-bottom:2px solid var(--s);padding-bottom:12px;margin-bottom:24px}' +
-    'p{margin-bottom:16px}' +
-    '.btn{background:var(--s);color:var(--w);border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font:inherit;transition:background .2s,transform .2s}' +
-    '.btn:hover{background:#2563eb;transform:translateY(-1px)}</style></head>' +
-    '<body><div class="c"><h1>HTMLプレビューアーへようこそ</h1>' +
-    '<p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p>' +
-    '<p>ツールバーのボタンでレイアウトを変更したり、ファイルを保存したりできます。</p>' +
-    '<button class="btn" onclick="alert(\'こんにちは！\')">クリックテスト</button></div></body></html>';
-
   function $(id) {
     return document.getElementById(id);
   }
+
+  // 初期サンプルはHTML内のデータブロック（#default-content）が単一情報源
+  var defaultContentEl = $('default-content');
+  var DEFAULT_CONTENT = defaultContentEl ? defaultContentEl.textContent.trim() : '';
 
   var iframe = $('preview-container');
   var helpOverlay = $('help-overlay');

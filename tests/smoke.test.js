@@ -69,6 +69,14 @@ describe.each(PAGES)('%s', (page) => {
     }
   });
 
+  it('初期サンプルがデータブロックとして埋め込まれている', () => {
+    const block = doc.getElementById('default-content');
+    expect(block).not.toBeNull();
+    expect(block.tagName).toBe('SCRIPT');
+    expect(block.getAttribute('type')).toBe('text/html'); // 実行されないデータブロック
+    expect(block.textContent).toContain('<!DOCTYPE html>');
+  });
+
   it('ツール間ナビゲーションが相互リンクされている', () => {
     const nav = [...doc.querySelectorAll('.toolbar-nav a')].map((a) => a.getAttribute('href'));
     expect(nav).toContain('index.html');

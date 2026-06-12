@@ -364,5 +364,96 @@
         <div class="help-modal-footer">Esc または外側クリックで閉じる</div>
       </div>
     </div>
+
+    <!-- 初期サンプル（type="text/html" のデータブロック。実行・描画はされない） -->
+    <script type="text/html" id="default-content">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>サンプルドキュメント</title>
+  <style>
+    body {
+      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+      margin: 0;
+      padding: 32px;
+      background: #f9fafb;
+      color: #1f2937;
+      line-height: 1.8;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 48px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    h1 { font-size: 28px; border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 24px; }
+    h2 { font-size: 22px; color: #1e40af; margin-top: 32px; margin-bottom: 16px; }
+    h3 { font-size: 18px; color: #374151; margin-top: 24px; margin-bottom: 12px; }
+    p { margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #d1d5db; padding: 10px 14px; text-align: left; }
+    th { background: #f3f4f6; font-weight: 600; }
+    .highlight { background: #fef3c7; padding: 16px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 16px 0; }
+    ul, ol { margin: 16px 0; padding-left: 24px; }
+    li { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>プロジェクト報告書</h1>
+    <p>このドキュメントはDocEditorのサンプルです。プレビューをクリックして要素を選択し、テキストをダブルクリックで編集できます。</p>
+
+    <h2>概要</h2>
+    <p>DocEditorは、AIが生成したHTMLドキュメントを<strong>GUIで直感的に修正</strong>できるツールです。</p>
+
+    <div class="highlight">
+      <strong>ポイント:</strong> テキストを選択すると書式設定ツールバーが表示されます。太字・斜体・下線・文字色などを変更できます。
+    </div>
+
+    <h2>進捗状況</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>タスク</th>
+          <th>担当</th>
+          <th>状況</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>要件定義</td>
+          <td>田中</td>
+          <td>完了</td>
+        </tr>
+        <tr>
+          <td>設計</td>
+          <td>佐藤</td>
+          <td>進行中</td>
+        </tr>
+        <tr>
+          <td>実装</td>
+          <td>鈴木</td>
+          <td>未着手</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>次のステップ</h2>
+    <ol>
+      <li>デザインレビューの実施</li>
+      <li>テスト計画の策定</li>
+      <li>リリース準備</li>
+    </ol>
+
+    <h3>備考</h3>
+    <p>画像はデスクトップからドラッグ&ドロップで挿入できます。テーブルの行列追加はDesignパネルのTableセクションから操作できます。</p>
+  </div>
+</body>
+</html>
+    </script>
   </body>
 </html>
