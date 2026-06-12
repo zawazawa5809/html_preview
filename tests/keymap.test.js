@@ -42,6 +42,30 @@ describe('App.createKeymap', () => {
     expect(undo).toHaveBeenCalledTimes(1);
   });
 
+  it('修飾キー無しの印字キーはShift込み入力でも発火する（US配列の ? = Shift+/ 対応）', () => {
+    const help = vi.fn();
+    const handler = App.createKeymap([
+      { key: '?', run: help, help: ['?', 'ヘルプ'] },
+    ]);
+    // US配列では '?' の入力時に shiftKey が true になる
+    handler(keyEvent('?', { shift: true }));
+    expect(help).toHaveBeenCalledTimes(1);
+    // shift 無しで '?' が打てる配列でも発火する
+    handler(keyEvent('?'));
+    expect(help).toHaveBeenCalledTimes(2);
+  });
+
+  it('Ctrl併用の印字キーはShift状態を厳密に区別したままにする', () => {
+    const layoutLr = vi.fn();
+    const handler = App.createKeymap([
+      { key: '1', ctrl: true, run: layoutLr, help: ['Ctrl + 1', '左右分割'] },
+    ]);
+    handler(keyEvent('1', { ctrl: true, shift: true }));
+    expect(layoutLr).not.toHaveBeenCalled();
+    handler(keyEvent('1', { ctrl: true }));
+    expect(layoutLr).toHaveBeenCalledTimes(1);
+  });
+
   it('when 条件が false ならスキップする', () => {
     const fn = vi.fn();
     let enabled = false;

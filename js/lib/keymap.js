@@ -15,7 +15,10 @@
         var b = bindings[i];
         if (e.key !== b.key) continue;
         if (!!b.ctrl !== e.ctrlKey) continue;
-        if (!!b.shift !== e.shiftKey) continue;
+        // Ctrl/Altを伴わない印字キー（'?' 等）はShift状態が e.key に反映済みのため
+        // 照合しない（US配列では '?' = Shift+/ で shiftKey=true になる）
+        var shiftAgnostic = !b.ctrl && !b.alt && b.key.length === 1;
+        if (!shiftAgnostic && !!b.shift !== e.shiftKey) continue;
         if (!!b.alt !== e.altKey) continue;
         if (b.when && !b.when(e)) continue;
         e.preventDefault();
