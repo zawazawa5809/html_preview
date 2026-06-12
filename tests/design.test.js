@@ -182,6 +182,105 @@ describe('注入ランタイム: Undo/Redoキーの親への中継', () => {
   });
 });
 
+describe('注入ランタイム: Selection/Rangeベースの書式ツールバー（execCommand脱却）', () => {
+  function selectText(node, start, end) {
+    const range = document.createRange();
+    range.setStart(node, start);
+    range.setEnd(node, end);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  const formatBtn = (cmd) => document.querySelector(`[data-cmd="${cmd}"]`);
+
+  it('注入スクリプトに execCommand が残っていない', () => {
+    expect(design().buildInjectionScript('t')).not.toContain('execCommand');
+  });
+
+  it('bold: 選択範囲を <strong> で囲む', () => {
+    document.body.innerHTML = '<p id="t">hello world</p>';
+    bootRuntime('tok-fmt');
+    selectText(document.getElementById('t').firstChild, 0, 5);
+    formatBtn('bold').click();
+    expect(document.getElementById('t').innerHTML).toBe('<strong>hello</strong> world');
+  });
+
+  it('bold: 全体選択の再適用でトグル解除される', () => {
+    document.body.innerHTML = '<p id="t"><strong>hello</strong> world</p>';
+    bootRuntime('tok-fmt2');
+    selectText(document.querySelector('strong').firstChild, 0, 5);
+    formatBtn('bold').click();
+    expect(document.getElementById('t').textContent).toBe('hello world');
+    expect(document.getElementById('t').querySelector('strong')).toBeNull();
+  });
+
+  it('bold: 部分選択のトグル解除は選択部分だけ書式を外す', () => {
+    document.body.innerHTML = '<p id="t"><strong>hello world</strong></p>';
+    bootRuntime('tok-fmt3');
+    selectText(document.querySelector('strong').firstChild, 0, 5);
+    formatBtn('bold').click();
+    expect(document.getElementById('t').innerHTML).toBe('hello<strong> world</strong>');
+  });
+
+  it('italic / underline / strikeThrough も対応タグで囲む', () => {
+    document.body.innerHTML = '<p id="t">abcdef</p>';
+    bootRuntime('tok-fmt4');
+    const text = () => document.getElementById('t');
+    selectText(text().firstChild, 0, 2);
+    formatBtn('italic').click();
+    expect(text().querySelector('em')).not.toBeNull();
+    selectText(text().lastChild, 0, 2);
+    formatBtn('underline').click();
+    expect(text().querySelector('u')).not.toBeNull();
+  });
+
+  it('文字色/背景色: スタイル付き <span> を適用する', () => {
+    document.body.innerHTML = '<p id="t">colored text</p>';
+    bootRuntime('tok-color');
+    selectText(document.getElementById('t').firstChild, 0, 7);
+    const inp = document.querySelector('input[data-for="foreColor"]');
+    inp.value = '#ff0000';
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    const span = document.getElementById('t').querySelector('span');
+    expect(span).not.toBeNull();
+    expect(span.style.color).toBeTruthy();
+    expect(span.textContent).toBe('colored');
+  });
+
+  it('リンク: prompt のURLで <a> を作る', () => {
+    document.body.innerHTML = '<p id="t">link me</p>';
+    window.prompt = vi.fn(() => 'https://example.com/');
+    bootRuntime('tok-link');
+    selectText(document.getElementById('t').firstChild, 0, 4);
+    formatBtn('createLink').click();
+    const a = document.getElementById('t').querySelector('a');
+    expect(a.getAttribute('href')).toBe('https://example.com/');
+    expect(a.textContent).toBe('link');
+  });
+
+  it('removeFormat: 選択範囲のネストした書式を除去する', () => {
+    document.body.innerHTML = '<p id="t"><strong><em>x</em>y</strong></p>';
+    bootRuntime('tok-clear');
+    const strong = document.querySelector('strong');
+    const range = document.createRange();
+    range.selectNodeContents(strong);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    formatBtn('removeFormat').click();
+    expect(document.getElementById('t').textContent).toBe('xy');
+    expect(document.getElementById('t').querySelector('strong,em')).toBeNull();
+  });
+
+  it('書式適用で __design_change__ が送られる', () => {
+    document.body.innerHTML = '<p id="t">notify</p>';
+    const messages = bootRuntime('tok-notify');
+    selectText(document.getElementById('t').firstChild, 0, 3);
+    formatBtn('bold').click();
+    expect(messages.some((m) => m.type === '__design_change__' && m.token === 'tok-notify')).toBe(true);
+  });
+});
+
 describe('注入ランタイム: クリック選択の出現順 (occurrence)', () => {
   it('同名タグの何番目かが __design_click__ に含まれる', () => {
     document.body.innerHTML = '<p id="p1">a</p><p id="p2">b</p>';

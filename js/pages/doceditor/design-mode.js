@@ -416,6 +416,20 @@
       true
     );
 
+    /** キャレット位置にプレーンテキストを挿入する（非推奨APIに依存しない） */
+    function insertTextAtSelection(text) {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      var range = sel.getRangeAt(0);
+      range.deleteContents();
+      var node = document.createTextNode(text);
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
     /* ---- dblclick: contentEditable でテキスト編集 ---- */
     document.addEventListener('dblclick', function (e) {
       var el = e.target;
@@ -426,7 +440,7 @@
       el.addEventListener('paste', function onPaste(pe) {
         pe.preventDefault();
         var text = (pe.clipboardData || window.clipboardData).getData('text/plain');
-        document.execCommand('insertText', false, text);
+        insertTextAtSelection(text);
       });
       el.addEventListener('blur', function onBlur() {
         el.contentEditable = 'false';
@@ -802,6 +816,135 @@
       characterData: true,
     });
 
+    /* ----------------------------------------------------------------
+     * 書式適用エンジン（Selection/Range実装。非推奨APIに依存しない）
+     * Range.extractContents() が部分選択の要素境界を自動分割する性質を使い、
+     * 「選択部分をラップ → 中と祖先の書式を整理」の手順で適用/解除する。
+     * ---------------------------------------------------------------- */
+    var FORMAT_WRAPPER = { bold: 'strong', italic: 'em', underline: 'u', strikeThrough: 's' };
+    var FORMAT_MATCH = {
+      bold: ['STRONG', 'B'],
+      italic: ['EM', 'I'],
+      underline: ['U'],
+      strikeThrough: ['S', 'STRIKE', 'DEL'],
+    };
+    var ALL_FORMAT_TAGS = ['STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE', 'DEL', 'FONT'];
+    var ALL_FORMAT_SELECTOR = 'strong,b,em,i,u,s,strike,del,font,span[style]';
+
+    function currentRange() {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+      return sel.getRangeAt(0);
+    }
+
+    /** node から上方向に、書式タグ（必要ならスタイル付きspanも）に一致する祖先を探す */
+    function closestFormat(node, tagNames, includeStyledSpan) {
+      var el = node && (node.nodeType === 1 ? node : node.parentElement);
+      while (el && el.tagName !== 'BODY') {
+        if (tagNames.indexOf(el.tagName) !== -1) return el;
+        if (includeStyledSpan && el.tagName === 'SPAN' && el.getAttribute('style')) return el;
+        el = el.parentElement;
+      }
+      return null;
+    }
+
+    function unwrapEl(el) {
+      var parent = el.parentNode;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+    }
+
+    function selectNodeContents(el) {
+      var sel = window.getSelection();
+      var r = document.createRange();
+      r.selectNodeContents(el);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+
+    /** 選択範囲を makeEl() の要素でラップし、その要素を返す（選択は中身に張り直す） */
+    function wrapRangeWith(makeEl) {
+      var range = currentRange();
+      if (!range) return null;
+      var wrapper = makeEl();
+      wrapper.appendChild(range.extractContents());
+      range.insertNode(wrapper);
+      selectNodeContents(wrapper);
+      return wrapper;
+    }
+
+    function isHollow(el) {
+      return !el.textContent && !el.firstElementChild;
+    }
+
+    /** node を ancestor の外側へ、間の要素を分割しながら引き上げる */
+    function liftOutOf(node, ancestor) {
+      var stopParent = ancestor.parentNode; // ancestorが途中で除去されても停止位置は不変
+      while (node.parentNode && node.parentNode !== stopParent) {
+        var parent = node.parentNode;
+        var after = parent.cloneNode(false);
+        while (node.nextSibling) after.appendChild(node.nextSibling);
+        parent.parentNode.insertBefore(node, parent.nextSibling);
+        if (after.firstChild && !isHollow(after)) parent.parentNode.insertBefore(after, node.nextSibling);
+        if (isHollow(parent)) parent.parentNode.removeChild(parent);
+      }
+    }
+
+    /** 選択範囲の内側と祖先から該当書式を取り除く（部分選択は該当部のみ解除） */
+    function clearFormatting(tagNames, selector, includeStyledSpan) {
+      var temp = wrapRangeWith(function () {
+        return document.createElement('span');
+      });
+      if (!temp) return;
+      var m;
+      while ((m = temp.querySelector(selector))) unwrapEl(m);
+      var anc;
+      while ((anc = closestFormat(temp.parentNode, tagNames, includeStyledSpan))) liftOutOf(temp, anc);
+      var first = temp.firstChild;
+      var last = temp.lastChild;
+      unwrapEl(temp);
+      if (first) {
+        var sel = window.getSelection();
+        var r = document.createRange();
+        r.setStartBefore(first);
+        r.setEndAfter(last);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+    }
+
+    /** bold等のトグル: 選択全体が同一書式内なら解除、そうでなければ適用 */
+    function toggleInline(cmd) {
+      var range = currentRange();
+      if (!range) return;
+      var names = FORMAT_MATCH[cmd];
+      var startEl = closestFormat(range.startContainer, names, false);
+      var endEl = closestFormat(range.endContainer, names, false);
+      if (startEl && startEl === endEl) {
+        clearFormatting(names, names.join(',').toLowerCase(), false);
+      } else {
+        wrapRangeWith(function () {
+          return document.createElement(FORMAT_WRAPPER[cmd]);
+        });
+      }
+    }
+
+    function applyColor(styleProp, value) {
+      wrapRangeWith(function () {
+        var span = document.createElement('span');
+        span.style[styleProp] = value;
+        return span;
+      });
+    }
+
+    function applyLink(url) {
+      wrapRangeWith(function () {
+        var a = document.createElement('a');
+        a.setAttribute('href', url);
+        return a;
+      });
+    }
+
     /* ---- テキスト選択時のフローティング書式ツールバー ---- */
     var FORMAT_BTN_BASE =
       'background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 7px;border-radius:4px;font-size:13px;min-width:26px;min-height:26px';
@@ -895,17 +1038,19 @@
       var cmd = btn.getAttribute('data-cmd');
       if (cmd === 'createLink') {
         var url = prompt('URL:');
-        if (url) document.execCommand('createLink', false, url);
+        if (url) applyLink(url);
       } else if (cmd === 'foreColor' || cmd === 'hiliteColor') {
         return; // color input側で処理
+      } else if (cmd === 'removeFormat') {
+        clearFormatting(ALL_FORMAT_TAGS, ALL_FORMAT_SELECTOR, true);
       } else {
-        document.execCommand(cmd, false, null);
+        toggleInline(cmd);
       }
       post({ type: '__design_change__' });
     });
     formatBar.querySelectorAll('input[type=color]').forEach(function (inp) {
       inp.addEventListener('input', function () {
-        document.execCommand(this.getAttribute('data-for'), false, this.value);
+        applyColor(this.getAttribute('data-for') === 'foreColor' ? 'color' : 'backgroundColor', this.value);
         post({ type: '__design_change__' });
       });
     });
