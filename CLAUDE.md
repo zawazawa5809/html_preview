@@ -40,6 +40,7 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 | `storage.js` | `safeGet/safeSet`, `createSaveStatus`, `createCodeStore`（容量警告含む） |
 | `toast.js` | `showToast(msg, type, {actionLabel, onAction})` |
 | `keymap.js` | `createKeymap`(宣言的KB定義), `renderHelpRows`(ヘルプ表生成), `isTypingContext` |
+| `modal.js` | `createModal`（フォーカストラップ + フォーカス復元付きモーダル制御） |
 | `editor.js` | `createEditor`（CodeMirror初期化。失敗時はtextareaアダプタにフォールバック） |
 | `theme.js` | `createTheme`（data-theme属性 + localStorage） |
 | `layout.js` | `createLayout`(lr/tb/po切替), `initSplitDrag`(gutterリサイズ) |
@@ -74,7 +75,10 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 - **iframeプレビュー**: `renderPreview()` が `iframeDoc.open()/write()/close()`。DocEditorはDesign Mode中の再描画時に `design.injectInto()` を再実行
 - **Design Modeメッセージ**: iframe↔親は `postMessage` + ランダムtoken検証（`__design_click__`/`__design_change__`/`__design_deselect__`/`__design_action__`/`__design_toast__`）
 - **DOM→ソース同期**: `serializeCleanHtml()` がdesigner注入物と編集用属性を除去 → `beautifyHtml()` → CodeMirror全置換。`syncingFromDesign` フラグでchangeループを抑止
-- **エディタフォールバック**: `createEditor` はCodeMirror不在時にCM互換textareaアダプタを返し `.asset-warning` バナーを表示（vendor/欠損などの異常系）
+- **エディタフォールバック**: `createEditor` はCodeMirror不在時にCM互換textareaアダプタを返し `.asset-warning` バナーを表示（vendor/欠損などの異常系）。undo/redoは自前履歴スタック
+- **初期サンプル**: 各ページの `<script type="text/html" id="default-content">` データブロックが単一情報源（JS側はtextContentを参照）
+- **ドラッグ操作**: gutter・リサイズハンドルはPointerEvent + `touch-action:none` で実装（mouse/touchの二重実装をしない）。要素並べ替えのみHTML5 DnD
+- **書式適用**: `document.execCommand` は使用禁止。designRuntime内のSelection/Rangeベースの書式エンジンを使う
 
 ## Testing Notes
 
