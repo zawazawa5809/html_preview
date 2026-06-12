@@ -117,10 +117,7 @@
     designMode: false,
     activeTab: 'code',
     syncingFromDesign: false,
-    designToken:
-      window.crypto && crypto.randomUUID
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2),
+    designToken: window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
     highlightedLines: [],
   };
 
@@ -496,15 +493,58 @@
       help: ['?', 'このヘルプを表示'],
     },
     { key: 's', ctrl: true, run: saveToFile, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
-    { key: 'z', ctrl: true, run: function () { editor.undo(); }, help: ['Ctrl + Z', '元に戻す'] },
-    { key: 'y', ctrl: true, run: function () { editor.redo(); }, help: ['Ctrl + Y', 'やり直す'] },
-    { key: 'Z', ctrl: true, shift: true, run: function () { editor.redo(); }, help: null },
+    {
+      key: 'z',
+      ctrl: true,
+      run: function () {
+        editor.undo();
+      },
+      help: ['Ctrl + Z', '元に戻す'],
+    },
+    {
+      key: 'y',
+      ctrl: true,
+      run: function () {
+        editor.redo();
+      },
+      help: ['Ctrl + Y', 'やり直す'],
+    },
+    {
+      key: 'Z',
+      ctrl: true,
+      shift: true,
+      run: function () {
+        editor.redo();
+      },
+      help: null,
+    },
     { key: 'C', ctrl: true, shift: true, run: copyEditor, help: ['Ctrl + Shift + C', 'コードをコピー'] },
     { key: 'V', ctrl: true, shift: true, run: pasteEditor, help: ['Ctrl + Shift + V', 'クリップボードから貼り付け'] },
     { key: 'Delete', ctrl: true, run: clearEditor, help: ['Ctrl + Delete', 'エディターをクリア'] },
-    { key: '1', ctrl: true, run: function () { layout.apply('lr'); }, help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'] },
-    { key: '2', ctrl: true, run: function () { layout.apply('tb'); }, help: null },
-    { key: '3', ctrl: true, run: function () { layout.apply('po'); }, help: null },
+    {
+      key: '1',
+      ctrl: true,
+      run: function () {
+        layout.apply('lr');
+      },
+      help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'],
+    },
+    {
+      key: '2',
+      ctrl: true,
+      run: function () {
+        layout.apply('tb');
+      },
+      help: null,
+    },
+    {
+      key: '3',
+      ctrl: true,
+      run: function () {
+        layout.apply('po');
+      },
+      help: null,
+    },
     {
       key: 'd',
       ctrl: true,
@@ -557,11 +597,21 @@
       getLayout: layout.current,
     });
 
-    $('layout-lr-btn').addEventListener('click', function () { layout.apply('lr'); });
-    $('layout-tb-btn').addEventListener('click', function () { layout.apply('tb'); });
-    $('layout-po-btn').addEventListener('click', function () { layout.apply('po'); });
-    $('undo-btn').addEventListener('click', function () { editor.undo(); });
-    $('redo-btn').addEventListener('click', function () { editor.redo(); });
+    $('layout-lr-btn').addEventListener('click', function () {
+      layout.apply('lr');
+    });
+    $('layout-tb-btn').addEventListener('click', function () {
+      layout.apply('tb');
+    });
+    $('layout-po-btn').addEventListener('click', function () {
+      layout.apply('po');
+    });
+    $('undo-btn').addEventListener('click', function () {
+      editor.undo();
+    });
+    $('redo-btn').addEventListener('click', function () {
+      editor.redo();
+    });
     $('copy-btn').addEventListener('click', copyEditor);
     $('paste-btn').addEventListener('click', pasteEditor);
     $('clear-btn').addEventListener('click', clearEditor);
@@ -593,9 +643,15 @@
     // タブ（design toolbar / outline panel はエディタ側カラムに移動して表示）
     editorContainer.appendChild($('design-toolbar'));
     editorContainer.appendChild($('outline-panel'));
-    $('tab-code').addEventListener('click', function () { switchTab('code'); });
-    $('tab-design').addEventListener('click', function () { switchTab('design'); });
-    $('tab-outline').addEventListener('click', function () { switchTab('outline'); });
+    $('tab-code').addEventListener('click', function () {
+      switchTab('code');
+    });
+    $('tab-design').addEventListener('click', function () {
+      switchTab('design');
+    });
+    $('tab-outline').addEventListener('click', function () {
+      switchTab('outline');
+    });
 
     helpOverlay.addEventListener('click', function (e) {
       if (e.target === helpOverlay) closeHelp();

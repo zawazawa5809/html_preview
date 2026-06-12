@@ -57,7 +57,7 @@
   --app-gutter-handle: var(--da-stone);
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   --app-text-primary: var(--da-frost);
   --app-text-secondary: var(--da-stone);
   --app-text-muted: var(--da-ash);

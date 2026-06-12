@@ -28,11 +28,19 @@
       },
       undo: function () {
         textarea.focus();
-        try { document.execCommand('undo'); } catch (e) { /* 非対応ブラウザは無視 */ }
+        try {
+          document.execCommand('undo');
+        } catch (e) {
+          /* 非対応ブラウザは無視 */
+        }
       },
       redo: function () {
         textarea.focus();
-        try { document.execCommand('redo'); } catch (e) { /* 非対応ブラウザは無視 */ }
+        try {
+          document.execCommand('redo');
+        } catch (e) {
+          /* 非対応ブラウザは無視 */
+        }
       },
       lastLine: function () {
         return textarea.value.split('\n').length - 1;
@@ -44,15 +52,21 @@
         textarea.value = text;
       },
       // Design Mode が利用する拡張API（フォールバック時はno-op）
-      operation: function (fn) { fn(); },
+      operation: function (fn) {
+        fn();
+      },
       refresh: function () {},
       scrollIntoView: function () {},
       addLineClass: function () {},
       removeLineClass: function () {},
       getSearchCursor: function () {
         return {
-          findNext: function () { return false; },
-          from: function () { return { line: 0, ch: 0 }; },
+          findNext: function () {
+            return false;
+          },
+          from: function () {
+            return { line: 0, ch: 0 };
+          },
         };
       },
     };

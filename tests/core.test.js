@@ -10,7 +10,9 @@ describe('App.debounce', () => {
   it('遅延後に1回だけ実行される', () => {
     const fn = vi.fn();
     const d = App.debounce(fn, 300);
-    d(); d(); d();
+    d();
+    d();
+    d();
     expect(fn).not.toHaveBeenCalled();
     vi.advanceTimersByTime(300);
     expect(fn).toHaveBeenCalledTimes(1);
@@ -19,7 +21,8 @@ describe('App.debounce', () => {
   it('最後の引数で呼ばれる', () => {
     const fn = vi.fn();
     const d = App.debounce(fn, 100);
-    d('a'); d('b');
+    d('a');
+    d('b');
     vi.advanceTimersByTime(100);
     expect(fn).toHaveBeenCalledWith('b');
   });
@@ -53,8 +56,7 @@ describe('App.debounce', () => {
 
 describe('App.escHtml', () => {
   it('HTML特殊文字をエスケープする', () => {
-    expect(App.escHtml('<a href="x">&\'</a>'))
-      .toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
+    expect(App.escHtml('<a href="x">&\'</a>')).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
   });
   it('null/undefined は空文字を返す', () => {
     expect(App.escHtml(null)).toBe('');

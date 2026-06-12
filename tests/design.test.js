@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../js/lib/core.js';
 import '../js/pages/doceditor/design-mode.js';
 
-const App = window.App;
 const design = () => window.App.design;
 
 beforeEach(() => {

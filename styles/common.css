@@ -12,7 +12,7 @@
 body {
   /* オフライン動作のためWebフォントは使わない（ADR-0001）。
      Noto Sans JP はOSにあれば使われる */
-  font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
@@ -83,14 +83,22 @@ body {
   color: var(--da-cloud);
   transition: color var(--duration-normal) var(--ease-out-expo);
 }
-.toolbar-button:hover { background-color: var(--da-graphite); }
-.toolbar-button:hover svg { color: var(--da-snow); }
-.toolbar-button:active { transform: scale(0.93); }
+.toolbar-button:hover {
+  background-color: var(--da-graphite);
+}
+.toolbar-button:hover svg {
+  color: var(--da-snow);
+}
+.toolbar-button:active {
+  transform: scale(0.93);
+}
 .toolbar-button.active {
   background: var(--da-accent-muted);
   border-color: var(--da-secondary);
 }
-.toolbar-button.active svg { color: var(--da-snow); }
+.toolbar-button.active svg {
+  color: var(--da-snow);
+}
 .toolbar-button:focus-visible {
   outline: 2px solid var(--da-secondary);
   outline-offset: 2px;
@@ -140,11 +148,17 @@ body {
   user-select: none;
   transition: color var(--duration-normal) var(--ease-out-expo);
 }
-.save-status.is-saved { color: var(--da-success); }
-.save-status.is-error { color: var(--da-error); }
+.save-status.is-saved {
+  color: var(--da-success);
+}
+.save-status.is-error {
+  color: var(--da-error);
+}
 
 @media (max-width: 600px) {
-  .toolbar { flex-wrap: wrap; }
+  .toolbar {
+    flex-wrap: wrap;
+  }
   .toolbar-menu {
     width: 100%;
     justify-content: center;
@@ -160,8 +174,12 @@ body {
   position: relative;
   overflow: hidden;
 }
-.split-view.layout-lr { flex-direction: row; }
-.split-view.layout-tb { flex-direction: column; }
+.split-view.layout-lr {
+  flex-direction: row;
+}
+.split-view.layout-tb {
+  flex-direction: column;
+}
 
 .editor-container,
 .preview-panel {
@@ -175,16 +193,34 @@ body {
     height 250ms var(--ease-out-expo);
 }
 
-.editor-container { background-color: var(--app-editor-bg); }
-.split-view.layout-lr .editor-container { width: 50%; height: 100%; }
-.split-view.layout-tb .editor-container { width: 100%; height: 50%; }
+.editor-container {
+  background-color: var(--app-editor-bg);
+}
+.split-view.layout-lr .editor-container {
+  width: 50%;
+  height: 100%;
+}
+.split-view.layout-tb .editor-container {
+  width: 100%;
+  height: 50%;
+}
 
-.preview-panel { background-color: var(--app-bg-primary); }
-.split-view.layout-lr .preview-panel { width: 50%; height: 100%; }
-.split-view.layout-tb .preview-panel { width: 100%; height: 50%; }
+.preview-panel {
+  background-color: var(--app-bg-primary);
+}
+.split-view.layout-lr .preview-panel {
+  width: 50%;
+  height: 100%;
+}
+.split-view.layout-tb .preview-panel {
+  width: 100%;
+  height: 50%;
+}
 
 .split-view.layout-po .editor-container,
-.split-view.layout-po .gutter { display: none; }
+.split-view.layout-po .gutter {
+  display: none;
+}
 .split-view.layout-po .preview-panel {
   width: 100% !important;
   height: 100% !important;
@@ -215,7 +251,7 @@ body {
   border-radius: 0 0 4px 4px;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
 }
-:root[data-theme="dark"] .editor-content-wrapper {
+:root[data-theme='dark'] .editor-content-wrapper {
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -225,7 +261,7 @@ body {
   border: none;
   border-radius: 0;
   padding: 12px 16px;
-  font-family: "Noto Sans Mono", Consolas, "Courier New", monospace;
+  font-family: 'Noto Sans Mono', Consolas, 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.5;
   resize: none;
@@ -249,9 +285,15 @@ body {
   height: 100%;
   flex-grow: 1;
 }
-.CodeMirror-activeline-background { background: var(--da-accent-glow) !important; }
-.CodeMirror-selected { background: var(--da-accent-muted) !important; }
-.CodeMirror-focused .CodeMirror-selected { background: var(--da-accent-muted) !important; }
+.CodeMirror-activeline-background {
+  background: var(--da-accent-glow) !important;
+}
+.CodeMirror-selected {
+  background: var(--da-accent-muted) !important;
+}
+.CodeMirror-focused .CodeMirror-selected {
+  background: var(--da-accent-muted) !important;
+}
 
 .panel-content {
   flex-grow: 1;
@@ -293,10 +335,14 @@ body {
   padding: 4px 0;
   background-clip: content-box;
 }
-.gutter:hover { background-color: var(--da-secondary); }
-.gutter.dragging { box-shadow: 0 0 8px var(--da-accent-muted); }
+.gutter:hover {
+  background-color: var(--da-secondary);
+}
+.gutter.dragging {
+  box-shadow: 0 0 8px var(--da-accent-muted);
+}
 .gutter::before {
-  content: "";
+  content: '';
   position: absolute;
   border-radius: 2px;
   transition: background-color var(--duration-normal) var(--ease-out-expo);
@@ -325,9 +371,13 @@ body {
 }
 
 body.dragging-lr,
-body.dragging-lr * { cursor: col-resize !important; }
+body.dragging-lr * {
+  cursor: col-resize !important;
+}
 body.dragging-tb,
-body.dragging-tb * { cursor: row-resize !important; }
+body.dragging-tb * {
+  cursor: row-resize !important;
+}
 
 .resize-overlay {
   position: absolute;
@@ -337,12 +387,24 @@ body.dragging-tb * { cursor: row-resize !important; }
 
 /* ---- Toast ---- */
 @keyframes toast-slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 @keyframes toast-fade-out {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(-8px); opacity: 0; }
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
 }
 .temp-message {
   position: fixed;
@@ -359,9 +421,15 @@ body.dragging-tb * { cursor: row-resize !important; }
   box-shadow: var(--shadow-md);
   animation: toast-slide-in 300ms var(--ease-out-expo);
 }
-.temp-message[role="status"] { border-left: 3px solid var(--da-success); }
-.temp-message.toast-error[role="status"] { border-left: 3px solid var(--da-error); }
-.temp-message.toast-out { animation: toast-fade-out 300ms var(--ease-out-expo) forwards; }
+.temp-message[role='status'] {
+  border-left: 3px solid var(--da-success);
+}
+.temp-message.toast-error[role='status'] {
+  border-left: 3px solid var(--da-error);
+}
+.temp-message.toast-out {
+  animation: toast-fade-out 300ms var(--ease-out-expo) forwards;
+}
 .temp-message.has-action {
   pointer-events: auto;
   display: flex;
@@ -381,13 +449,21 @@ body.dragging-tb * { cursor: row-resize !important; }
   white-space: nowrap;
   transition: background-color var(--duration-normal) var(--ease-out-expo);
 }
-.toast-action:hover { background: var(--da-accent-muted); }
+.toast-action:hover {
+  background: var(--da-accent-muted);
+}
 
 /* ---- Theme toggle ---- */
-.theme-icon-spin svg { animation: theme-spin 400ms var(--ease-out-expo); }
+.theme-icon-spin svg {
+  animation: theme-spin 400ms var(--ease-out-expo);
+}
 @keyframes theme-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---- アセット読み込み失敗バナー（vendor欠損などの異常系） ---- */
@@ -409,7 +485,9 @@ body.dragging-tb * { cursor: row-resize !important; }
   align-items: center;
   justify-content: center;
 }
-.help-overlay[hidden] { display: none; }
+.help-overlay[hidden] {
+  display: none;
+}
 .help-modal {
   background: var(--app-bg-primary);
   color: var(--app-text-primary);

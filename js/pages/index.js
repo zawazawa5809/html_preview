@@ -58,18 +58,14 @@
     buttons: { lr: $('layout-lr-btn'), tb: $('layout-tb-btn'), po: $('layout-po-btn') },
   });
 
-  var editor = App.createEditor(
-    $('html-editor'),
-    { lineNumbers: true, mode: 'htmlmixed' },
-    function onFallback() {
-      var div = document.createElement('div');
-      div.className = 'asset-warning';
-      div.setAttribute('role', 'alert');
-      div.textContent =
-        'エディタ拡張（CodeMirror）の読み込みに失敗したため、簡易エディタで動作しています。vendor/ フォルダが揃っているか確認してください。';
-      document.body.insertBefore(div, $('split-view'));
-    }
-  );
+  var editor = App.createEditor($('html-editor'), { lineNumbers: true, mode: 'htmlmixed' }, function onFallback() {
+    var div = document.createElement('div');
+    div.className = 'asset-warning';
+    div.setAttribute('role', 'alert');
+    div.textContent =
+      'エディタ拡張（CodeMirror）の読み込みに失敗したため、簡易エディタで動作しています。vendor/ フォルダが揃っているか確認してください。';
+    document.body.insertBefore(div, $('split-view'));
+  });
 
   var scheduleSave = App.debounce(function () {
     store.save(editor.getValue());
@@ -181,15 +177,58 @@
       help: ['?', 'このヘルプを表示'],
     },
     { key: 's', ctrl: true, run: saveToFile, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
-    { key: 'z', ctrl: true, run: function () { editor.undo(); }, help: ['Ctrl + Z', '元に戻す'] },
-    { key: 'y', ctrl: true, run: function () { editor.redo(); }, help: ['Ctrl + Y', 'やり直す'] },
-    { key: 'Z', ctrl: true, shift: true, run: function () { editor.redo(); }, help: null },
+    {
+      key: 'z',
+      ctrl: true,
+      run: function () {
+        editor.undo();
+      },
+      help: ['Ctrl + Z', '元に戻す'],
+    },
+    {
+      key: 'y',
+      ctrl: true,
+      run: function () {
+        editor.redo();
+      },
+      help: ['Ctrl + Y', 'やり直す'],
+    },
+    {
+      key: 'Z',
+      ctrl: true,
+      shift: true,
+      run: function () {
+        editor.redo();
+      },
+      help: null,
+    },
     { key: 'C', ctrl: true, shift: true, run: copyEditor, help: ['Ctrl + Shift + C', 'コードをコピー'] },
     { key: 'V', ctrl: true, shift: true, run: pasteEditor, help: ['Ctrl + Shift + V', 'クリップボードから貼り付け'] },
     { key: 'Delete', ctrl: true, run: clearEditor, help: ['Ctrl + Delete', 'エディターをクリア'] },
-    { key: '1', ctrl: true, run: function () { layout.apply('lr'); }, help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'] },
-    { key: '2', ctrl: true, run: function () { layout.apply('tb'); }, help: null },
-    { key: '3', ctrl: true, run: function () { layout.apply('po'); }, help: null },
+    {
+      key: '1',
+      ctrl: true,
+      run: function () {
+        layout.apply('lr');
+      },
+      help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'],
+    },
+    {
+      key: '2',
+      ctrl: true,
+      run: function () {
+        layout.apply('tb');
+      },
+      help: null,
+    },
+    {
+      key: '3',
+      ctrl: true,
+      run: function () {
+        layout.apply('po');
+      },
+      help: null,
+    },
   ];
 
   /* ---- 初期化 ---- */
@@ -210,11 +249,21 @@
       getLayout: layout.current,
     });
 
-    $('layout-lr-btn').addEventListener('click', function () { layout.apply('lr'); });
-    $('layout-tb-btn').addEventListener('click', function () { layout.apply('tb'); });
-    $('layout-po-btn').addEventListener('click', function () { layout.apply('po'); });
-    $('undo-btn').addEventListener('click', function () { editor.undo(); });
-    $('redo-btn').addEventListener('click', function () { editor.redo(); });
+    $('layout-lr-btn').addEventListener('click', function () {
+      layout.apply('lr');
+    });
+    $('layout-tb-btn').addEventListener('click', function () {
+      layout.apply('tb');
+    });
+    $('layout-po-btn').addEventListener('click', function () {
+      layout.apply('po');
+    });
+    $('undo-btn').addEventListener('click', function () {
+      editor.undo();
+    });
+    $('redo-btn').addEventListener('click', function () {
+      editor.redo();
+    });
     $('copy-btn').addEventListener('click', copyEditor);
     $('paste-btn').addEventListener('click', pasteEditor);
     $('clear-btn').addEventListener('click', clearEditor);

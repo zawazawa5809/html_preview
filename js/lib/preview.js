@@ -6,10 +6,7 @@
   var App = (window.App = window.App || {});
 
   function getIframeDoc(iframe) {
-    return (
-      iframe.contentDocument ||
-      (iframe.contentWindow && iframe.contentWindow.document)
-    );
+    return iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
   }
 
   /**

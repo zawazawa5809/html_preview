@@ -14,25 +14,51 @@
   /** 選択UIのアクセント色。styles/tokens.css の --da-secondary と同値 */
   design.ACCENT = '#5b8fcc';
 
-  design.EXCLUDED_TAGS = [
-    'HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT', 'BR',
-  ];
+  design.EXCLUDED_TAGS = ['HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT', 'BR'];
 
   /** スタイルパネルと注入スクリプトが共有する computedStyle 収集対象 */
   design.STYLE_PROPS = [
-    'backgroundColor', 'color', 'borderColor',
-    'fontSize', 'fontWeight', 'textAlign', 'lineHeight',
-    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-    'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-    'width', 'height', 'borderRadius', 'opacity', 'display', 'overflow',
+    'backgroundColor',
+    'color',
+    'borderColor',
+    'fontSize',
+    'fontWeight',
+    'textAlign',
+    'lineHeight',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'marginTop',
+    'marginRight',
+    'marginBottom',
+    'marginLeft',
+    'width',
+    'height',
+    'borderRadius',
+    'opacity',
+    'display',
+    'overflow',
   ];
 
   /** スタイルコピー/ペーストの対象プロパティ */
   design.COPY_STYLE_PROPS = [
-    'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle',
-    'fontSize', 'fontWeight', 'fontFamily', 'textAlign', 'lineHeight',
-    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-    'borderRadius', 'opacity',
+    'backgroundColor',
+    'color',
+    'borderColor',
+    'borderWidth',
+    'borderStyle',
+    'fontSize',
+    'fontWeight',
+    'fontFamily',
+    'textAlign',
+    'lineHeight',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'borderRadius',
+    'opacity',
   ];
 
   /** designer注入物・編集用属性を取り除いた完全なHTMLを返す */
@@ -97,16 +123,31 @@
       return s;
     },
     'flex-row': function (doc) {
-      return buildItems(doc, 'display:flex;gap:8px', 3,
-        'flex:1;padding:12px;background:#f0f1f5;border-radius:4px;text-align:center', 'Item ');
+      return buildItems(
+        doc,
+        'display:flex;gap:8px',
+        3,
+        'flex:1;padding:12px;background:#f0f1f5;border-radius:4px;text-align:center',
+        'Item '
+      );
     },
     'flex-col': function (doc) {
-      return buildItems(doc, 'display:flex;flex-direction:column;gap:8px', 3,
-        'padding:12px;background:#f0f1f5;border-radius:4px', 'Item ');
+      return buildItems(
+        doc,
+        'display:flex;flex-direction:column;gap:8px',
+        3,
+        'padding:12px;background:#f0f1f5;border-radius:4px',
+        'Item '
+      );
     },
     'grid-2col': function (doc) {
-      return buildItems(doc, 'display:grid;grid-template-columns:1fr 1fr;gap:8px', 4,
-        'padding:12px;background:#f0f1f5;border-radius:4px;text-align:center', 'Cell ');
+      return buildItems(
+        doc,
+        'display:grid;grid-template-columns:1fr 1fr;gap:8px',
+        4,
+        'padding:12px;background:#f0f1f5;border-radius:4px;text-align:center',
+        'Cell '
+      );
     },
     divider: function (doc) {
       return doc.createElement('hr');
@@ -197,19 +238,29 @@
   design.injectionCss = function () {
     var ACCENT = design.ACCENT;
     return (
-      '[data-designer-selected]{outline:2px dashed ' + ACCENT + '!important;outline-offset:2px!important}' +
+      '[data-designer-selected]{outline:2px dashed ' +
+      ACCENT +
+      '!important;outline-offset:2px!important}' +
       '.designer-hover-overlay{position:fixed;pointer-events:none;background:rgba(91,143,204,0.08);border:1px solid rgba(91,143,204,0.4);z-index:99998;transition:all 50ms}' +
       '.designer-hover-label{position:fixed;pointer-events:none;background:#1e1f25;color:#e2e4ec;font:11px/1.3 "Noto Sans Mono",Consolas,monospace;padding:2px 6px;border-radius:3px;z-index:99999;white-space:nowrap}' +
       '[draggable="true"]{cursor:grab}' +
       '.designer-dragging{opacity:0.3!important}' +
-      '.designer-drop-before{box-shadow:inset 0 3px 0 0 ' + ACCENT + '!important}' +
-      '.designer-drop-after{box-shadow:inset 0 -3px 0 0 ' + ACCENT + '!important}' +
-      '.designer-drop-inside{outline:2px solid ' + ACCENT + '!important;background:rgba(91,143,204,0.06)!important}' +
+      '.designer-drop-before{box-shadow:inset 0 3px 0 0 ' +
+      ACCENT +
+      '!important}' +
+      '.designer-drop-after{box-shadow:inset 0 -3px 0 0 ' +
+      ACCENT +
+      '!important}' +
+      '.designer-drop-inside{outline:2px solid ' +
+      ACCENT +
+      '!important;background:rgba(91,143,204,0.06)!important}' +
       '.designer-action-bar{position:fixed;display:flex;gap:2px;background:#1e1f25;border:1px solid #353842;border-radius:6px;padding:3px;z-index:99997;box-shadow:0 4px 12px rgba(0,0,0,0.3)}' +
       '.designer-action-bar button{background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 6px;border-radius:4px;line-height:1;display:flex;align-items:center;justify-content:center;min-width:26px;min-height:26px}' +
       '.designer-action-bar button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
       '.designer-action-bar button:hover{background:#353842;color:#f0f1f5}' +
-      '.designer-resize-handle{position:fixed;width:8px;height:8px;background:' + ACCENT + ';border:1px solid #fff;border-radius:50%;z-index:99996;pointer-events:auto;box-shadow:0 0 3px rgba(0,0,0,0.3)}' +
+      '.designer-resize-handle{position:fixed;width:8px;height:8px;background:' +
+      ACCENT +
+      ';border:1px solid #fff;border-radius:50%;z-index:99996;pointer-events:auto;box-shadow:0 0 3px rgba(0,0,0,0.3)}' +
       ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
         .map(function (dir) {
           return '.designer-resize-handle[data-dir="' + dir + '"]{cursor:' + dir + '-resize}';
@@ -385,7 +436,7 @@
 
     /* ---- floating action bar ---- */
     var ACTION_ICONS = {
-      'delete':
+      delete:
         '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
       duplicate:
         '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
@@ -689,7 +740,9 @@
         if (m.target && m.target.hasAttribute && m.target.hasAttribute('data-designer-injected')) return false;
         if (
           m.type === 'attributes' &&
-          ['data-designer-injected', 'data-designer-selected', 'contenteditable', 'draggable'].indexOf(m.attributeName) !== -1
+          ['data-designer-injected', 'data-designer-selected', 'contenteditable', 'draggable'].indexOf(
+            m.attributeName
+          ) !== -1
         ) {
           return false;
         }
@@ -720,10 +773,27 @@
       { cmd: 'underline', title: '下線', label: 'U', css: 'text-decoration:underline' },
       { cmd: 'strikeThrough', title: '取消線', label: 'S', css: 'text-decoration:line-through' },
       { sep: true },
-      { cmd: 'foreColor', title: '文字色', label: 'A', css: 'font-size:11px;position:relative;padding:2px 4px', color: '#ff0000' },
-      { cmd: 'hiliteColor', title: '背景色', label: 'H', css: 'font-size:11px;position:relative;padding:2px 4px;background:#ffeb3b;color:#1e1f25', color: '#ffeb3b' },
+      {
+        cmd: 'foreColor',
+        title: '文字色',
+        label: 'A',
+        css: 'font-size:11px;position:relative;padding:2px 4px',
+        color: '#ff0000',
+      },
+      {
+        cmd: 'hiliteColor',
+        title: '背景色',
+        label: 'H',
+        css: 'font-size:11px;position:relative;padding:2px 4px;background:#ffeb3b;color:#1e1f25',
+        color: '#ffeb3b',
+      },
       { sep: true },
-      { cmd: 'createLink', title: 'リンク', label: 'Link', css: 'font-size:12px;color:#5b8fcc;text-decoration:underline' },
+      {
+        cmd: 'createLink',
+        title: 'リンク',
+        label: 'Link',
+        css: 'font-size:12px;color:#5b8fcc;text-decoration:underline',
+      },
       { cmd: 'removeFormat', title: '書式クリア', label: '✕', css: 'font-size:12px;color:#d45a5a' },
     ];
 
@@ -733,11 +803,25 @@
     formatBar.innerHTML = FORMAT_BUTTONS.map(function (b) {
       if (b.sep) return '<span style="width:1px;background:#353842;margin:2px 2px;align-self:stretch"></span>';
       var colorInput = b.color
-        ? '<input type="color" data-for="' + b.cmd + '" value="' + b.color + '" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"/>'
+        ? '<input type="color" data-for="' +
+          b.cmd +
+          '" value="' +
+          b.color +
+          '" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"/>'
         : '';
       return (
-        '<button data-cmd="' + b.cmd + '" title="' + b.title + '" style="' + FORMAT_BTN_BASE + ';' + b.css + '">' +
-        b.label + colorInput + '</button>'
+        '<button data-cmd="' +
+        b.cmd +
+        '" title="' +
+        b.title +
+        '" style="' +
+        FORMAT_BTN_BASE +
+        ';' +
+        b.css +
+        '">' +
+        b.label +
+        colorInput +
+        '</button>'
       );
     }).join('');
 
