@@ -18,9 +18,7 @@ function keyEvent(key, mods = {}) {
 describe('App.createKeymap', () => {
   it('修飾キーとキーが一致したバインディングを実行し preventDefault する', () => {
     const save = vi.fn();
-    const handler = App.createKeymap([
-      { key: 's', ctrl: true, run: save, help: ['Ctrl + S', '保存'] },
-    ]);
+    const handler = App.createKeymap([{ key: 's', ctrl: true, run: save, help: ['Ctrl + S', '保存'] }]);
     const e = keyEvent('s', { ctrl: true });
     handler(e);
     expect(save).toHaveBeenCalledTimes(1);
@@ -44,9 +42,7 @@ describe('App.createKeymap', () => {
 
   it('修飾キー無しの印字キーはShift込み入力でも発火する（US配列の ? = Shift+/ 対応）', () => {
     const help = vi.fn();
-    const handler = App.createKeymap([
-      { key: '?', run: help, help: ['?', 'ヘルプ'] },
-    ]);
+    const handler = App.createKeymap([{ key: '?', run: help, help: ['?', 'ヘルプ'] }]);
     // US配列では '?' の入力時に shiftKey が true になる
     handler(keyEvent('?', { shift: true }));
     expect(help).toHaveBeenCalledTimes(1);
@@ -57,9 +53,7 @@ describe('App.createKeymap', () => {
 
   it('Ctrl併用の印字キーはShift状態を厳密に区別したままにする', () => {
     const layoutLr = vi.fn();
-    const handler = App.createKeymap([
-      { key: '1', ctrl: true, run: layoutLr, help: ['Ctrl + 1', '左右分割'] },
-    ]);
+    const handler = App.createKeymap([{ key: '1', ctrl: true, run: layoutLr, help: ['Ctrl + 1', '左右分割'] }]);
     handler(keyEvent('1', { ctrl: true, shift: true }));
     expect(layoutLr).not.toHaveBeenCalled();
     handler(keyEvent('1', { ctrl: true }));
@@ -69,9 +63,7 @@ describe('App.createKeymap', () => {
   it('when 条件が false ならスキップする', () => {
     const fn = vi.fn();
     let enabled = false;
-    const handler = App.createKeymap([
-      { key: '?', run: fn, when: () => enabled, help: ['?', 'ヘルプ'] },
-    ]);
+    const handler = App.createKeymap([{ key: '?', run: fn, when: () => enabled, help: ['?', 'ヘルプ'] }]);
     handler(keyEvent('?'));
     expect(fn).not.toHaveBeenCalled();
     enabled = true;
@@ -90,10 +82,14 @@ describe('App.createKeymap', () => {
 describe('App.renderHelpRows', () => {
   it('バインディング定義からヘルプ表の行を生成する（実装とヘルプの一元管理）', () => {
     const table = document.createElement('table');
-    App.renderHelpRows(table, [
-      { key: 's', ctrl: true, run: () => {}, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
-      { key: 'z', ctrl: true, run: () => {}, help: null }, // help無しは表に出さない
-    ], [['Esc', '閉じる']]);
+    App.renderHelpRows(
+      table,
+      [
+        { key: 's', ctrl: true, run: () => {}, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
+        { key: 'z', ctrl: true, run: () => {}, help: null }, // help無しは表に出さない
+      ],
+      [['Esc', '閉じる']]
+    );
     const rows = table.querySelectorAll('tr');
     expect(rows.length).toBe(2);
     expect(rows[0].textContent).toContain('Ctrl + S');

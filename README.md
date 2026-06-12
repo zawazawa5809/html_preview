@@ -30,16 +30,33 @@ docs/adr/    アーキテクチャ決定記録（ADR）
 
 ビルド工程はありません。`index.html` または `doceditor.html` をブラウザで開くだけです。
 
+## セキュリティ上の注意
+
+プレビューは sandbox なしの iframe で描画されるため、**貼り付けたHTML内の
+`<script>` はツール本体と同一オリジンで実行されます**（ツールの localStorage
+保存データへ到達可能です）。これは DocEditor の Design Mode（iframe内DOMへの
+直接アクセス）が同一オリジン動作を前提としているためのトレードオフです。
+
+- **信頼できる出所のHTMLのみ**を開いてください（自分で書いたもの・自分の指示でAIが生成したもの等）
+- 出所不明のHTMLを検査したい場合は、ブラウザのプライベートウィンドウなど
+  保存データと隔離された環境で開くことを推奨します
+- 将来的な対応案（sandbox化した「信頼しないHTMLを開くモード」）は
+  `docs/HANDOVER.md` の改善バックログを参照してください
+
 ## 開発
 
 ```bash
-npm install        # 開発ツール（Vitest等）の取得
-npm test           # テスト実行
-npm run test:watch # ウォッチモード
-npm run vendor     # 依存更新時: node_modules → vendor/ の再生成
+npm install            # 開発ツール（Vitest等）の取得
+npm test               # ユニットテスト実行
+npm run test:watch     # ウォッチモード
+npm run test:coverage  # カバレッジ計測（閾値チェック付き）
+npm run test:e2e       # E2Eテスト（Playwright。初回は npx playwright install chromium）
+npm run lint           # ESLint（ES5構文規約 + グローバル参照チェック）
+npm run format         # Prettierで整形（format:check で検査のみ）
+npm run vendor         # 依存更新時: node_modules → vendor/ の再生成
 ```
 
 - 開発はTDDで進めます。挙動を変える前にテストで仕様を固定してください（ADR-0003）
-- push / PR で CI（テスト + vendor整合性チェック）が走ります
+- push / PR で CI（lint + フォーマット検査 + テスト/カバレッジ + vendor整合性チェック + E2E）が走ります
 - main へのマージで GitHub Pages へ自動デプロイされます
 - 設計判断の経緯は `docs/adr/` を参照してください

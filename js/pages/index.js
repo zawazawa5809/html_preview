@@ -13,25 +13,13 @@
     quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
   };
 
-  var DEFAULT_CONTENT =
-    '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-    '<title>サンプルページ</title>' +
-    '<style>:root{--p:#1f2937;--s:#3b82f6;--w:#fff;--g:#f9fafb;--d:#111827}' +
-    'body{font-family:system-ui,sans-serif;font-size:16px;line-height:1.6;margin:0;padding:24px;background:var(--g);color:var(--d)}' +
-    '.c{max-width:800px;margin:0 auto;padding:32px;background:var(--w);border-radius:8px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}' +
-    'h1{font-size:32px;font-weight:700;color:var(--p);border-bottom:2px solid var(--s);padding-bottom:12px;margin-bottom:24px}' +
-    'p{margin-bottom:16px}' +
-    '.btn{background:var(--s);color:var(--w);border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font:inherit;transition:background .2s,transform .2s}' +
-    '.btn:hover{background:#2563eb;transform:translateY(-1px)}</style></head>' +
-    '<body><div class="c"><h1>HTMLプレビューアーへようこそ</h1>' +
-    '<p>エディタにHTMLコードを入力または貼り付けると、こちらにリアルタイムでプレビューが表示されます。</p>' +
-    '<p>ツールバーのボタンでレイアウトを変更したり、ファイルを保存したりできます。</p>' +
-    '<button class="btn" onclick="alert(\'こんにちは！\')">クリックテスト</button></div></body></html>';
-
   function $(id) {
     return document.getElementById(id);
   }
+
+  // 初期サンプルはHTML内のデータブロック（#default-content）が単一情報源
+  var defaultContentEl = $('default-content');
+  var DEFAULT_CONTENT = defaultContentEl ? defaultContentEl.textContent.trim() : '';
 
   var iframe = $('preview-container');
   var helpOverlay = $('help-overlay');
@@ -58,18 +46,14 @@
     buttons: { lr: $('layout-lr-btn'), tb: $('layout-tb-btn'), po: $('layout-po-btn') },
   });
 
-  var editor = App.createEditor(
-    $('html-editor'),
-    { lineNumbers: true, mode: 'htmlmixed' },
-    function onFallback() {
-      var div = document.createElement('div');
-      div.className = 'asset-warning';
-      div.setAttribute('role', 'alert');
-      div.textContent =
-        'エディタ拡張（CodeMirror）の読み込みに失敗したため、簡易エディタで動作しています。vendor/ フォルダが揃っているか確認してください。';
-      document.body.insertBefore(div, $('split-view'));
-    }
-  );
+  var editor = App.createEditor($('html-editor'), { lineNumbers: true, mode: 'htmlmixed' }, function onFallback() {
+    var div = document.createElement('div');
+    div.className = 'asset-warning';
+    div.setAttribute('role', 'alert');
+    div.textContent =
+      'エディタ拡張（CodeMirror）の読み込みに失敗したため、簡易エディタで動作しています。vendor/ フォルダが揃っているか確認してください。';
+    document.body.insertBefore(div, $('split-view'));
+  });
 
   var scheduleSave = App.debounce(function () {
     store.save(editor.getValue());
@@ -154,22 +138,15 @@
     App.downloadHtml(html, App.filenameFromTitle(html, { fallback: 'preview' }));
   }
 
-  /* ---- ヘルプモーダル ---- */
-  function toggleHelp() {
-    helpOverlay.hidden = !helpOverlay.hidden;
-  }
-  function closeHelp() {
-    helpOverlay.hidden = true;
-  }
+  /* ---- ヘルプモーダル（フォーカストラップ + フォーカス復元付き） ---- */
+  var helpModal = App.createModal(helpOverlay);
 
   /* ---- キーボードショートカット（ヘルプ表もこの定義から生成） ---- */
   var KEY_BINDINGS = [
     {
       key: 'Escape',
-      when: function () {
-        return !helpOverlay.hidden;
-      },
-      run: closeHelp,
+      when: helpModal.isOpen,
+      run: helpModal.close,
       help: null,
     },
     {
@@ -177,19 +154,62 @@
       when: function (e) {
         return !App.isTypingContext(e.target);
       },
-      run: toggleHelp,
+      run: helpModal.toggle,
       help: ['?', 'このヘルプを表示'],
     },
     { key: 's', ctrl: true, run: saveToFile, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
-    { key: 'z', ctrl: true, run: function () { editor.undo(); }, help: ['Ctrl + Z', '元に戻す'] },
-    { key: 'y', ctrl: true, run: function () { editor.redo(); }, help: ['Ctrl + Y', 'やり直す'] },
-    { key: 'Z', ctrl: true, shift: true, run: function () { editor.redo(); }, help: null },
+    {
+      key: 'z',
+      ctrl: true,
+      run: function () {
+        editor.undo();
+      },
+      help: ['Ctrl + Z', '元に戻す'],
+    },
+    {
+      key: 'y',
+      ctrl: true,
+      run: function () {
+        editor.redo();
+      },
+      help: ['Ctrl + Y', 'やり直す'],
+    },
+    {
+      key: 'Z',
+      ctrl: true,
+      shift: true,
+      run: function () {
+        editor.redo();
+      },
+      help: null,
+    },
     { key: 'C', ctrl: true, shift: true, run: copyEditor, help: ['Ctrl + Shift + C', 'コードをコピー'] },
     { key: 'V', ctrl: true, shift: true, run: pasteEditor, help: ['Ctrl + Shift + V', 'クリップボードから貼り付け'] },
     { key: 'Delete', ctrl: true, run: clearEditor, help: ['Ctrl + Delete', 'エディターをクリア'] },
-    { key: '1', ctrl: true, run: function () { layout.apply('lr'); }, help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'] },
-    { key: '2', ctrl: true, run: function () { layout.apply('tb'); }, help: null },
-    { key: '3', ctrl: true, run: function () { layout.apply('po'); }, help: null },
+    {
+      key: '1',
+      ctrl: true,
+      run: function () {
+        layout.apply('lr');
+      },
+      help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'],
+    },
+    {
+      key: '2',
+      ctrl: true,
+      run: function () {
+        layout.apply('tb');
+      },
+      help: null,
+    },
+    {
+      key: '3',
+      ctrl: true,
+      run: function () {
+        layout.apply('po');
+      },
+      help: null,
+    },
   ];
 
   /* ---- 初期化 ---- */
@@ -210,17 +230,28 @@
       getLayout: layout.current,
     });
 
-    $('layout-lr-btn').addEventListener('click', function () { layout.apply('lr'); });
-    $('layout-tb-btn').addEventListener('click', function () { layout.apply('tb'); });
-    $('layout-po-btn').addEventListener('click', function () { layout.apply('po'); });
-    $('undo-btn').addEventListener('click', function () { editor.undo(); });
-    $('redo-btn').addEventListener('click', function () { editor.redo(); });
+    $('layout-lr-btn').addEventListener('click', function () {
+      layout.apply('lr');
+    });
+    $('layout-tb-btn').addEventListener('click', function () {
+      layout.apply('tb');
+    });
+    $('layout-po-btn').addEventListener('click', function () {
+      layout.apply('po');
+    });
+    $('undo-btn').addEventListener('click', function () {
+      editor.undo();
+    });
+    $('redo-btn').addEventListener('click', function () {
+      editor.redo();
+    });
     $('copy-btn').addEventListener('click', copyEditor);
     $('paste-btn').addEventListener('click', pasteEditor);
     $('clear-btn').addEventListener('click', clearEditor);
     $('save-btn').addEventListener('click', saveToFile);
     $('theme-toggle-btn').addEventListener('click', theme.toggle);
-    $('help-btn').addEventListener('click', toggleHelp);
+    $('help-btn').addEventListener('click', helpModal.toggle);
+    $('help-close-btn').addEventListener('click', helpModal.close);
 
     $('open-btn').addEventListener('click', function () {
       $('file-input').click();
@@ -239,7 +270,7 @@
     });
 
     helpOverlay.addEventListener('click', function (e) {
-      if (e.target === helpOverlay) closeHelp();
+      if (e.target === helpOverlay) helpModal.close();
     });
     App.renderHelpRows($('help-table'), KEY_BINDINGS);
     document.addEventListener('keydown', App.createKeymap(KEY_BINDINGS), true);

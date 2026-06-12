@@ -9,30 +9,55 @@
   'use strict';
   var App = (window.App = window.App || {});
 
+  var FALLBACK_HISTORY_LIMIT = 100;
+
   function createTextareaFallback(textarea) {
     var listeners = [];
-    textarea.addEventListener('input', function () {
+    // 非推奨の document.execCommand('undo') に依存しない自前の履歴スタック
+    var history = [textarea.value];
+    var hIndex = 0;
+
+    function notifyChange() {
       listeners.forEach(function (fn) {
         fn();
       });
+    }
+
+    function record() {
+      if (textarea.value === history[hIndex]) return;
+      history = history.slice(0, hIndex + 1);
+      history.push(textarea.value);
+      if (history.length > FALLBACK_HISTORY_LIMIT) history.shift();
+      hIndex = history.length - 1;
+    }
+
+    function restore(index) {
+      hIndex = index;
+      textarea.value = history[hIndex];
+      notifyChange();
+    }
+
+    textarea.addEventListener('input', function () {
+      record();
+      notifyChange();
     });
+
     return {
       getValue: function () {
         return textarea.value;
       },
       setValue: function (v) {
         textarea.value = v;
+        record();
       },
       on: function (ev, fn) {
         if (ev === 'change') listeners.push(fn);
       },
       undo: function () {
-        textarea.focus();
-        try { document.execCommand('undo'); } catch (e) { /* 非対応ブラウザは無視 */ }
+        if (hIndex > 0) restore(hIndex - 1);
       },
       redo: function () {
-        textarea.focus();
-        try { document.execCommand('redo'); } catch (e) { /* 非対応ブラウザは無視 */ }
+        if (hIndex < history.length - 1) restore(hIndex + 1);
       },
       lastLine: function () {
         return textarea.value.split('\n').length - 1;
@@ -42,17 +67,24 @@
       },
       replaceRange: function (text) {
         textarea.value = text;
+        record();
       },
       // Design Mode が利用する拡張API（フォールバック時はno-op）
-      operation: function (fn) { fn(); },
+      operation: function (fn) {
+        fn();
+      },
       refresh: function () {},
       scrollIntoView: function () {},
       addLineClass: function () {},
       removeLineClass: function () {},
       getSearchCursor: function () {
         return {
-          findNext: function () { return false; },
-          from: function () { return { line: 0, ch: 0 }; },
+          findNext: function () {
+            return false;
+          },
+          from: function () {
+            return { line: 0, ch: 0 };
+          },
         };
       },
     };

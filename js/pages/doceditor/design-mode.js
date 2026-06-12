@@ -14,25 +14,51 @@
   /** 選択UIのアクセント色。styles/tokens.css の --da-secondary と同値 */
   design.ACCENT = '#5b8fcc';
 
-  design.EXCLUDED_TAGS = [
-    'HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT', 'BR',
-  ];
+  design.EXCLUDED_TAGS = ['HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT', 'BR'];
 
   /** スタイルパネルと注入スクリプトが共有する computedStyle 収集対象 */
   design.STYLE_PROPS = [
-    'backgroundColor', 'color', 'borderColor',
-    'fontSize', 'fontWeight', 'textAlign', 'lineHeight',
-    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-    'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-    'width', 'height', 'borderRadius', 'opacity', 'display', 'overflow',
+    'backgroundColor',
+    'color',
+    'borderColor',
+    'fontSize',
+    'fontWeight',
+    'textAlign',
+    'lineHeight',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'marginTop',
+    'marginRight',
+    'marginBottom',
+    'marginLeft',
+    'width',
+    'height',
+    'borderRadius',
+    'opacity',
+    'display',
+    'overflow',
   ];
 
   /** スタイルコピー/ペーストの対象プロパティ */
   design.COPY_STYLE_PROPS = [
-    'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle',
-    'fontSize', 'fontWeight', 'fontFamily', 'textAlign', 'lineHeight',
-    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-    'borderRadius', 'opacity',
+    'backgroundColor',
+    'color',
+    'borderColor',
+    'borderWidth',
+    'borderStyle',
+    'fontSize',
+    'fontWeight',
+    'fontFamily',
+    'textAlign',
+    'lineHeight',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'borderRadius',
+    'opacity',
   ];
 
   /** designer注入物・編集用属性を取り除いた完全なHTMLを返す */
@@ -97,16 +123,31 @@
       return s;
     },
     'flex-row': function (doc) {
-      return buildItems(doc, 'display:flex;gap:8px', 3,
-        'flex:1;padding:12px;background:#f0f1f5;border-radius:4px;text-align:center', 'Item ');
+      return buildItems(
+        doc,
+        'display:flex;gap:8px',
+        3,
+        'flex:1;padding:12px;background:#f0f1f5;border-radius:4px;text-align:center',
+        'Item '
+      );
     },
     'flex-col': function (doc) {
-      return buildItems(doc, 'display:flex;flex-direction:column;gap:8px', 3,
-        'padding:12px;background:#f0f1f5;border-radius:4px', 'Item ');
+      return buildItems(
+        doc,
+        'display:flex;flex-direction:column;gap:8px',
+        3,
+        'padding:12px;background:#f0f1f5;border-radius:4px',
+        'Item '
+      );
     },
     'grid-2col': function (doc) {
-      return buildItems(doc, 'display:grid;grid-template-columns:1fr 1fr;gap:8px', 4,
-        'padding:12px;background:#f0f1f5;border-radius:4px;text-align:center', 'Cell ');
+      return buildItems(
+        doc,
+        'display:grid;grid-template-columns:1fr 1fr;gap:8px',
+        4,
+        'padding:12px;background:#f0f1f5;border-radius:4px;text-align:center',
+        'Cell '
+      );
     },
     divider: function (doc) {
       return doc.createElement('hr');
@@ -197,25 +238,35 @@
   design.injectionCss = function () {
     var ACCENT = design.ACCENT;
     return (
-      '[data-designer-selected]{outline:2px dashed ' + ACCENT + '!important;outline-offset:2px!important}' +
+      '[data-designer-selected]{outline:2px dashed ' +
+      ACCENT +
+      '!important;outline-offset:2px!important}' +
       '.designer-hover-overlay{position:fixed;pointer-events:none;background:rgba(91,143,204,0.08);border:1px solid rgba(91,143,204,0.4);z-index:99998;transition:all 50ms}' +
       '.designer-hover-label{position:fixed;pointer-events:none;background:#1e1f25;color:#e2e4ec;font:11px/1.3 "Noto Sans Mono",Consolas,monospace;padding:2px 6px;border-radius:3px;z-index:99999;white-space:nowrap}' +
       '[draggable="true"]{cursor:grab}' +
       '.designer-dragging{opacity:0.3!important}' +
-      '.designer-drop-before{box-shadow:inset 0 3px 0 0 ' + ACCENT + '!important}' +
-      '.designer-drop-after{box-shadow:inset 0 -3px 0 0 ' + ACCENT + '!important}' +
-      '.designer-drop-inside{outline:2px solid ' + ACCENT + '!important;background:rgba(91,143,204,0.06)!important}' +
+      '.designer-drop-before{box-shadow:inset 0 3px 0 0 ' +
+      ACCENT +
+      '!important}' +
+      '.designer-drop-after{box-shadow:inset 0 -3px 0 0 ' +
+      ACCENT +
+      '!important}' +
+      '.designer-drop-inside{outline:2px solid ' +
+      ACCENT +
+      '!important;background:rgba(91,143,204,0.06)!important}' +
       '.designer-action-bar{position:fixed;display:flex;gap:2px;background:#1e1f25;border:1px solid #353842;border-radius:6px;padding:3px;z-index:99997;box-shadow:0 4px 12px rgba(0,0,0,0.3)}' +
       '.designer-action-bar button{background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 6px;border-radius:4px;line-height:1;display:flex;align-items:center;justify-content:center;min-width:26px;min-height:26px}' +
       '.designer-action-bar button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
       '.designer-action-bar button:hover{background:#353842;color:#f0f1f5}' +
-      '.designer-resize-handle{position:fixed;width:8px;height:8px;background:' + ACCENT + ';border:1px solid #fff;border-radius:50%;z-index:99996;pointer-events:auto;box-shadow:0 0 3px rgba(0,0,0,0.3)}' +
+      '.designer-resize-handle{position:fixed;width:8px;height:8px;background:' +
+      ACCENT +
+      ';border:1px solid #fff;border-radius:50%;z-index:99996;pointer-events:auto;box-shadow:0 0 3px rgba(0,0,0,0.3);touch-action:none}' +
       ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
         .map(function (dir) {
           return '.designer-resize-handle[data-dir="' + dir + '"]{cursor:' + dir + '-resize}';
         })
         .join('') +
-      '.designer-resize-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99995;cursor:inherit}' +
+      '.designer-resize-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99995;cursor:inherit;touch-action:none}' +
       '[data-page-break]{break-before:page;border:none;border-top:2px dashed #999;text-align:center;padding:8px 0;color:#999;font-size:12px;margin:16px 0;position:relative}' +
       '[data-page-break]::after{content:"Page Break";background:#fff;padding:0 12px;position:relative}' +
       '@media print{[data-page-break]{color:transparent;border:none;padding:0;margin:0}[data-page-break]::after{display:none}}'
@@ -273,6 +324,17 @@
       return styles;
     }
 
+    /** 同名タグの中で何番目の要素か（designer注入物は除外）。ソース行特定用 */
+    function occurrenceIndex(el) {
+      var all = document.getElementsByTagName(el.tagName);
+      var idx = 0;
+      for (var i = 0; i < all.length; i++) {
+        if (all[i] === el) return idx;
+        if (!isInjected(all[i])) idx++;
+      }
+      return idx;
+    }
+
     /** 選択状態を親に通知し、選択UI（アクションバー/リサイズハンドル）を更新 */
     function notifySelect(el) {
       var ancestors = [];
@@ -281,7 +343,13 @@
         ancestors.unshift(tagInfo(p));
         p = p.parentElement;
       }
-      post({ type: '__design_click__', tag: tagInfo(el), styles: snapshot(el), ancestors: ancestors });
+      post({
+        type: '__design_click__',
+        tag: tagInfo(el),
+        styles: snapshot(el),
+        ancestors: ancestors,
+        occurrence: occurrenceIndex(el),
+      });
       showActionBar(el);
       updateResizeHandles(el);
     }
@@ -348,6 +416,20 @@
       true
     );
 
+    /** キャレット位置にプレーンテキストを挿入する（非推奨APIに依存しない） */
+    function insertTextAtSelection(text) {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      var range = sel.getRangeAt(0);
+      range.deleteContents();
+      var node = document.createTextNode(text);
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
     /* ---- dblclick: contentEditable でテキスト編集 ---- */
     document.addEventListener('dblclick', function (e) {
       var el = e.target;
@@ -358,7 +440,7 @@
       el.addEventListener('paste', function onPaste(pe) {
         pe.preventDefault();
         var text = (pe.clipboardData || window.clipboardData).getData('text/plain');
-        document.execCommand('insertText', false, text);
+        insertTextAtSelection(text);
       });
       el.addEventListener('blur', function onBlur() {
         el.contentEditable = 'false';
@@ -366,6 +448,16 @@
         post({ type: '__design_change__' });
       });
     });
+
+    /** contenteditable="true" の編集コンテキスト内か（ネイティブ編集を妨げない判定用） */
+    function inEditableContext(node) {
+      var el = node && node.nodeType === 1 ? node : null;
+      while (el) {
+        if (el.getAttribute && el.getAttribute('contenteditable') === 'true') return true;
+        el = el.parentElement;
+      }
+      return false;
+    }
 
     /* ---- keyboard ---- */
     document.addEventListener('keydown', function (e) {
@@ -381,11 +473,22 @@
         // 削除は親側に集約（「元に戻す」トーストを出すため）
         post({ type: '__design_action__', action: 'delete' });
       }
+      // Undo/Redoは親のエディタ履歴に集約する（テキスト編集中はネイティブ動作を優先）
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !inEditableContext(e.target)) {
+        var k = e.key.toLowerCase();
+        if (k === 'z') {
+          e.preventDefault();
+          post({ type: e.shiftKey ? '__design_redo__' : '__design_undo__' });
+        } else if (k === 'y' && !e.shiftKey) {
+          e.preventDefault();
+          post({ type: '__design_redo__' });
+        }
+      }
     });
 
     /* ---- floating action bar ---- */
     var ACTION_ICONS = {
-      'delete':
+      delete:
         '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
       duplicate:
         '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
@@ -453,14 +556,16 @@
     var dropPosition = null;
     var prevDropTarget = null;
 
-    document.addEventListener('mousedown', function (e) {
+    // PointerEventで統一（マウス/ペン/タッチ）。ただし並べ替え自体はHTML5 DnDのため
+    // 実際のドラッグ開始はマウス操作時のみ発生する
+    document.addEventListener('pointerdown', function (e) {
       var el = e.target;
       if (isExcluded(el) || isInjected(el)) return;
       if (el.isContentEditable) return;
       el.setAttribute('draggable', 'true');
     });
 
-    document.addEventListener('mouseup', function (e) {
+    document.addEventListener('pointerup', function (e) {
       if (!dragEl) {
         var el = e.target;
         if (el.hasAttribute && el.hasAttribute('draggable')) el.removeAttribute('draggable');
@@ -632,10 +737,17 @@
     var resizeOverlay = null;
 
     resizeHandles.forEach(function (h) {
-      h.addEventListener('mousedown', function (e) {
+      h.addEventListener('pointerdown', function (e) {
         if (!selected) return;
         e.preventDefault();
         e.stopPropagation();
+        if (h.setPointerCapture) {
+          try {
+            h.setPointerCapture(e.pointerId);
+          } catch (err) {
+            /* 非対応環境では無視（documentのpointermoveで追従できる） */
+          }
+        }
         resizing = true;
         resizeDir = h.getAttribute('data-dir');
         resizeTarget = selected;
@@ -653,7 +765,7 @@
       });
     });
 
-    document.addEventListener('mousemove', function (e) {
+    document.addEventListener('pointermove', function (e) {
       if (!resizing || !resizeTarget) return;
       e.preventDefault();
       var dx = e.clientX - resizeStartX;
@@ -670,7 +782,7 @@
       showActionBar(resizeTarget);
     });
 
-    document.addEventListener('mouseup', function () {
+    function endResize() {
       if (!resizing) return;
       resizing = false;
       resizeDir = null;
@@ -681,7 +793,9 @@
       post({ type: '__design_change__' });
       if (resizeTarget) notifySelect(resizeTarget);
       resizeTarget = null;
-    });
+    }
+    document.addEventListener('pointerup', endResize);
+    document.addEventListener('pointercancel', endResize);
 
     /* ---- MutationObserver: 実DOM変更の検出 ---- */
     var observer = new MutationObserver(function (mutations) {
@@ -689,7 +803,9 @@
         if (m.target && m.target.hasAttribute && m.target.hasAttribute('data-designer-injected')) return false;
         if (
           m.type === 'attributes' &&
-          ['data-designer-injected', 'data-designer-selected', 'contenteditable', 'draggable'].indexOf(m.attributeName) !== -1
+          ['data-designer-injected', 'data-designer-selected', 'contenteditable', 'draggable'].indexOf(
+            m.attributeName
+          ) !== -1
         ) {
           return false;
         }
@@ -711,6 +827,135 @@
       characterData: true,
     });
 
+    /* ----------------------------------------------------------------
+     * 書式適用エンジン（Selection/Range実装。非推奨APIに依存しない）
+     * Range.extractContents() が部分選択の要素境界を自動分割する性質を使い、
+     * 「選択部分をラップ → 中と祖先の書式を整理」の手順で適用/解除する。
+     * ---------------------------------------------------------------- */
+    var FORMAT_WRAPPER = { bold: 'strong', italic: 'em', underline: 'u', strikeThrough: 's' };
+    var FORMAT_MATCH = {
+      bold: ['STRONG', 'B'],
+      italic: ['EM', 'I'],
+      underline: ['U'],
+      strikeThrough: ['S', 'STRIKE', 'DEL'],
+    };
+    var ALL_FORMAT_TAGS = ['STRONG', 'B', 'EM', 'I', 'U', 'S', 'STRIKE', 'DEL', 'FONT'];
+    var ALL_FORMAT_SELECTOR = 'strong,b,em,i,u,s,strike,del,font,span[style]';
+
+    function currentRange() {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+      return sel.getRangeAt(0);
+    }
+
+    /** node から上方向に、書式タグ（必要ならスタイル付きspanも）に一致する祖先を探す */
+    function closestFormat(node, tagNames, includeStyledSpan) {
+      var el = node && (node.nodeType === 1 ? node : node.parentElement);
+      while (el && el.tagName !== 'BODY') {
+        if (tagNames.indexOf(el.tagName) !== -1) return el;
+        if (includeStyledSpan && el.tagName === 'SPAN' && el.getAttribute('style')) return el;
+        el = el.parentElement;
+      }
+      return null;
+    }
+
+    function unwrapEl(el) {
+      var parent = el.parentNode;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+    }
+
+    function selectNodeContents(el) {
+      var sel = window.getSelection();
+      var r = document.createRange();
+      r.selectNodeContents(el);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+
+    /** 選択範囲を makeEl() の要素でラップし、その要素を返す（選択は中身に張り直す） */
+    function wrapRangeWith(makeEl) {
+      var range = currentRange();
+      if (!range) return null;
+      var wrapper = makeEl();
+      wrapper.appendChild(range.extractContents());
+      range.insertNode(wrapper);
+      selectNodeContents(wrapper);
+      return wrapper;
+    }
+
+    function isHollow(el) {
+      return !el.textContent && !el.firstElementChild;
+    }
+
+    /** node を ancestor の外側へ、間の要素を分割しながら引き上げる */
+    function liftOutOf(node, ancestor) {
+      var stopParent = ancestor.parentNode; // ancestorが途中で除去されても停止位置は不変
+      while (node.parentNode && node.parentNode !== stopParent) {
+        var parent = node.parentNode;
+        var after = parent.cloneNode(false);
+        while (node.nextSibling) after.appendChild(node.nextSibling);
+        parent.parentNode.insertBefore(node, parent.nextSibling);
+        if (after.firstChild && !isHollow(after)) parent.parentNode.insertBefore(after, node.nextSibling);
+        if (isHollow(parent)) parent.parentNode.removeChild(parent);
+      }
+    }
+
+    /** 選択範囲の内側と祖先から該当書式を取り除く（部分選択は該当部のみ解除） */
+    function clearFormatting(tagNames, selector, includeStyledSpan) {
+      var temp = wrapRangeWith(function () {
+        return document.createElement('span');
+      });
+      if (!temp) return;
+      var m;
+      while ((m = temp.querySelector(selector))) unwrapEl(m);
+      var anc;
+      while ((anc = closestFormat(temp.parentNode, tagNames, includeStyledSpan))) liftOutOf(temp, anc);
+      var first = temp.firstChild;
+      var last = temp.lastChild;
+      unwrapEl(temp);
+      if (first) {
+        var sel = window.getSelection();
+        var r = document.createRange();
+        r.setStartBefore(first);
+        r.setEndAfter(last);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+    }
+
+    /** bold等のトグル: 選択全体が同一書式内なら解除、そうでなければ適用 */
+    function toggleInline(cmd) {
+      var range = currentRange();
+      if (!range) return;
+      var names = FORMAT_MATCH[cmd];
+      var startEl = closestFormat(range.startContainer, names, false);
+      var endEl = closestFormat(range.endContainer, names, false);
+      if (startEl && startEl === endEl) {
+        clearFormatting(names, names.join(',').toLowerCase(), false);
+      } else {
+        wrapRangeWith(function () {
+          return document.createElement(FORMAT_WRAPPER[cmd]);
+        });
+      }
+    }
+
+    function applyColor(styleProp, value) {
+      wrapRangeWith(function () {
+        var span = document.createElement('span');
+        span.style[styleProp] = value;
+        return span;
+      });
+    }
+
+    function applyLink(url) {
+      wrapRangeWith(function () {
+        var a = document.createElement('a');
+        a.setAttribute('href', url);
+        return a;
+      });
+    }
+
     /* ---- テキスト選択時のフローティング書式ツールバー ---- */
     var FORMAT_BTN_BASE =
       'background:none;border:none;color:#c4c8d6;cursor:pointer;padding:4px 7px;border-radius:4px;font-size:13px;min-width:26px;min-height:26px';
@@ -720,10 +965,27 @@
       { cmd: 'underline', title: '下線', label: 'U', css: 'text-decoration:underline' },
       { cmd: 'strikeThrough', title: '取消線', label: 'S', css: 'text-decoration:line-through' },
       { sep: true },
-      { cmd: 'foreColor', title: '文字色', label: 'A', css: 'font-size:11px;position:relative;padding:2px 4px', color: '#ff0000' },
-      { cmd: 'hiliteColor', title: '背景色', label: 'H', css: 'font-size:11px;position:relative;padding:2px 4px;background:#ffeb3b;color:#1e1f25', color: '#ffeb3b' },
+      {
+        cmd: 'foreColor',
+        title: '文字色',
+        label: 'A',
+        css: 'font-size:11px;position:relative;padding:2px 4px',
+        color: '#ff0000',
+      },
+      {
+        cmd: 'hiliteColor',
+        title: '背景色',
+        label: 'H',
+        css: 'font-size:11px;position:relative;padding:2px 4px;background:#ffeb3b;color:#1e1f25',
+        color: '#ffeb3b',
+      },
       { sep: true },
-      { cmd: 'createLink', title: 'リンク', label: 'Link', css: 'font-size:12px;color:#5b8fcc;text-decoration:underline' },
+      {
+        cmd: 'createLink',
+        title: 'リンク',
+        label: 'Link',
+        css: 'font-size:12px;color:#5b8fcc;text-decoration:underline',
+      },
       { cmd: 'removeFormat', title: '書式クリア', label: '✕', css: 'font-size:12px;color:#d45a5a' },
     ];
 
@@ -733,17 +995,31 @@
     formatBar.innerHTML = FORMAT_BUTTONS.map(function (b) {
       if (b.sep) return '<span style="width:1px;background:#353842;margin:2px 2px;align-self:stretch"></span>';
       var colorInput = b.color
-        ? '<input type="color" data-for="' + b.cmd + '" value="' + b.color + '" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"/>'
+        ? '<input type="color" data-for="' +
+          b.cmd +
+          '" value="' +
+          b.color +
+          '" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"/>'
         : '';
       return (
-        '<button data-cmd="' + b.cmd + '" title="' + b.title + '" style="' + FORMAT_BTN_BASE + ';' + b.css + '">' +
-        b.label + colorInput + '</button>'
+        '<button data-cmd="' +
+        b.cmd +
+        '" title="' +
+        b.title +
+        '" style="' +
+        FORMAT_BTN_BASE +
+        ';' +
+        b.css +
+        '">' +
+        b.label +
+        colorInput +
+        '</button>'
       );
     }).join('');
 
+    // selectionchangeベースの表示制御（マウス/タッチ/キーボード選択すべてに反応する）
     var formatBarTimeout = null;
-    document.addEventListener('mouseup', function (e) {
-      if (e.target.closest('[data-designer-injected]')) return;
+    document.addEventListener('selectionchange', function () {
       clearTimeout(formatBarTimeout);
       formatBarTimeout = setTimeout(function () {
         var sel = window.getSelection();
@@ -761,11 +1037,14 @@
         if (barTop < 4) barTop = rect.bottom + 6;
         formatBar.style.left = Math.max(4, rect.left + rect.width / 2 - 100) + 'px';
         formatBar.style.top = barTop + 'px';
-      }, 50);
+      }, 120);
     });
 
-    formatBar.addEventListener('mousedown', function (e) {
+    formatBar.addEventListener('pointerdown', function (e) {
       e.preventDefault(); // テキスト選択を維持する
+    });
+    formatBar.addEventListener('mousedown', function (e) {
+      e.preventDefault(); // pointerdownのpreventDefaultはmousedown既定動作を抑止しないため両方必要
     });
     formatBar.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-cmd]');
@@ -773,27 +1052,21 @@
       var cmd = btn.getAttribute('data-cmd');
       if (cmd === 'createLink') {
         var url = prompt('URL:');
-        if (url) document.execCommand('createLink', false, url);
+        if (url) applyLink(url);
       } else if (cmd === 'foreColor' || cmd === 'hiliteColor') {
         return; // color input側で処理
+      } else if (cmd === 'removeFormat') {
+        clearFormatting(ALL_FORMAT_TAGS, ALL_FORMAT_SELECTOR, true);
       } else {
-        document.execCommand(cmd, false, null);
+        toggleInline(cmd);
       }
       post({ type: '__design_change__' });
     });
     formatBar.querySelectorAll('input[type=color]').forEach(function (inp) {
       inp.addEventListener('input', function () {
-        document.execCommand(this.getAttribute('data-for'), false, this.value);
+        applyColor(this.getAttribute('data-for') === 'foreColor' ? 'color' : 'backgroundColor', this.value);
         post({ type: '__design_change__' });
       });
-    });
-    document.addEventListener('mousedown', function (e) {
-      if (!e.target.closest('[data-designer-injected]')) {
-        setTimeout(function () {
-          var sel = window.getSelection();
-          if (!sel || sel.isCollapsed) formatBar.style.display = 'none';
-        }, 10);
-      }
     });
   }
 

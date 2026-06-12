@@ -6,34 +6,28 @@ const App = window.App;
 
 describe('App.filenameFromTitle', () => {
   it('<title> からファイル名を生成する', () => {
-    expect(App.filenameFromTitle('<html><title>My Page</title></html>', { fallback: 'preview' }))
-      .toBe('My_Page.html');
+    expect(App.filenameFromTitle('<html><title>My Page</title></html>', { fallback: 'preview' })).toBe('My_Page.html');
   });
   it('日本語タイトルを保持する', () => {
-    expect(App.filenameFromTitle('<title>レポート 2026</title>', { fallback: 'preview' }))
-      .toBe('レポート_2026.html');
+    expect(App.filenameFromTitle('<title>レポート 2026</title>', { fallback: 'preview' })).toBe('レポート_2026.html');
   });
   it('ファイル名に使えない文字は _ に置換する', () => {
-    expect(App.filenameFromTitle('<title>a/b\\c:d*e</title>', { fallback: 'preview' }))
-      .toBe('a_b_c_d_e.html');
+    expect(App.filenameFromTitle('<title>a/b\\c:d*e</title>', { fallback: 'preview' })).toBe('a_b_c_d_e.html');
   });
   it('Windows予約名には _ を前置する', () => {
-    expect(App.filenameFromTitle('<title>CON</title>', { fallback: 'preview' }))
-      .toBe('_CON.html');
+    expect(App.filenameFromTitle('<title>CON</title>', { fallback: 'preview' })).toBe('_CON.html');
   });
   it('titleが無い場合はfallback名', () => {
-    expect(App.filenameFromTitle('<p>no title</p>', { fallback: 'preview' }))
-      .toBe('preview.html');
+    expect(App.filenameFromTitle('<p>no title</p>', { fallback: 'preview' })).toBe('preview.html');
   });
   it('suffix を付けられる（DocEditorのタイムスタンプ用途）', () => {
-    expect(App.filenameFromTitle('<title>Doc</title>', { fallback: 'out', suffix: '_20260611_120000' }))
-      .toBe('Doc_20260611_120000.html');
-    expect(App.filenameFromTitle('', { fallback: 'out', suffix: '_x' }))
-      .toBe('out_x.html');
+    expect(App.filenameFromTitle('<title>Doc</title>', { fallback: 'out', suffix: '_20260611_120000' })).toBe(
+      'Doc_20260611_120000.html'
+    );
+    expect(App.filenameFromTitle('', { fallback: 'out', suffix: '_x' })).toBe('out_x.html');
   });
   it('複数行の title にも対応する', () => {
-    expect(App.filenameFromTitle('<title>\n  Multi\n  Line\n</title>', { fallback: 'p' }))
-      .toBe('Multi_Line.html');
+    expect(App.filenameFromTitle('<title>\n  Multi\n  Line\n</title>', { fallback: 'p' })).toBe('Multi_Line.html');
   });
 });
 

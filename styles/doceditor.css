@@ -47,7 +47,9 @@
   display: flex;
   flex-direction: column;
 }
-#preview-container { flex-grow: 1; }
+#preview-container {
+  flex-grow: 1;
+}
 
 /* Design Mode中はプレビューにアクセント枠 */
 .preview-panel.design-active .panel-content {
@@ -63,8 +65,12 @@
   flex-grow: 1;
   font-size: 12px;
 }
-.design-toolbar::-webkit-scrollbar { width: 5px; }
-.design-toolbar::-webkit-scrollbar-track { background: transparent; }
+.design-toolbar::-webkit-scrollbar {
+  width: 5px;
+}
+.design-toolbar::-webkit-scrollbar-track {
+  background: transparent;
+}
 .design-toolbar::-webkit-scrollbar-thumb {
   background: var(--da-ash);
   border-radius: 3px;
@@ -80,7 +86,7 @@
   gap: 8px;
 }
 .dt-element-tag {
-  font-family: "Noto Sans Mono", Consolas, monospace;
+  font-family: 'Noto Sans Mono', Consolas, monospace;
   font-size: 13px;
   color: var(--da-secondary);
   white-space: nowrap;
@@ -117,12 +123,17 @@
   border-color: var(--da-secondary);
   color: var(--da-snow);
 }
-.dt-btn svg { width: 13px; height: 13px; }
+.dt-btn svg {
+  width: 13px;
+  height: 13px;
+}
 .dt-btn .dt-btn-label {
   font-size: 10px;
   margin-left: 2px;
 }
-.dt-btn.dt-btn-danger { color: var(--da-error); }
+.dt-btn.dt-btn-danger {
+  color: var(--da-error);
+}
 
 .dt-section-header {
   display: flex;
@@ -139,13 +150,21 @@
   user-select: none;
   transition: background-color var(--duration-fast);
 }
-.dt-section-header:hover { background: var(--da-accent-glow); }
+.dt-section-header:hover {
+  background: var(--da-accent-glow);
+}
+.dt-section-header:focus-visible {
+  outline: 2px solid var(--da-secondary);
+  outline-offset: -2px;
+}
 .dt-section-header .dt-chevron {
   width: 14px;
   height: 14px;
   transition: transform 200ms var(--ease-out-expo);
 }
-.dt-section-header.collapsed .dt-chevron { transform: rotate(-90deg); }
+.dt-section-header.collapsed .dt-chevron {
+  transform: rotate(-90deg);
+}
 
 .dt-section-body {
   padding: 8px 12px;
@@ -154,7 +173,9 @@
   gap: 6px;
   border-bottom: 1px solid var(--app-border-default);
 }
-.dt-section-body.collapsed { display: none; }
+.dt-section-body.collapsed {
+  display: none;
+}
 
 .dt-row {
   display: flex;
@@ -188,7 +209,7 @@
   font-size: 11px;
   flex-shrink: 0;
 }
-.dt-color-row input[type="color"] {
+.dt-color-row input[type='color'] {
   width: 26px;
   height: 26px;
   border: 1px solid var(--app-border-default);
@@ -209,10 +230,14 @@
   color: var(--app-text-primary);
   font-family: inherit;
 }
-.dt-input { width: 90px; }
-.dt-input-sm { width: 52px; }
+.dt-input {
+  width: 90px;
+}
+.dt-input-sm {
+  width: 52px;
+}
 
-.dt-row input[type="range"] {
+.dt-row input[type='range'] {
   flex: 1;
   min-width: 60px;
   accent-color: var(--da-secondary);
@@ -278,8 +303,13 @@
   color: var(--da-secondary);
   border-color: var(--da-secondary);
 }
-.dt-link-btn svg { width: 12px; height: 12px; }
-.dt-link-btn .dt-btn-label { margin-left: 3px; }
+.dt-link-btn svg {
+  width: 12px;
+  height: 12px;
+}
+.dt-link-btn .dt-btn-label {
+  margin-left: 3px;
+}
 
 /* ---- Box model diagram ---- */
 .dt-box-model {
@@ -332,13 +362,31 @@
   outline: 1px solid var(--da-secondary);
   border-color: var(--da-secondary);
 }
-.dt-box-top { top: 1px; left: 50%; transform: translateX(-50%); }
-.dt-box-right { right: 2px; top: 50%; transform: translateY(-50%); }
-.dt-box-bottom { bottom: 1px; left: 50%; transform: translateX(-50%); }
-.dt-box-left { left: 2px; top: 50%; transform: translateY(-50%); }
+.dt-box-top {
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.dt-box-right {
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.dt-box-bottom {
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.dt-box-left {
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 /* ---- Add child dropdown ---- */
-.dt-add-wrap { position: relative; }
+.dt-add-wrap {
+  position: relative;
+}
 .dt-add-dropdown {
   position: absolute;
   top: 100%;
@@ -359,11 +407,13 @@
   border: none;
   padding: 5px 12px;
   font-size: 12px;
-  font-family: "Noto Sans Mono", Consolas, monospace;
+  font-family: 'Noto Sans Mono', Consolas, monospace;
   color: var(--app-text-primary);
   cursor: pointer;
 }
-.dt-add-dropdown button:hover { background: var(--da-accent-muted); }
+.dt-add-dropdown button:hover {
+  background: var(--da-accent-muted);
+}
 .dt-dropdown-category {
   font-size: 10px;
   font-weight: 600;
@@ -373,7 +423,9 @@
   padding: 6px 12px 2px;
   border-top: 1px solid var(--app-border-default);
 }
-.dt-dropdown-category:first-child { border-top: none; }
+.dt-dropdown-category:first-child {
+  border-top: none;
+}
 
 /* ---- Breadcrumb ---- */
 .dt-breadcrumb {
@@ -387,19 +439,23 @@
   background: var(--app-panel-header-bg);
   min-height: 0;
 }
-.dt-breadcrumb:empty { display: none; }
+.dt-breadcrumb:empty {
+  display: none;
+}
 .dt-breadcrumb-item {
   cursor: pointer;
   padding: 1px 4px;
   border-radius: 3px;
   color: var(--da-stone);
-  font-family: "Noto Sans Mono", Consolas, monospace;
+  font-family: 'Noto Sans Mono', Consolas, monospace;
 }
 .dt-breadcrumb-item:hover {
   background: var(--da-accent-muted);
   color: var(--da-snow);
 }
-.dt-breadcrumb-item.active { color: var(--da-secondary); }
+.dt-breadcrumb-item.active {
+  color: var(--da-secondary);
+}
 .dt-breadcrumb-sep {
   color: var(--da-ash);
   font-size: 9px;
@@ -425,13 +481,33 @@
   color: var(--app-text-primary);
   border-left-color: var(--da-secondary);
 }
-.outline-item[data-level="1"] { padding-left: 12px; font-weight: 600; font-size: 13px; }
-.outline-item[data-level="2"] { padding-left: 24px; font-weight: 500; }
-.outline-item[data-level="3"] { padding-left: 36px; }
-.outline-item[data-level="4"] { padding-left: 48px; font-size: 11px; }
-.outline-item[data-level="5"] { padding-left: 60px; font-size: 11px; }
-.outline-item[data-level="6"] { padding-left: 72px; font-size: 11px; }
+.outline-item[data-level='1'] {
+  padding-left: 12px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.outline-item[data-level='2'] {
+  padding-left: 24px;
+  font-weight: 500;
+}
+.outline-item[data-level='3'] {
+  padding-left: 36px;
+}
+.outline-item[data-level='4'] {
+  padding-left: 48px;
+  font-size: 11px;
+}
+.outline-item[data-level='5'] {
+  padding-left: 60px;
+  font-size: 11px;
+}
+.outline-item[data-level='6'] {
+  padding-left: 72px;
+  font-size: 11px;
+}
 
 /* ---- Design Mode選択要素のソース行ハイライト ---- */
 /* rgba は tokens.css の --da-secondary (#5b8fcc) と同色 */
-.cm-design-highlight { background: rgba(91, 143, 204, 0.12) !important; }
+.cm-design-highlight {
+  background: rgba(91, 143, 204, 0.12) !important;
+}

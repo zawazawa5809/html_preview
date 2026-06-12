@@ -34,20 +34,47 @@ describe.each(PAGES)('%s', (page) => {
 
   it('オフライン原則: 外部オリジンへの参照が無い', () => {
     const html = readFileSync(join(root, page), 'utf8');
-    expect(html).not.toMatch(/https?:\/\/(unpkg\.com|cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)/);
+    expect(html).not.toMatch(
+      /https?:\/\/(unpkg\.com|cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)/
+    );
   });
 
   it('JSが前提とする必須要素IDが存在する', () => {
     const required = [
-      'split-view', 'editor-container', 'preview-panel', 'gutter',
-      'html-editor', 'preview-container', 'save-status', 'help-overlay',
-      'layout-lr-btn', 'layout-tb-btn', 'layout-po-btn', 'theme-toggle-btn',
-      'undo-btn', 'redo-btn', 'copy-btn', 'paste-btn', 'clear-btn',
-      'open-btn', 'file-input', 'save-btn', 'help-btn',
+      'split-view',
+      'editor-container',
+      'preview-panel',
+      'gutter',
+      'html-editor',
+      'preview-container',
+      'save-status',
+      'help-overlay',
+      'layout-lr-btn',
+      'layout-tb-btn',
+      'layout-po-btn',
+      'theme-toggle-btn',
+      'undo-btn',
+      'redo-btn',
+      'copy-btn',
+      'paste-btn',
+      'clear-btn',
+      'open-btn',
+      'file-input',
+      'save-btn',
+      'help-btn',
+      'help-close-btn',
     ];
     for (const id of required) {
       expect(doc.getElementById(id), `#${id} がない`).not.toBeNull();
     }
+  });
+
+  it('初期サンプルがデータブロックとして埋め込まれている', () => {
+    const block = doc.getElementById('default-content');
+    expect(block).not.toBeNull();
+    expect(block.tagName).toBe('SCRIPT');
+    expect(block.getAttribute('type')).toBe('text/html'); // 実行されないデータブロック
+    expect(block.textContent).toContain('<!DOCTYPE html>');
   });
 
   it('ツール間ナビゲーションが相互リンクされている', () => {
@@ -59,9 +86,36 @@ describe.each(PAGES)('%s', (page) => {
 
 describe('doceditor.html 固有', () => {
   const doc = parse('doceditor.html');
+
+  it('Designパネルのセクション開閉がキーボード操作可能なマークアップになっている', () => {
+    const headers = [...doc.querySelectorAll('.dt-section-header')];
+    expect(headers.length).toBeGreaterThan(0);
+    for (const h of headers) {
+      expect(h.getAttribute('tabindex')).toBe('0');
+      expect(h.getAttribute('role')).toBe('button');
+      expect(['true', 'false']).toContain(h.getAttribute('aria-expanded'));
+      expect(h.getAttribute('aria-controls')).toBe(h.getAttribute('data-section'));
+    }
+  });
+
+  it('子要素追加ドロップダウンのトリガーに aria-haspopup/aria-expanded がある', () => {
+    const btn = doc.getElementById('dt-add-child');
+    expect(btn.getAttribute('aria-haspopup')).toBe('true');
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('Design/Outline タブと design toolbar 要素が存在する', () => {
-    ['tab-code', 'tab-design', 'tab-outline', 'design-toolbar', 'outline-panel',
-     'dt-controls', 'dt-breadcrumb', 'dt-add-dropdown', 'design-mode-btn', 'print-btn',
+    [
+      'tab-code',
+      'tab-design',
+      'tab-outline',
+      'design-toolbar',
+      'outline-panel',
+      'dt-controls',
+      'dt-breadcrumb',
+      'dt-add-dropdown',
+      'design-mode-btn',
+      'print-btn',
     ].forEach((id) => expect(doc.getElementById(id), `#${id} がない`).not.toBeNull());
   });
 });

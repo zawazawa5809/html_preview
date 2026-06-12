@@ -55,6 +55,52 @@ describe('App.createEditor (CodeMirror不在時のフォールバック)', () =>
     expect(ed.getSearchCursor('x').findNext()).toBe(false);
   });
 
+  it('undo/redo が内部履歴で動作する（execCommand非依存）', () => {
+    const ta = document.getElementById('ed');
+    const ed = App.createEditor(ta, {});
+    const type = (v) => {
+      ta.value = v;
+      ta.dispatchEvent(new Event('input'));
+    };
+    type('a');
+    type('ab');
+    type('abc');
+
+    ed.undo();
+    expect(ed.getValue()).toBe('ab');
+    ed.undo();
+    expect(ed.getValue()).toBe('a');
+    ed.redo();
+    expect(ed.getValue()).toBe('ab');
+
+    // undo後に新規入力すると、それ以降のredo履歴は破棄される
+    type('abX');
+    ed.redo();
+    expect(ed.getValue()).toBe('abX');
+  });
+
+  it('undo/redo は change リスナーへ通知してプレビュー再描画につながる', () => {
+    const ta = document.getElementById('ed');
+    const ed = App.createEditor(ta, {});
+    const onChange = vi.fn();
+    ta.value = 'x';
+    ta.dispatchEvent(new Event('input'));
+    ed.on('change', onChange);
+    ed.undo();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    ed.redo();
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('履歴の先頭/末尾を超える undo/redo は何もしない', () => {
+    const ed = App.createEditor(document.getElementById('ed'), {});
+    expect(() => {
+      ed.undo();
+      ed.redo();
+    }).not.toThrow();
+    expect(ed.getValue()).toBe('');
+  });
+
   it('window.CodeMirror があれば fromTextArea を使う', () => {
     const fake = { fromTextArea: vi.fn(() => ({ marker: 'cm-instance' })) };
     window.CodeMirror = fake;

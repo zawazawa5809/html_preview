@@ -16,99 +16,13 @@
     quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
   };
 
-  var DEFAULT_CONTENT = [
-    '<!DOCTYPE html>',
-    '<html lang="ja">',
-    '<head>',
-    '  <meta charset="UTF-8">',
-    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
-    '  <title>サンプルドキュメント</title>',
-    '  <style>',
-    '    body {',
-    '      font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;',
-    '      margin: 0;',
-    '      padding: 32px;',
-    '      background: #f9fafb;',
-    '      color: #1f2937;',
-    '      line-height: 1.8;',
-    '    }',
-    '    .container {',
-    '      max-width: 800px;',
-    '      margin: 0 auto;',
-    '      background: #fff;',
-    '      padding: 48px;',
-    '      border-radius: 8px;',
-    '      box-shadow: 0 1px 3px rgba(0,0,0,0.1);',
-    '    }',
-    '    h1 { font-size: 28px; border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 24px; }',
-    '    h2 { font-size: 22px; color: #1e40af; margin-top: 32px; margin-bottom: 16px; }',
-    '    h3 { font-size: 18px; color: #374151; margin-top: 24px; margin-bottom: 12px; }',
-    '    p { margin-bottom: 16px; }',
-    '    table { width: 100%; border-collapse: collapse; margin: 16px 0; }',
-    '    th, td { border: 1px solid #d1d5db; padding: 10px 14px; text-align: left; }',
-    '    th { background: #f3f4f6; font-weight: 600; }',
-    '    .highlight { background: #fef3c7; padding: 16px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 16px 0; }',
-    '    ul, ol { margin: 16px 0; padding-left: 24px; }',
-    '    li { margin-bottom: 8px; }',
-    '  </style>',
-    '</head>',
-    '<body>',
-    '  <div class="container">',
-    '    <h1>プロジェクト報告書</h1>',
-    '    <p>このドキュメントはDocEditorのサンプルです。プレビューをクリックして要素を選択し、テキストをダブルクリックで編集できます。</p>',
-    '',
-    '    <h2>概要</h2>',
-    '    <p>DocEditorは、AIが生成したHTMLドキュメントを<strong>GUIで直感的に修正</strong>できるツールです。</p>',
-    '',
-    '    <div class="highlight">',
-    '      <strong>ポイント:</strong> テキストを選択すると書式設定ツールバーが表示されます。太字・斜体・下線・文字色などを変更できます。',
-    '    </div>',
-    '',
-    '    <h2>進捗状況</h2>',
-    '    <table>',
-    '      <thead>',
-    '        <tr>',
-    '          <th>タスク</th>',
-    '          <th>担当</th>',
-    '          <th>状況</th>',
-    '        </tr>',
-    '      </thead>',
-    '      <tbody>',
-    '        <tr>',
-    '          <td>要件定義</td>',
-    '          <td>田中</td>',
-    '          <td>完了</td>',
-    '        </tr>',
-    '        <tr>',
-    '          <td>設計</td>',
-    '          <td>佐藤</td>',
-    '          <td>進行中</td>',
-    '        </tr>',
-    '        <tr>',
-    '          <td>実装</td>',
-    '          <td>鈴木</td>',
-    '          <td>未着手</td>',
-    '        </tr>',
-    '      </tbody>',
-    '    </table>',
-    '',
-    '    <h2>次のステップ</h2>',
-    '    <ol>',
-    '      <li>デザインレビューの実施</li>',
-    '      <li>テスト計画の策定</li>',
-    '      <li>リリース準備</li>',
-    '    </ol>',
-    '',
-    '    <h3>備考</h3>',
-    '    <p>画像はデスクトップからドラッグ&ドロップで挿入できます。テーブルの行列追加はDesignパネルのTableセクションから操作できます。</p>',
-    '  </div>',
-    '</body>',
-    '</html>',
-  ].join('\n');
-
   function $(id) {
     return document.getElementById(id);
   }
+
+  // 初期サンプルはHTML内のデータブロック（#default-content）が単一情報源
+  var defaultContentEl = $('default-content');
+  var DEFAULT_CONTENT = defaultContentEl ? defaultContentEl.textContent.trim() : '';
 
   var iframe = $('preview-container');
   var helpOverlay = $('help-overlay');
@@ -117,10 +31,7 @@
     designMode: false,
     activeTab: 'code',
     syncingFromDesign: false,
-    designToken:
-      window.crypto && crypto.randomUUID
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2),
+    designToken: window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
     highlightedLines: [],
   };
 
@@ -189,7 +100,10 @@
   /* ---- プレビュー / 保存 ---- */
   function updatePreview() {
     App.renderPreview(iframe, editor.getValue());
-    if (state.designMode) design.injectInto(iframe.contentDocument, state.designToken);
+    if (state.designMode) {
+      design.injectInto(iframe.contentDocument, state.designToken);
+      panel.clearSelection(); // ソース起点の再描画で選択は失われるためパネルも追従
+    }
     scheduleOutline();
   }
 
@@ -214,6 +128,7 @@
     if (!iframeDoc || !iframeDoc.documentElement) return;
 
     var html = beautifyHtml(design.serializeCleanHtml(iframeDoc));
+    if (html === editor.getValue()) return; // 実質変更なし（エディタ履歴を汚さない）
 
     state.syncingFromDesign = true;
     // changeイベントが発火しなかった場合でもフラグが残らないようにする
@@ -317,16 +232,34 @@
     else enableDesignMode();
   }
 
+  /**
+   * Design Mode中の多段Undo/Redo。DOM→ソース同期が1操作=1履歴entryとして
+   * エディタ履歴に積まれるため、エディタのundo/redoへ集約する。
+   * 戻した内容はchangeイベント経由でプレビューに再描画される。
+   */
+  function designHistoryStep(dir) {
+    scheduleSync.flush(); // 未確定のDesign変更を履歴に確定させてから操作する
+    panel.clearSelection();
+    if (dir === 'undo') editor.undo();
+    else editor.redo();
+  }
+
   /* ---- iframe からのメッセージ ---- */
   function handleDesignMessage(e) {
     if (!e.data || e.data.token !== state.designToken) return;
     switch (e.data.type) {
       case '__design_click__':
         panel.showSelection(e.data.tag, e.data.styles, e.data.ancestors);
-        highlightSourceLine(e.data.tag);
+        highlightSourceLine(e.data.tag, e.data.occurrence);
         break;
       case '__design_change__':
         scheduleSync();
+        break;
+      case '__design_undo__':
+        designHistoryStep('undo');
+        break;
+      case '__design_redo__':
+        designHistoryStep('redo');
         break;
       case '__design_deselect__':
         panel.clearSelection();
@@ -347,15 +280,30 @@
   }
 
   /* ---- ソース行ハイライト ---- */
-  function highlightSourceLine(tag) {
+  /**
+   * 選択要素の開始タグ行を強調する。occurrence（同名タグの出現順、iframe側で
+   * 算出）でN番目の開始タグを特定するため、同名タグが複数あっても正しい行を指す。
+   */
+  function highlightSourceLine(tag, occurrence) {
     state.highlightedLines.forEach(function (line) {
       editor.removeLineClass(line, 'background', 'cm-design-highlight');
     });
     state.highlightedLines = [];
 
     var tagName = tag.split(/[#.]/)[0];
-    var cursor = editor.getSearchCursor('<' + tagName, null, { caseFold: true });
-    if (cursor.findNext()) {
+    // 前方一致の誤検出を防ぐ（例: <p が <pre に一致しない）
+    var query = new RegExp('<' + tagName + '(?=[\\s>/])', 'i');
+    var cursor = editor.getSearchCursor(query, null, { caseFold: true });
+    var remaining = typeof occurrence === 'number' && occurrence >= 0 ? occurrence : 0;
+    var found = false;
+    while (cursor.findNext()) {
+      if (remaining === 0) {
+        found = true;
+        break;
+      }
+      remaining--;
+    }
+    if (found) {
       var line = cursor.from().line;
       editor.addLineClass(line, 'background', 'cm-design-highlight');
       state.highlightedLines.push(line);
@@ -448,13 +396,8 @@
     );
   }
 
-  /* ---- ヘルプモーダル ---- */
-  function toggleHelp() {
-    helpOverlay.hidden = !helpOverlay.hidden;
-  }
-  function closeHelp() {
-    helpOverlay.hidden = true;
-  }
+  /* ---- ヘルプモーダル（フォーカストラップ + フォーカス復元付き） ---- */
+  var helpModal = App.createModal(helpOverlay);
 
   /** Designタブで選択要素をDeleteキー削除してよい状況か */
   function canDeleteByKey() {
@@ -475,10 +418,8 @@
   var KEY_BINDINGS = [
     {
       key: 'Escape',
-      when: function () {
-        return !helpOverlay.hidden;
-      },
-      run: closeHelp,
+      when: helpModal.isOpen,
+      run: helpModal.close,
       help: null,
     },
     {
@@ -492,19 +433,62 @@
       when: function (e) {
         return !App.isTypingContext(e.target);
       },
-      run: toggleHelp,
+      run: helpModal.toggle,
       help: ['?', 'このヘルプを表示'],
     },
     { key: 's', ctrl: true, run: saveToFile, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
-    { key: 'z', ctrl: true, run: function () { editor.undo(); }, help: ['Ctrl + Z', '元に戻す'] },
-    { key: 'y', ctrl: true, run: function () { editor.redo(); }, help: ['Ctrl + Y', 'やり直す'] },
-    { key: 'Z', ctrl: true, shift: true, run: function () { editor.redo(); }, help: null },
+    {
+      key: 'z',
+      ctrl: true,
+      run: function () {
+        editor.undo();
+      },
+      help: ['Ctrl + Z', '元に戻す'],
+    },
+    {
+      key: 'y',
+      ctrl: true,
+      run: function () {
+        editor.redo();
+      },
+      help: ['Ctrl + Y', 'やり直す'],
+    },
+    {
+      key: 'Z',
+      ctrl: true,
+      shift: true,
+      run: function () {
+        editor.redo();
+      },
+      help: null,
+    },
     { key: 'C', ctrl: true, shift: true, run: copyEditor, help: ['Ctrl + Shift + C', 'コードをコピー'] },
     { key: 'V', ctrl: true, shift: true, run: pasteEditor, help: ['Ctrl + Shift + V', 'クリップボードから貼り付け'] },
     { key: 'Delete', ctrl: true, run: clearEditor, help: ['Ctrl + Delete', 'エディターをクリア'] },
-    { key: '1', ctrl: true, run: function () { layout.apply('lr'); }, help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'] },
-    { key: '2', ctrl: true, run: function () { layout.apply('tb'); }, help: null },
-    { key: '3', ctrl: true, run: function () { layout.apply('po'); }, help: null },
+    {
+      key: '1',
+      ctrl: true,
+      run: function () {
+        layout.apply('lr');
+      },
+      help: ['Ctrl + 1 / 2 / 3', '左右分割 / 上下分割 / プレビューのみ'],
+    },
+    {
+      key: '2',
+      ctrl: true,
+      run: function () {
+        layout.apply('tb');
+      },
+      help: null,
+    },
+    {
+      key: '3',
+      ctrl: true,
+      run: function () {
+        layout.apply('po');
+      },
+      help: null,
+    },
     {
       key: 'd',
       ctrl: true,
@@ -557,17 +541,28 @@
       getLayout: layout.current,
     });
 
-    $('layout-lr-btn').addEventListener('click', function () { layout.apply('lr'); });
-    $('layout-tb-btn').addEventListener('click', function () { layout.apply('tb'); });
-    $('layout-po-btn').addEventListener('click', function () { layout.apply('po'); });
-    $('undo-btn').addEventListener('click', function () { editor.undo(); });
-    $('redo-btn').addEventListener('click', function () { editor.redo(); });
+    $('layout-lr-btn').addEventListener('click', function () {
+      layout.apply('lr');
+    });
+    $('layout-tb-btn').addEventListener('click', function () {
+      layout.apply('tb');
+    });
+    $('layout-po-btn').addEventListener('click', function () {
+      layout.apply('po');
+    });
+    $('undo-btn').addEventListener('click', function () {
+      editor.undo();
+    });
+    $('redo-btn').addEventListener('click', function () {
+      editor.redo();
+    });
     $('copy-btn').addEventListener('click', copyEditor);
     $('paste-btn').addEventListener('click', pasteEditor);
     $('clear-btn').addEventListener('click', clearEditor);
     $('save-btn').addEventListener('click', saveToFile);
     $('theme-toggle-btn').addEventListener('click', theme.toggle);
-    $('help-btn').addEventListener('click', toggleHelp);
+    $('help-btn').addEventListener('click', helpModal.toggle);
+    $('help-close-btn').addEventListener('click', helpModal.close);
     $('design-mode-btn').addEventListener('click', toggleDesignMode);
     $('print-btn').addEventListener('click', function () {
       var win = iframe.contentWindow;
@@ -593,12 +588,18 @@
     // タブ（design toolbar / outline panel はエディタ側カラムに移動して表示）
     editorContainer.appendChild($('design-toolbar'));
     editorContainer.appendChild($('outline-panel'));
-    $('tab-code').addEventListener('click', function () { switchTab('code'); });
-    $('tab-design').addEventListener('click', function () { switchTab('design'); });
-    $('tab-outline').addEventListener('click', function () { switchTab('outline'); });
+    $('tab-code').addEventListener('click', function () {
+      switchTab('code');
+    });
+    $('tab-design').addEventListener('click', function () {
+      switchTab('design');
+    });
+    $('tab-outline').addEventListener('click', function () {
+      switchTab('outline');
+    });
 
     helpOverlay.addEventListener('click', function (e) {
-      if (e.target === helpOverlay) closeHelp();
+      if (e.target === helpOverlay) helpModal.close();
     });
     App.renderHelpRows($('help-table'), KEY_BINDINGS, HELP_EXTRA_ROWS);
     document.addEventListener('keydown', App.createKeymap(KEY_BINDINGS), true);

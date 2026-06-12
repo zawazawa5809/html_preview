@@ -26,7 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `js/pages/index.js` | プレビューアーのエントリ |
 | `js/pages/doceditor/` | DocEditorのエントリ(main.js)と固有モジュール |
 | `vendor/` | 実行時依存（**生成物。直接編集禁止。** `npm run vendor` で再生成） |
-| `tests/` | Vitestテスト |
+| `tests/` | Vitestテスト（ユニット/スモーク） |
+| `e2e/` | Playwright E2Eテスト（実ブラウザで `file://` を直接開いて検証） |
 | `scripts/vendor.mjs` | node_modules → vendor/ のコピー（依存リストの単一情報源） |
 
 localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/Layout/Theme`（doceditor）
@@ -39,6 +40,7 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 | `storage.js` | `safeGet/safeSet`, `createSaveStatus`, `createCodeStore`（容量警告含む） |
 | `toast.js` | `showToast(msg, type, {actionLabel, onAction})` |
 | `keymap.js` | `createKeymap`(宣言的KB定義), `renderHelpRows`(ヘルプ表生成), `isTypingContext` |
+| `modal.js` | `createModal`（フォーカストラップ + フォーカス復元付きモーダル制御） |
 | `editor.js` | `createEditor`（CodeMirror初期化。失敗時はtextareaアダプタにフォールバック） |
 | `theme.js` | `createTheme`（data-theme属性 + localStorage） |
 | `layout.js` | `createLayout`(lr/tb/po切替), `initSplitDrag`(gutterリサイズ) |
@@ -56,8 +58,10 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 
 - **動作確認**: HTMLファイルをブラウザで直接開く（サーバー不要）
 - **テスト**: `npm test`（Vitest + jsdom）。**TDDで進める**: 挙動変更の前にテストを書く/直す
+- **E2E**: `npm run test:e2e`（Playwright/Chromium。初回のみ `npx playwright install chromium`）
+- **Lint/Format**: `npm run lint`（js/はES5構文に固定、no-undefでグローバル参照ミス検出）/ `npm run format`（Prettier）
 - **依存更新**: package.jsonを変更 → `npm install && npm run vendor`（vendor/を手で編集しない）
-- **CI**: push/PRでテスト + vendor整合性チェック。mainマージでGitHub Pagesへ自動デプロイ
+- **CI**: push/PRで lint + format検査 + テスト（カバレッジ閾値付き）+ vendor整合性チェック + E2E。mainマージでGitHub Pagesへ自動デプロイ
 
 ## Key Patterns
 
@@ -71,11 +75,14 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 - **iframeプレビュー**: `renderPreview()` が `iframeDoc.open()/write()/close()`。DocEditorはDesign Mode中の再描画時に `design.injectInto()` を再実行
 - **Design Modeメッセージ**: iframe↔親は `postMessage` + ランダムtoken検証（`__design_click__`/`__design_change__`/`__design_deselect__`/`__design_action__`/`__design_toast__`）
 - **DOM→ソース同期**: `serializeCleanHtml()` がdesigner注入物と編集用属性を除去 → `beautifyHtml()` → CodeMirror全置換。`syncingFromDesign` フラグでchangeループを抑止
-- **エディタフォールバック**: `createEditor` はCodeMirror不在時にCM互換textareaアダプタを返し `.asset-warning` バナーを表示（vendor/欠損などの異常系）
+- **エディタフォールバック**: `createEditor` はCodeMirror不在時にCM互換textareaアダプタを返し `.asset-warning` バナーを表示（vendor/欠損などの異常系）。undo/redoは自前履歴スタック
+- **初期サンプル**: 各ページの `<script type="text/html" id="default-content">` データブロックが単一情報源（JS側はtextContentを参照）
+- **ドラッグ操作**: gutter・リサイズハンドルはPointerEvent + `touch-action:none` で実装（mouse/touchの二重実装をしない）。要素並べ替えのみHTML5 DnD
+- **書式適用**: `document.execCommand` は使用禁止。designRuntime内のSelection/Rangeベースの書式エンジンを使う
 
 ## Testing Notes
 
 - テストはクラシックスクリプトを `import '../js/lib/x.js'` の副作用ロードで読み込み、`window.App` 経由で検証する
 - `tests/smoke.test.js` が参照整合性（script/link実在・**外部URL参照ゼロ**・必須DOM ID）を守っている。HTML構造を変えたらここを追従させる
 - 注入スクリプトは `new Function` による構文検証 + jsdom実行でメッセージプロトコルまで検証している
-- jsdomで検証できないもの（実レイアウト・印刷・クリップボード・ドラッグリサイズ）は手動確認
+- jsdomで検証できない領域のうち、実レイアウト・gutterドラッグ・実CodeMirror編集・Design Mode選択/削除/同期は `e2e/` のPlaywrightテストがカバーする。印刷・クリップボード・D&Dの実操作感は引き続き手動確認

@@ -84,7 +84,9 @@ describe('App.createCodeStore', () => {
     const { store, setStatus, warn } = mkStore();
     const err = new Error('full');
     err.name = 'QuotaExceededError';
-    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw err; });
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw err;
+    });
     store.save('data');
     expect(setStatus).toHaveBeenLastCalledWith('error');
     expect(warn).toHaveBeenCalled();
