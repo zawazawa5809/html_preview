@@ -6,7 +6,8 @@
 
 - PR #22「マルチファイル構成へ移行」は **main へマージ済み**（マージコミット `0ce23c2`）。CI全チェックgreen、レビュー指摘1件（keymapのShift照合）は修正・resolve済み
 - GitHub Pages 稼働確認済み（main マージで `deploy-pages.yml` が自動デプロイ）
-- テスト: 12ファイル / 98テスト。`npm test` で全GREEN
+- テスト: ユニット12ファイル / 98テスト（`npm test`）+ E2E 11テスト（`npm run test:e2e`）。全GREEN
+- 品質ゲート: ESLint（`npm run lint`）/ Prettier（`npm run format:check`）/ カバレッジ閾値（`npm run test:coverage`）がCIで強制される
 
 ### 直近の主要コミット
 
@@ -31,20 +32,21 @@
 - 注入スクリプト（`designRuntime`）は自己完結必須。外側スコープを参照すると `toString()` 注入で壊れる。`cfg` 引数経由で渡すこと
 - `vendor/` は生成物。手編集するとCIの整合性チェックで落ちる
 
-### jsdomで検証できない領域（変更時は手動確認）
+### jsdomで検証できない領域
 
-gutterドラッグリサイズ / 印刷 / クリップボード実挙動 / CodeMirror実描画（折りたたみ・検索ダイアログ）/ Design Modeのリサイズハンドル・D&Dの実操作感
+gutterドラッグリサイズ・CodeMirror実描画/実編集・Design Modeの選択/削除/同期は `e2e/` のPlaywrightテストがカバー済み。
+**引き続き手動確認が必要**: 印刷 / クリップボード実挙動 / CodeMirror検索ダイアログ・折りたたみ / Design Modeのリサイズハンドル・D&Dの実操作感
 
 ## 3. 改善バックログ（推奨順）
 
-### P1: 価値が高く、すぐ着手できる
+### P1: ~~価値が高く、すぐ着手できる~~ → **完了（2026-06-12）**
 
-1. **E2Eテスト（Playwright）の導入**
-   上記「jsdomで検証できない領域」が現状すべて手動。実ブラウザでの起動・編集・ドラッグ・Design Mode選択のスモークE2EをCIに足せば、手動確認をほぼ撤廃できる。静的ファイルなので `npx serve` 不要、`file://` をそのまま開ける
-2. **ESLint + Prettier + CIのlintステップ**
-   現状フォーマッタ・リンタ無し。ES5スタイル（var/function）を規約として固定し、`no-undef` でグローバル参照ミス（`App.xxx` のtypo）を静的検出できる。導入コストは小さい
-3. **カバレッジ計測（`vitest --coverage` + CI閾値）**
-   テスト網の穴（特に `js/pages/doceditor/main.js` の分岐）を可視化する
+1. ~~**E2Eテスト（Playwright）の導入**~~ ✅
+   `e2e/` に11テスト（index 6 / doceditor 5）。`file://` を直接開いて実CodeMirror編集→プレビュー反映・gutterドラッグ・レイアウト/テーマ切替・localStorage永続化・Design Mode選択/削除/DOM→ソース同期・アウトラインを検証。CIに `e2e` ジョブ追加（失敗時はplaywright-reportをartifact保存）
+2. ~~**ESLint + Prettier + CIのlintステップ**~~ ✅
+   `eslint.config.mjs`: js/ は `ecmaVersion: 5` + `sourceType: 'script'` でES6+構文を構文エラーとして検出（組み込みグローバルのみES2015許可）。Prettierは `singleQuote` / `printWidth: 120` / `trailingComma: "es5"`（関数引数の末尾カンマ=ES2017構文を避けるため）。全コード整形済み
+3. ~~**カバレッジ計測（`vitest --coverage` + CI閾値）**~~ ✅
+   `npm run test:coverage`。閾値は現状値直下（Stmts 38 / Branch 28 / Funcs 45 / Lines 40）の回帰ガード。テスト追加時に引き上げること。注: design-mode.js の注入ランタイムは `new Function` 実行のためカバレッジに乗らない
 
 ### P2: 機能・品質の底上げ
 
@@ -73,5 +75,6 @@ gutterドラッグリサイズ / 印刷 / クリップボード実挙動 / CodeM
 ## 4. 運用メモ
 
 - 依存更新フロー: package.jsonのバージョン変更 → `npm install && npm run vendor` → コミット（vendor差分込み）。CIが乖離を検出する
+- `@playwright/test` は `1.56` に固定（Claude Codeリモート実行環境のプリインストールブラウザ Chromium 141/build 1194 に合わせるため。CDNダウンロードが当該環境では不可）。更新する場合はCIは問題ないが、リモート環境でのE2E実行可否を確認すること
 - デプロイ: mainマージのみ。ロールバックはmainのrevert
 - localStorageキー: ページごとに独立（`htmlPreviewer*` / `docEditor*`）。**キー変更はユーザーの保存データ消失を意味する**ので避ける

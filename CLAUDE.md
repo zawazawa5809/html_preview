@@ -26,7 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `js/pages/index.js` | プレビューアーのエントリ |
 | `js/pages/doceditor/` | DocEditorのエントリ(main.js)と固有モジュール |
 | `vendor/` | 実行時依存（**生成物。直接編集禁止。** `npm run vendor` で再生成） |
-| `tests/` | Vitestテスト |
+| `tests/` | Vitestテスト（ユニット/スモーク） |
+| `e2e/` | Playwright E2Eテスト（実ブラウザで `file://` を直接開いて検証） |
 | `scripts/vendor.mjs` | node_modules → vendor/ のコピー（依存リストの単一情報源） |
 
 localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/Layout/Theme`（doceditor）
@@ -56,8 +57,10 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 
 - **動作確認**: HTMLファイルをブラウザで直接開く（サーバー不要）
 - **テスト**: `npm test`（Vitest + jsdom）。**TDDで進める**: 挙動変更の前にテストを書く/直す
+- **E2E**: `npm run test:e2e`（Playwright/Chromium。初回のみ `npx playwright install chromium`）
+- **Lint/Format**: `npm run lint`（js/はES5構文に固定、no-undefでグローバル参照ミス検出）/ `npm run format`（Prettier）
 - **依存更新**: package.jsonを変更 → `npm install && npm run vendor`（vendor/を手で編集しない）
-- **CI**: push/PRでテスト + vendor整合性チェック。mainマージでGitHub Pagesへ自動デプロイ
+- **CI**: push/PRで lint + format検査 + テスト（カバレッジ閾値付き）+ vendor整合性チェック + E2E。mainマージでGitHub Pagesへ自動デプロイ
 
 ## Key Patterns
 
@@ -78,4 +81,4 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 - テストはクラシックスクリプトを `import '../js/lib/x.js'` の副作用ロードで読み込み、`window.App` 経由で検証する
 - `tests/smoke.test.js` が参照整合性（script/link実在・**外部URL参照ゼロ**・必須DOM ID）を守っている。HTML構造を変えたらここを追従させる
 - 注入スクリプトは `new Function` による構文検証 + jsdom実行でメッセージプロトコルまで検証している
-- jsdomで検証できないもの（実レイアウト・印刷・クリップボード・ドラッグリサイズ）は手動確認
+- jsdomで検証できない領域のうち、実レイアウト・gutterドラッグ・実CodeMirror編集・Design Mode選択/削除/同期は `e2e/` のPlaywrightテストがカバーする。印刷・クリップボード・D&Dの実操作感は引き続き手動確認

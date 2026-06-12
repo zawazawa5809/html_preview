@@ -33,13 +33,17 @@ docs/adr/    アーキテクチャ決定記録（ADR）
 ## 開発
 
 ```bash
-npm install        # 開発ツール（Vitest等）の取得
-npm test           # テスト実行
-npm run test:watch # ウォッチモード
-npm run vendor     # 依存更新時: node_modules → vendor/ の再生成
+npm install            # 開発ツール（Vitest等）の取得
+npm test               # ユニットテスト実行
+npm run test:watch     # ウォッチモード
+npm run test:coverage  # カバレッジ計測（閾値チェック付き）
+npm run test:e2e       # E2Eテスト（Playwright。初回は npx playwright install chromium）
+npm run lint           # ESLint（ES5構文規約 + グローバル参照チェック）
+npm run format         # Prettierで整形（format:check で検査のみ）
+npm run vendor         # 依存更新時: node_modules → vendor/ の再生成
 ```
 
 - 開発はTDDで進めます。挙動を変える前にテストで仕様を固定してください（ADR-0003）
-- push / PR で CI（テスト + vendor整合性チェック）が走ります
+- push / PR で CI（lint + フォーマット検査 + テスト/カバレッジ + vendor整合性チェック + E2E）が走ります
 - main へのマージで GitHub Pages へ自動デプロイされます
 - 設計判断の経緯は `docs/adr/` を参照してください
