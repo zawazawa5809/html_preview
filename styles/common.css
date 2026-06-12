@@ -318,6 +318,7 @@ body {
   background-color: var(--app-gutter-bg);
   position: relative;
   transition: background-color var(--duration-normal) var(--ease-out-expo);
+  touch-action: none; /* PointerEventドラッグ（タッチ時のスクロール抑止） */
 }
 .split-view.layout-lr .gutter {
   width: 6px;

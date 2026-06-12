@@ -39,7 +39,9 @@
   };
 
   /**
-   * gutter のマウス/タッチドラッグでパネル比率を変更する。
+   * gutter のドラッグでパネル比率を変更する。
+   * PointerEvent で統一しマウス/ペン/タッチを同一コードで扱う
+   * （CSS側の .gutter { touch-action: none } とセット）。
    * opts: { gutter, editorPane, previewPane, getLayout() }
    */
   App.initSplitDrag = function (opts) {
@@ -48,10 +50,6 @@
     var startY = 0;
     var initialWidth = 0;
     var initialHeight = 0;
-
-    function onTouchMove(ev) {
-      onMove(ev.touches[0]);
-    }
 
     function start(e) {
       dragging = true;
@@ -62,11 +60,9 @@
       startY = e.clientY;
       initialWidth = opts.editorPane.offsetWidth;
       initialHeight = opts.editorPane.offsetHeight;
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('touchmove', onTouchMove, { passive: false });
-      window.addEventListener('mouseup', stop);
-      window.addEventListener('touchend', stop);
-      window.addEventListener('mouseleave', stop);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', stop);
+      window.addEventListener('pointercancel', stop);
       document.body.style.userSelect = 'none';
       document.body.style.cursor = layout === 'tb' ? 'row-resize' : 'col-resize';
       var overlay = document.createElement('div');
@@ -100,21 +96,18 @@
       dragging = false;
       document.body.classList.remove('dragging-lr', 'dragging-tb');
       opts.gutter.classList.remove('dragging');
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('mouseup', stop);
-      window.removeEventListener('touchend', stop);
-      window.removeEventListener('mouseleave', stop);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
       var overlay = document.querySelector('.resize-overlay');
       if (overlay) overlay.remove();
     }
 
-    opts.gutter.addEventListener('mousedown', start);
-    opts.gutter.addEventListener('touchstart', function (e) {
-      e.preventDefault(); // スクロール防止
-      start(e.touches[0]);
+    opts.gutter.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); // テキスト選択開始の抑止
+      start(e);
     });
   };
 })();

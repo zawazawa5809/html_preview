@@ -260,13 +260,13 @@
       '.designer-action-bar button:hover{background:#353842;color:#f0f1f5}' +
       '.designer-resize-handle{position:fixed;width:8px;height:8px;background:' +
       ACCENT +
-      ';border:1px solid #fff;border-radius:50%;z-index:99996;pointer-events:auto;box-shadow:0 0 3px rgba(0,0,0,0.3)}' +
+      ';border:1px solid #fff;border-radius:50%;z-index:99996;pointer-events:auto;box-shadow:0 0 3px rgba(0,0,0,0.3);touch-action:none}' +
       ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
         .map(function (dir) {
           return '.designer-resize-handle[data-dir="' + dir + '"]{cursor:' + dir + '-resize}';
         })
         .join('') +
-      '.designer-resize-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99995;cursor:inherit}' +
+      '.designer-resize-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99995;cursor:inherit;touch-action:none}' +
       '[data-page-break]{break-before:page;border:none;border-top:2px dashed #999;text-align:center;padding:8px 0;color:#999;font-size:12px;margin:16px 0;position:relative}' +
       '[data-page-break]::after{content:"Page Break";background:#fff;padding:0 12px;position:relative}' +
       '@media print{[data-page-break]{color:transparent;border:none;padding:0;margin:0}[data-page-break]::after{display:none}}'
@@ -556,14 +556,16 @@
     var dropPosition = null;
     var prevDropTarget = null;
 
-    document.addEventListener('mousedown', function (e) {
+    // PointerEventで統一（マウス/ペン/タッチ）。ただし並べ替え自体はHTML5 DnDのため
+    // 実際のドラッグ開始はマウス操作時のみ発生する
+    document.addEventListener('pointerdown', function (e) {
       var el = e.target;
       if (isExcluded(el) || isInjected(el)) return;
       if (el.isContentEditable) return;
       el.setAttribute('draggable', 'true');
     });
 
-    document.addEventListener('mouseup', function (e) {
+    document.addEventListener('pointerup', function (e) {
       if (!dragEl) {
         var el = e.target;
         if (el.hasAttribute && el.hasAttribute('draggable')) el.removeAttribute('draggable');
@@ -735,10 +737,17 @@
     var resizeOverlay = null;
 
     resizeHandles.forEach(function (h) {
-      h.addEventListener('mousedown', function (e) {
+      h.addEventListener('pointerdown', function (e) {
         if (!selected) return;
         e.preventDefault();
         e.stopPropagation();
+        if (h.setPointerCapture) {
+          try {
+            h.setPointerCapture(e.pointerId);
+          } catch (err) {
+            /* 非対応環境では無視（documentのpointermoveで追従できる） */
+          }
+        }
         resizing = true;
         resizeDir = h.getAttribute('data-dir');
         resizeTarget = selected;
@@ -756,7 +765,7 @@
       });
     });
 
-    document.addEventListener('mousemove', function (e) {
+    document.addEventListener('pointermove', function (e) {
       if (!resizing || !resizeTarget) return;
       e.preventDefault();
       var dx = e.clientX - resizeStartX;
@@ -773,7 +782,7 @@
       showActionBar(resizeTarget);
     });
 
-    document.addEventListener('mouseup', function () {
+    function endResize() {
       if (!resizing) return;
       resizing = false;
       resizeDir = null;
@@ -784,7 +793,9 @@
       post({ type: '__design_change__' });
       if (resizeTarget) notifySelect(resizeTarget);
       resizeTarget = null;
-    });
+    }
+    document.addEventListener('pointerup', endResize);
+    document.addEventListener('pointercancel', endResize);
 
     /* ---- MutationObserver: 実DOM変更の検出 ---- */
     var observer = new MutationObserver(function (mutations) {
@@ -1006,9 +1017,9 @@
       );
     }).join('');
 
+    // selectionchangeベースの表示制御（マウス/タッチ/キーボード選択すべてに反応する）
     var formatBarTimeout = null;
-    document.addEventListener('mouseup', function (e) {
-      if (e.target.closest('[data-designer-injected]')) return;
+    document.addEventListener('selectionchange', function () {
       clearTimeout(formatBarTimeout);
       formatBarTimeout = setTimeout(function () {
         var sel = window.getSelection();
@@ -1026,11 +1037,14 @@
         if (barTop < 4) barTop = rect.bottom + 6;
         formatBar.style.left = Math.max(4, rect.left + rect.width / 2 - 100) + 'px';
         formatBar.style.top = barTop + 'px';
-      }, 50);
+      }, 120);
     });
 
-    formatBar.addEventListener('mousedown', function (e) {
+    formatBar.addEventListener('pointerdown', function (e) {
       e.preventDefault(); // テキスト選択を維持する
+    });
+    formatBar.addEventListener('mousedown', function (e) {
+      e.preventDefault(); // pointerdownのpreventDefaultはmousedown既定動作を抑止しないため両方必要
     });
     formatBar.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-cmd]');
@@ -1053,14 +1067,6 @@
         applyColor(this.getAttribute('data-for') === 'foreColor' ? 'color' : 'backgroundColor', this.value);
         post({ type: '__design_change__' });
       });
-    });
-    document.addEventListener('mousedown', function (e) {
-      if (!e.target.closest('[data-designer-injected]')) {
-        setTimeout(function () {
-          var sel = window.getSelection();
-          if (!sel || sel.isCollapsed) formatBar.style.display = 'none';
-        }, 10);
-      }
     });
   }
 
