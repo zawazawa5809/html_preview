@@ -63,6 +63,7 @@ describe.each(PAGES)('%s', (page) => {
       'save-btn',
       'help-btn',
       'help-close-btn',
+      'protected-mode-btn',
     ];
     for (const id of required) {
       expect(doc.getElementById(id), `#${id} がない`).not.toBeNull();

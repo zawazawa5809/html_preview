@@ -121,6 +121,47 @@ test('書式ツールバー: テキスト選択で表示され、太字を適用
   await expect(p.locator('strong')).toBeVisible();
 });
 
+test('要素並べ替え: Pointerドラッグで要素を移動でき、直後のクリック選択も機能する', async ({ page }) => {
+  const preview = page.frameLocator('#preview-container');
+  const highlight = preview.locator('.highlight');
+  const h1 = preview.locator('h1').first();
+
+  const srcBox = await highlight.boundingBox();
+  const dstBox = await h1.boundingBox();
+  // paddingの内側（テキストノード外）を掴んで .highlight 自体をドラッグする
+  await page.mouse.move(srcBox.x + 8, srcBox.y + 8);
+  await page.mouse.down();
+  // h1の上1/3へ移動 → before ドロップ
+  await page.mouse.move(dstBox.x + dstBox.width / 2, dstBox.y + 4, { steps: 10 });
+  await page.mouse.up();
+
+  // .highlight が h1 の前（コンテナの先頭）へ移動している
+  await expect(preview.locator('.container > :first-child')).toHaveClass(/highlight/);
+  // DOM→ソース同期 → 自動保存まで到達する
+  await expect(page.locator('#save-status')).toContainText('自動保存済み');
+
+  // 抑止されるのはドラッグ直後のclickのみ。次のクリックは通常どおり選択になる
+  await h1.click();
+  await expect(page.locator('#dt-element-tag')).toContainText(/h1/i);
+});
+
+test('保護プレビュー: Design Modeが強制OFFになり、注入もスクリプト実行もされない', async ({ page }) => {
+  const preview = page.frameLocator('#preview-container');
+  await expect(preview.locator('style[data-designer-injected]')).toHaveCount(1);
+
+  await page.locator('#protected-mode-btn').click();
+  await expect(page.locator('#preview-container')).toHaveAttribute('sandbox', 'allow-same-origin');
+  await expect(page.locator('#design-mode-btn')).not.toHaveClass(/active/);
+  await expect(page.locator('#design-mode-btn')).toBeDisabled();
+  await expect(preview.locator('style[data-designer-injected]')).toHaveCount(0);
+
+  // OFFに戻すとデザインモードを再度有効化できる
+  await page.locator('#protected-mode-btn').click();
+  await expect(page.locator('#design-mode-btn')).toBeEnabled();
+  await page.locator('#design-mode-btn').click();
+  await expect(preview.locator('style[data-designer-injected]')).toHaveCount(1);
+});
+
 test('Design Mode OFFで注入物が除去され、ONで復帰する', async ({ page }) => {
   const btn = page.locator('#design-mode-btn');
   const preview = page.frameLocator('#preview-container');

@@ -125,4 +125,30 @@ describe('doceditor.html 起動', () => {
     expect(document.getElementById('dt-controls').style.display).toBe('none');
     expect(document.getElementById('dt-hint').style.display).toBe('');
   });
+
+  // 注: Design Mode状態を変更するためファイル末尾に置く
+  it('保護プレビューONでDesign Modeが強制OFFになり、注入なしのsandbox付きiframeに差し替わる', () => {
+    // 直前のテストでエディタ履歴が巻き戻っているため、内容を明示しておく
+    const ta = document.getElementById('html-editor');
+    ta.value = '<p id="prot">protected body</p>';
+    ta.dispatchEvent(new Event('input'));
+
+    document.getElementById('protected-mode-btn').click();
+
+    const iframe = document.getElementById('preview-container');
+    expect(iframe.getAttribute('sandbox')).toBe('allow-same-origin');
+    expect(localStorage.getItem('docEditorProtected')).toBe('1');
+    expect(document.getElementById('design-mode-btn').classList.contains('active')).toBe(false);
+    expect(document.getElementById('design-mode-btn').disabled).toBe(true);
+    expect(iframe.contentDocument.querySelector('[data-designer-injected]')).toBeNull();
+    expect(iframe.contentDocument.body.textContent).toContain('protected body');
+
+    // 保護中はデザインモードを有効化できない
+    document.getElementById('tab-design').click();
+    expect(document.getElementById('design-mode-btn').classList.contains('active')).toBe(false);
+
+    document.getElementById('protected-mode-btn').click();
+    expect(document.getElementById('preview-container').hasAttribute('sandbox')).toBe(false);
+    expect(document.getElementById('design-mode-btn').disabled).toBe(false);
+  });
 });

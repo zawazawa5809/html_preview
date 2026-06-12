@@ -67,4 +67,18 @@ describe('index.html 起動', () => {
     expect(document.getElementById('split-view').className).toBe('split-view layout-po');
     expect(localStorage.getItem('htmlPreviewerLayout')).toBe('po');
   });
+
+  it('保護プレビューの切替でiframeがsandbox付きで差し替わり、設定が永続化される', () => {
+    document.getElementById('protected-mode-btn').click();
+    const iframe = document.getElementById('preview-container');
+    expect(iframe.getAttribute('sandbox')).toBe('allow-same-origin');
+    expect(document.getElementById('protected-mode-btn').getAttribute('aria-pressed')).toBe('true');
+    expect(localStorage.getItem('htmlPreviewerProtected')).toBe('1');
+    // 差し替え後のiframeにもプレビューが描画されている
+    expect(iframe.contentDocument.body.textContent).toContain('updated');
+
+    document.getElementById('protected-mode-btn').click();
+    expect(document.getElementById('preview-container').hasAttribute('sandbox')).toBe(false);
+    expect(localStorage.getItem('htmlPreviewerProtected')).toBe('0');
+  });
 });

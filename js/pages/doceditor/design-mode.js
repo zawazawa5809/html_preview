@@ -67,11 +67,13 @@
     clone.querySelectorAll('[data-designer-injected]').forEach(function (el) {
       el.remove();
     });
-    ['data-designer-selected', 'contenteditable', 'draggable'].forEach(function (attr) {
-      clone.querySelectorAll('[' + attr + ']').forEach(function (el) {
-        el.removeAttribute(attr);
-      });
-    });
+    ['data-designer-selected', 'data-designer-dragging', 'data-designer-drop', 'contenteditable'].forEach(
+      function (attr) {
+        clone.querySelectorAll('[' + attr + ']').forEach(function (el) {
+          el.removeAttribute(attr);
+        });
+      }
+    );
     return '<!DOCTYPE html>\n' + clone.outerHTML;
   };
 
@@ -243,15 +245,15 @@
       '!important;outline-offset:2px!important}' +
       '.designer-hover-overlay{position:fixed;pointer-events:none;background:rgba(91,143,204,0.08);border:1px solid rgba(91,143,204,0.4);z-index:99998;transition:all 50ms}' +
       '.designer-hover-label{position:fixed;pointer-events:none;background:#1e1f25;color:#e2e4ec;font:11px/1.3 "Noto Sans Mono",Consolas,monospace;padding:2px 6px;border-radius:3px;z-index:99999;white-space:nowrap}' +
-      '[draggable="true"]{cursor:grab}' +
-      '.designer-dragging{opacity:0.3!important}' +
-      '.designer-drop-before{box-shadow:inset 0 3px 0 0 ' +
+      // pointer-events:none でドラッグ中の elementFromPoint が自分自身にヒットしないようにする
+      '[data-designer-dragging]{opacity:0.3!important;pointer-events:none!important}' +
+      '[data-designer-drop="before"]{box-shadow:inset 0 3px 0 0 ' +
       ACCENT +
       '!important}' +
-      '.designer-drop-after{box-shadow:inset 0 -3px 0 0 ' +
+      '[data-designer-drop="after"]{box-shadow:inset 0 -3px 0 0 ' +
       ACCENT +
       '!important}' +
-      '.designer-drop-inside{outline:2px solid ' +
+      '[data-designer-drop="inside"]{outline:2px solid ' +
       ACCENT +
       '!important;background:rgba(91,143,204,0.06)!important}' +
       '.designer-action-bar{position:fixed;display:flex;gap:2px;background:#1e1f25;border:1px solid #353842;border-radius:6px;padding:3px;z-index:99997;box-shadow:0 4px 12px rgba(0,0,0,0.3)}' +
@@ -406,6 +408,13 @@
     document.addEventListener(
       'click',
       function (e) {
+        if (suppressNextClick) {
+          // 並べ替えドラッグ直後に発火するclickは選択操作として扱わない
+          suppressNextClick = false;
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         var el = e.target;
         if (isInjected(el)) return;
         if (isExcluded(el)) return;
@@ -550,111 +559,161 @@
       }
     });
 
-    /* ---- drag & drop 並べ替え ---- */
-    var dragEl = null;
-    var dropTarget = null;
+    /* ---- 要素並べ替え（PointerEventベース。mouse/pen/touchを単一実装で扱う） ---- */
+    var DRAG_THRESHOLD = 6; // px。クリック選択と区別する移動量
+    var TOUCH_HOLD_MS = 350; // タッチは長押しで開始（スクロール操作と区別するため）
+    var dragState = null; // { el, x, y, pointerId, timer, active }
+    var dropTarget = null; // data-designer-drop を付与中の要素
     var dropPosition = null;
-    var prevDropTarget = null;
-
-    // PointerEventで統一（マウス/ペン/タッチ）。ただし並べ替え自体はHTML5 DnDのため
-    // 実際のドラッグ開始はマウス操作時のみ発生する
-    document.addEventListener('pointerdown', function (e) {
-      var el = e.target;
-      if (isExcluded(el) || isInjected(el)) return;
-      if (el.isContentEditable) return;
-      el.setAttribute('draggable', 'true');
-    });
-
-    document.addEventListener('pointerup', function (e) {
-      if (!dragEl) {
-        var el = e.target;
-        if (el.hasAttribute && el.hasAttribute('draggable')) el.removeAttribute('draggable');
-      }
-    });
+    var suppressNextClick = false;
 
     function clearDropIndicators() {
-      if (prevDropTarget) {
-        prevDropTarget.classList.remove('designer-drop-before', 'designer-drop-after', 'designer-drop-inside');
-        prevDropTarget = null;
+      if (dropTarget) {
+        dropTarget.removeAttribute('data-designer-drop');
+        dropTarget = null;
       }
     }
 
-    document.addEventListener('dragstart', function (e) {
-      if (resizing) {
-        e.preventDefault();
-        return;
-      }
-      var el = e.target;
-      if (isExcluded(el) || isInjected(el)) {
-        e.preventDefault();
-        return;
-      }
-      dragEl = el;
-      el.classList.add('designer-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', '');
-    });
+    function activateDrag() {
+      dragState.active = true;
+      dragState.el.setAttribute('data-designer-dragging', 'true');
+      // ドラッグ開始までに発生した部分テキスト選択を解除する
+      var sel = window.getSelection();
+      if (sel) sel.removeAllRanges();
+    }
 
-    document.addEventListener('dragover', function (e) {
-      if (!dragEl) {
-        // 要素ドラッグ中でなければ画像ファイルドロップの受け入れ判定
-        if (e.dataTransfer && e.dataTransfer.types && e.dataTransfer.types.indexOf('Files') !== -1) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'copy';
-        }
+    function updateDropTarget(x, y) {
+      // ドラッグ中の要素は pointer-events:none のため自分自身にはヒットしない
+      var target = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+      if (
+        !target ||
+        isExcluded(target) ||
+        isInjected(target) ||
+        target === dragState.el ||
+        dragState.el.contains(target)
+      ) {
+        clearDropIndicators();
         return;
       }
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      var target = e.target;
-      if (isExcluded(target) || isInjected(target) || target === dragEl || dragEl.contains(target)) {
-        clearDropIndicators();
-        dropTarget = null;
-        return;
+      var r = target.getBoundingClientRect();
+      var third = r.height / 3;
+      var offsetY = y - r.top;
+      var position = offsetY < third ? 'before' : offsetY > third * 2 ? 'after' : 'inside';
+      if (target === dropTarget && position === dropPosition) return; // 変化なし（毎moveの属性書き換えを避ける）
+      clearDropIndicators();
+      target.setAttribute('data-designer-drop', position);
+      dropTarget = target;
+      dropPosition = position;
+    }
+
+    function endDrag(commit) {
+      if (!dragState) return;
+      clearTimeout(dragState.timer);
+      if (dragState.active) {
+        var el = dragState.el;
+        el.removeAttribute('data-designer-dragging');
+        if (commit && dropTarget && !el.contains(dropTarget)) {
+          if (dropPosition === 'before') {
+            dropTarget.parentNode.insertBefore(el, dropTarget);
+          } else if (dropPosition === 'after') {
+            dropTarget.parentNode.insertBefore(el, dropTarget.nextSibling);
+          } else {
+            dropTarget.appendChild(el);
+          }
+          post({ type: '__design_change__' });
+        }
+        suppressNextClick = true; // ドラッグ後に発火するclickを選択として扱わない
       }
       clearDropIndicators();
-      var r = target.getBoundingClientRect();
-      var y = e.clientY - r.top;
-      var third = r.height / 3;
-      if (y < third) {
-        target.classList.add('designer-drop-before');
-        dropPosition = 'before';
-      } else if (y > third * 2) {
-        target.classList.add('designer-drop-after');
-        dropPosition = 'after';
-      } else {
-        target.classList.add('designer-drop-inside');
-        dropPosition = 'inside';
+      dragState = null;
+      dropPosition = null;
+    }
+
+    /** ドラッグ中、ビューポート端に近づいたら文書をスクロールする（HTML5 DnDの自動スクロール代替） */
+    function autoScrollAtEdge(clientY) {
+      var EDGE = 40;
+      var STEP = 24;
+      if (clientY < EDGE) window.scrollBy(0, -STEP);
+      else if (clientY > window.innerHeight - EDGE) window.scrollBy(0, STEP);
+    }
+
+    document.addEventListener('pointerdown', function (e) {
+      // 新しいジェスチャの開始で抑止フラグをリセットする
+      // （タッチドラッグ等でclickが一度も発火しなくても次のクリックを妨げない）
+      suppressNextClick = false;
+      if (resizing || dragState || e.isPrimary === false) return;
+      var el = e.target;
+      if (isExcluded(el) || isInjected(el) || inEditableContext(el)) return;
+      dragState = { el: el, x: e.clientX, y: e.clientY, pointerId: e.pointerId, timer: null, active: false };
+      if (e.pointerType === 'touch') {
+        // タッチは即時開始するとスクロールできなくなるため長押しで開始する
+        dragState.timer = setTimeout(function () {
+          if (dragState && !dragState.active) activateDrag();
+        }, TOUCH_HOLD_MS);
       }
-      dropTarget = target;
-      prevDropTarget = target;
+    });
+
+    document.addEventListener('pointermove', function (e) {
+      if (!dragState || resizing || e.pointerId !== dragState.pointerId) return;
+      if (!dragState.active) {
+        var dx = e.clientX - dragState.x;
+        var dy = e.clientY - dragState.y;
+        if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
+        if (e.pointerType === 'touch') {
+          // 長押し成立前に動いた → スクロール操作とみなしドラッグしない
+          endDrag(false);
+          return;
+        }
+        activateDrag();
+      }
+      if (e.cancelable) e.preventDefault();
+      autoScrollAtEdge(e.clientY);
+      updateDropTarget(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('pointerup', function (e) {
+      if (dragState && e.pointerId === dragState.pointerId) endDrag(true);
+    });
+    document.addEventListener('pointercancel', function (e) {
+      if (dragState && e.pointerId === dragState.pointerId) endDrag(false);
+    });
+
+    // タッチドラッグ中のブラウザスクロールを抑止する。ユーザー要素に
+    // touch-action を書き込まずに済むようリスナー側で preventDefault する
+    document.addEventListener(
+      'touchmove',
+      function (e) {
+        if (dragState && dragState.active) e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    // 長押しドラッグとコンテキストメニューの競合を防ぐ
+    document.addEventListener('contextmenu', function (e) {
+      if (dragState && dragState.active) e.preventDefault();
+    });
+
+    // ドラッグ中にマウス由来のテキスト選択が始まらないようにする
+    document.addEventListener('selectstart', function (e) {
+      if (dragState && dragState.active) e.preventDefault();
+    });
+
+    // img/a等のネイティブドラッグはPointer並べ替えと競合する（開始と同時に
+    // pointercancelが飛んでくる）ため、文書内発のHTML5ドラッグは無効化する
+    document.addEventListener('dragstart', function (e) {
+      e.preventDefault();
+    });
+
+    // 外部からのファイルD&D（画像挿入）のみHTML5 DnDで受け付ける
+    document.addEventListener('dragover', function (e) {
+      if (e.dataTransfer && e.dataTransfer.types && e.dataTransfer.types.indexOf('Files') !== -1) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      }
     });
 
     document.addEventListener('drop', function (e) {
-      if (!dragEl) {
-        dropImageFile(e);
-        return;
-      }
-      e.preventDefault();
-      if (!dropTarget || dragEl.contains(dropTarget)) return;
-      clearDropIndicators();
-      if (dropPosition === 'before') {
-        dropTarget.parentNode.insertBefore(dragEl, dropTarget);
-      } else if (dropPosition === 'after') {
-        dropTarget.parentNode.insertBefore(dragEl, dropTarget.nextSibling);
-      } else if (dropPosition === 'inside') {
-        dropTarget.appendChild(dragEl);
-      }
-      post({ type: '__design_change__' });
-    });
-
-    document.addEventListener('dragend', function () {
-      clearDropIndicators();
-      if (dragEl) {
-        dragEl.classList.remove('designer-dragging');
-        dragEl.removeAttribute('draggable');
-      }
-      dragEl = dropTarget = dropPosition = null;
+      dropImageFile(e);
     });
 
     /* ---- 画像ファイルのドロップ挿入 ---- */
@@ -803,9 +862,13 @@
         if (m.target && m.target.hasAttribute && m.target.hasAttribute('data-designer-injected')) return false;
         if (
           m.type === 'attributes' &&
-          ['data-designer-injected', 'data-designer-selected', 'contenteditable', 'draggable'].indexOf(
-            m.attributeName
-          ) !== -1
+          [
+            'data-designer-injected',
+            'data-designer-selected',
+            'data-designer-dragging',
+            'data-designer-drop',
+            'contenteditable',
+          ].indexOf(m.attributeName) !== -1
         ) {
           return false;
         }

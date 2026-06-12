@@ -11,8 +11,9 @@ beforeEach(() => {
 describe('App.design.serializeCleanHtml', () => {
   it('designer注入要素・編集用属性を除去して DOCTYPE 付きで返す', () => {
     document.body.innerHTML = `
-      <div id="keep" contenteditable="true" draggable="true">text</div>
+      <div id="keep" contenteditable="true">text</div>
       <div data-designer-selected="true">selected</div>
+      <div data-designer-dragging="true" data-designer-drop="before">drag leftovers</div>
       <style data-designer-injected="true">.x{}</style>
       <script data-designer-injected="true"></script>
     `;
@@ -22,7 +23,13 @@ describe('App.design.serializeCleanHtml', () => {
     expect(html).not.toContain('data-designer-injected');
     expect(html).not.toContain('data-designer-selected');
     expect(html).not.toContain('contenteditable');
-    expect(html).not.toContain('draggable');
+    expect(html).not.toContain('data-designer-dragging');
+    expect(html).not.toContain('data-designer-drop');
+  });
+
+  it('ユーザー自身の draggable 属性は保持する（並べ替えがPointer実装になり、ツールはdraggableを使わない）', () => {
+    document.body.innerHTML = '<div id="user" draggable="true">user attr</div>';
+    expect(design().serializeCleanHtml(document)).toContain('draggable="true"');
   });
 });
 
@@ -297,5 +304,148 @@ describe('注入ランタイム: クリック選択の出現順 (occurrence)', (
     document.getElementById('d2').click();
     const click = messages.find((m) => m.type === '__design_click__' && m.token === 'tok-occ2');
     expect(click.occurrence).toBe(1);
+  });
+});
+
+/*
+ * 注: dispatchEventで使うMouseEventにpointerId等を後付けし、PointerEventの代替とする
+ * （jsdomにPointerEventコンストラクタが無いため）。runtimeはe.pointerId/pointerType/
+ * clientX/clientYしか参照しないのでこれで十分。
+ */
+function firePointer(target, type, opts = {}) {
+  const e = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: opts.x || 0,
+    clientY: opts.y || 0,
+  });
+  Object.defineProperty(e, 'pointerId', { value: opts.pointerId ?? 1 });
+  Object.defineProperty(e, 'pointerType', { value: opts.pointerType ?? 'mouse' });
+  Object.defineProperty(e, 'isPrimary', { value: true });
+  target.dispatchEvent(e);
+  return e;
+}
+
+describe('注入ランタイム: Pointerベースの要素並べ替え（タッチ対応・HTML5 DnD廃止）', () => {
+  function setupRows() {
+    document.body.innerHTML = '<div id="a">A</div><div id="b">B</div><div id="c">C</div>';
+    return ['a', 'b', 'c'].map((id) => document.getElementById(id));
+  }
+
+  /** elementFromPoint と対象要素の矩形をスタブする（jsdomはレイアウトを持たない） */
+  function stubHit(el, top, height) {
+    document.elementFromPoint = () => el;
+    el.getBoundingClientRect = () => ({
+      top,
+      bottom: top + height,
+      left: 0,
+      right: 100,
+      width: 100,
+      height,
+    });
+  }
+
+  function bodyOrder() {
+    return [...document.body.children].filter((el) => el.id).map((el) => el.id);
+  }
+
+  it('要素並べ替えのHTML5 DnD実装が注入スクリプトから排除されている', () => {
+    const src = design().buildInjectionScript('t');
+    expect(src).not.toContain('effectAllowed');
+    expect(src).not.toContain("setAttribute('draggable'");
+  });
+
+  it('mouse: 閾値超のpointermoveでドラッグ状態になり、上1/3へのdropで対象の前へ移動する', () => {
+    const [a, , c] = setupRows();
+    const messages = bootRuntime('tok-drag1');
+    stubHit(a, 100, 30);
+    firePointer(c, 'pointerdown', { x: 10, y: 300 });
+    firePointer(document, 'pointermove', { x: 10, y: 105 });
+    expect(c.hasAttribute('data-designer-dragging')).toBe(true);
+    expect(a.getAttribute('data-designer-drop')).toBe('before');
+    firePointer(document, 'pointerup', { x: 10, y: 105 });
+    expect(bodyOrder()).toEqual(['c', 'a', 'b']);
+    expect(c.hasAttribute('data-designer-dragging')).toBe(false);
+    expect(a.hasAttribute('data-designer-drop')).toBe(false);
+    expect(messages.some((m) => m.type === '__design_change__' && m.token === 'tok-drag1')).toBe(true);
+  });
+
+  it('mouse: 中央1/3へのdropは子要素として挿入される (inside)', () => {
+    const [a, , c] = setupRows();
+    bootRuntime('tok-drag2');
+    stubHit(a, 100, 30);
+    firePointer(c, 'pointerdown', { x: 10, y: 300 });
+    firePointer(document, 'pointermove', { x: 10, y: 115 });
+    expect(a.getAttribute('data-designer-drop')).toBe('inside');
+    firePointer(document, 'pointerup', { x: 10, y: 115 });
+    expect(a.contains(c)).toBe(true);
+  });
+
+  it('mouse: 閾値未満の移動ではドラッグ状態にならない（クリック選択を妨げない）', () => {
+    const [, , c] = setupRows();
+    bootRuntime('tok-drag3');
+    firePointer(c, 'pointerdown', { x: 10, y: 300 });
+    firePointer(document, 'pointermove', { x: 12, y: 302 });
+    expect(c.hasAttribute('data-designer-dragging')).toBe(false);
+    firePointer(document, 'pointerup', { x: 12, y: 302 });
+  });
+
+  it('pointercancel でドラッグは破棄され、DOMは変化しない', () => {
+    const [a, , c] = setupRows();
+    bootRuntime('tok-drag4');
+    stubHit(a, 100, 30);
+    firePointer(c, 'pointerdown', { x: 10, y: 300 });
+    firePointer(document, 'pointermove', { x: 10, y: 105 });
+    firePointer(document, 'pointercancel', { x: 10, y: 105 });
+    expect(bodyOrder()).toEqual(['a', 'b', 'c']);
+    expect(c.hasAttribute('data-designer-dragging')).toBe(false);
+    expect(a.hasAttribute('data-designer-drop')).toBe(false);
+  });
+
+  it('touch: 長押しでドラッグが始まる', () => {
+    vi.useFakeTimers();
+    try {
+      const [, , c] = setupRows();
+      bootRuntime('tok-touch1');
+      firePointer(c, 'pointerdown', { x: 10, y: 300, pointerType: 'touch' });
+      expect(c.hasAttribute('data-designer-dragging')).toBe(false);
+      vi.advanceTimersByTime(400);
+      expect(c.hasAttribute('data-designer-dragging')).toBe(true);
+      firePointer(document, 'pointerup', { x: 10, y: 300, pointerType: 'touch' });
+      expect(c.hasAttribute('data-designer-dragging')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('touch: 長押し成立前に動いたらドラッグせずスクロールに譲る', () => {
+    vi.useFakeTimers();
+    try {
+      const [, , c] = setupRows();
+      bootRuntime('tok-touch2');
+      firePointer(c, 'pointerdown', { x: 10, y: 300, pointerType: 'touch' });
+      firePointer(document, 'pointermove', { x: 10, y: 250, pointerType: 'touch' });
+      vi.advanceTimersByTime(400);
+      expect(c.hasAttribute('data-designer-dragging')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ドラッグ直後のclickは選択(__design_click__)として扱われず、抑止は1回限り', () => {
+    const [a, , c] = setupRows();
+    const messages = bootRuntime('tok-suppress');
+    stubHit(a, 100, 30);
+    firePointer(c, 'pointerdown', { x: 10, y: 300 });
+    firePointer(document, 'pointermove', { x: 10, y: 105 });
+    firePointer(document, 'pointerup', { x: 10, y: 105 });
+    c.click();
+    expect(messages.some((m) => m.type === '__design_click__' && m.token === 'tok-suppress')).toBe(false);
+
+    // 次のジェスチャ（pointerdown→click）は通常どおり選択になる
+    firePointer(c, 'pointerdown', { x: 10, y: 300 });
+    firePointer(document, 'pointerup', { x: 10, y: 300 });
+    c.click();
+    expect(messages.some((m) => m.type === '__design_click__' && m.token === 'tok-suppress')).toBe(true);
   });
 });

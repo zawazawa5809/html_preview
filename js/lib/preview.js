@@ -39,5 +39,24 @@
     }
   };
 
+  /**
+   * 保護プレビューのsandbox値（両ページ共通）。
+   * スクリプト実行を無効化しつつ、親からのDOM操作（描画・アウトライン）は維持する。
+   */
+  App.PROTECTED_SANDBOX = 'allow-same-origin';
+
+  /**
+   * プレビューiframeをsandbox設定を変えて作り直し、差し替え後の要素を返す。
+   * sandboxフラグはdocument生成時に固定されるため、属性を付け替えるだけでは
+   * 既存documentに反映されない。要素ごと差し替えて確実に適用する。
+   */
+  App.recreatePreviewIframe = function (iframe, sandbox) {
+    var fresh = iframe.cloneNode(false);
+    if (sandbox) fresh.setAttribute('sandbox', sandbox);
+    else fresh.removeAttribute('sandbox');
+    iframe.parentNode.replaceChild(fresh, iframe);
+    return fresh;
+  };
+
   App.getIframeDoc = getIframeDoc;
 })();

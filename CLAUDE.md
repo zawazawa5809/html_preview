@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `e2e/` | Playwright E2Eテスト（実ブラウザで `file://` を直接開いて検証） |
 | `scripts/vendor.mjs` | node_modules → vendor/ のコピー（依存リストの単一情報源） |
 
-localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/Layout/Theme`（doceditor）
+localStorage keys: `htmlPreviewerCode/Layout/Theme/Protected`（index）, `docEditorCode/Layout/Theme/Protected`（doceditor）
 
 ### js/lib/ モジュール一覧
 
@@ -44,7 +44,7 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 | `editor.js` | `createEditor`（CodeMirror初期化。失敗時はtextareaアダプタにフォールバック） |
 | `theme.js` | `createTheme`（data-theme属性 + localStorage） |
 | `layout.js` | `createLayout`(lr/tb/po切替), `initSplitDrag`(gutterリサイズ) |
-| `preview.js` | `renderPreview`(iframe描画+エラー表示), `getIframeDoc` |
+| `preview.js` | `renderPreview`(iframe描画+エラー表示), `recreatePreviewIframe`(sandbox切替用のiframe差し替え), `getIframeDoc` |
 | `file-io.js` | `filenameFromTitle`, `jstTimestamp`, `validateHtmlFile`, `readHtmlFile`, `downloadHtml` |
 
 ### DocEditor (js/pages/doceditor/)
@@ -77,7 +77,8 @@ localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/L
 - **DOM→ソース同期**: `serializeCleanHtml()` がdesigner注入物と編集用属性を除去 → `beautifyHtml()` → CodeMirror全置換。`syncingFromDesign` フラグでchangeループを抑止
 - **エディタフォールバック**: `createEditor` はCodeMirror不在時にCM互換textareaアダプタを返し `.asset-warning` バナーを表示（vendor/欠損などの異常系）。undo/redoは自前履歴スタック
 - **初期サンプル**: 各ページの `<script type="text/html" id="default-content">` データブロックが単一情報源（JS側はtextContentを参照）
-- **ドラッグ操作**: gutter・リサイズハンドルはPointerEvent + `touch-action:none` で実装（mouse/touchの二重実装をしない）。要素並べ替えのみHTML5 DnD
+- **ドラッグ操作**: gutter・リサイズハンドル・要素並べ替えはPointerEventで実装（mouse/touchの二重実装をしない。並べ替えはマウス=移動閾値6px、タッチ=長押し350msで開始）。HTML5 DnDは外部からの画像ファイルドロップ受け入れのみ
+- **保護プレビュー**: `#protected-mode-btn` で `sandbox="allow-same-origin"` のiframeに差し替え（スクリプト実行なし・親からのDOM読み取りは可）。sandboxフラグはdocument生成時に固定されるため `recreatePreviewIframe` で**要素ごと作り直す**。設定は `*Protected` キーで永続化され初回描画前に適用。DocEditorではDesign Modeと排他（保護中は強制OFF・ボタンdisabled）
 - **書式適用**: `document.execCommand` は使用禁止。designRuntime内のSelection/Rangeベースの書式エンジンを使う
 
 ## Testing Notes

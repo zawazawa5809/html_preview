@@ -63,6 +63,32 @@ test('テーマ切替が反映され、再読込後も維持される', async ({
   await expect(html).toHaveAttribute('data-theme', 'dark');
 });
 
+test('保護プレビュー: スクリプト実行が無効化され、再読込後も初回描画から適用される', async ({ page }) => {
+  await replaceEditorContent(
+    page,
+    '<p id="marker">static</p><script>document.getElementById("marker").textContent = "script-ran";</script>'
+  );
+  const preview = page.frameLocator('#preview-container');
+  // 通常時はプレビュー内のスクリプトが実行される
+  await expect(preview.locator('#marker')).toHaveText('script-ran');
+
+  await page.locator('#protected-mode-btn').click();
+  await expect(page.locator('#preview-container')).toHaveAttribute('sandbox', 'allow-same-origin');
+  await expect(page.locator('#protected-mode-btn')).toHaveClass(/active/);
+  // sandbox化されたiframeではスクリプトが実行されない
+  await expect(preview.locator('#marker')).toHaveText('static');
+
+  // 設定は永続化され、再読込後の初回描画から適用される（スクリプトを一瞬も実行しない）
+  await expect(page.locator('#save-status')).toContainText('自動保存済み');
+  await page.reload();
+  await expect(page.locator('#preview-container')).toHaveAttribute('sandbox', 'allow-same-origin');
+  await expect(page.frameLocator('#preview-container').locator('#marker')).toHaveText('static');
+
+  // OFFに戻すと通常プレビューに復帰する
+  await page.locator('#protected-mode-btn').click();
+  await expect(page.frameLocator('#preview-container').locator('#marker')).toHaveText('script-ran');
+});
+
 test('編集内容がlocalStorageに自動保存され、再読込後に復元される', async ({ page }) => {
   await replaceEditorContent(page, '<p id="persisted">保存テスト</p>');
   // 自動保存ステータスの表示を待つ（debounce後）

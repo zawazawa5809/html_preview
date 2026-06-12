@@ -24,6 +24,37 @@ describe('App.renderPreview', () => {
   });
 });
 
+describe('App.recreatePreviewIframe（保護プレビュー用のiframe差し替え）', () => {
+  it('sandbox指定でid/class/titleを保ったまま新しいiframeに差し替える', () => {
+    const iframe = makeIframe();
+    iframe.id = 'preview-container';
+    iframe.className = 'preview-frame';
+    iframe.title = 'プレビュー';
+    const fresh = App.recreatePreviewIframe(iframe, 'allow-same-origin');
+    expect(fresh).not.toBe(iframe);
+    expect(fresh.getAttribute('sandbox')).toBe('allow-same-origin');
+    expect(fresh.id).toBe('preview-container');
+    expect(fresh.className).toBe('preview-frame');
+    expect(fresh.title).toBe('プレビュー');
+    expect(document.body.contains(iframe)).toBe(false);
+    expect(document.body.contains(fresh)).toBe(true);
+  });
+
+  it('sandbox=null で属性なしのiframeに戻す', () => {
+    const iframe = makeIframe();
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    const fresh = App.recreatePreviewIframe(iframe, null);
+    expect(fresh.hasAttribute('sandbox')).toBe(false);
+  });
+
+  it('差し替え後のiframeに描画できる', () => {
+    const iframe = makeIframe();
+    const fresh = App.recreatePreviewIframe(iframe, 'allow-same-origin');
+    expect(App.renderPreview(fresh, '<p id="y">sandboxed</p>')).toBe(true);
+    expect(fresh.contentDocument.getElementById('y').textContent).toBe('sandboxed');
+  });
+});
+
 describe('App.buildOutline', () => {
   it('h1-h6 から階層付きアウトラインを生成する', () => {
     const iframe = makeIframe();

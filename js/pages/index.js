@@ -9,6 +9,7 @@
     storageKey: 'htmlPreviewerCode',
     layoutStorageKey: 'htmlPreviewerLayout',
     themeStorageKey: 'htmlPreviewerTheme',
+    protectedStorageKey: 'htmlPreviewerProtected',
     debounceDelay: 300,
     quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
   };
@@ -64,6 +65,19 @@
     App.renderPreview(iframe, editor.getValue());
     setSaveStatus('saving');
     scheduleSave();
+  }
+
+  /* ---- 保護プレビュー（信頼しないHTMLを開くモード） ---- */
+  var protectedMode = false;
+
+  function setProtectedMode(on) {
+    protectedMode = on;
+    App.safeSet(CONFIG.protectedStorageKey, on ? '1' : '0');
+    var btn = $('protected-mode-btn');
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+    iframe = App.recreatePreviewIframe(iframe, on ? App.PROTECTED_SANDBOX : null);
+    App.renderPreview(iframe, editor.getValue());
   }
 
   /* ---- エディター操作 ---- */
@@ -219,7 +233,12 @@
     setSaveStatus('saved');
     theme.init();
     layout.init();
-    App.renderPreview(iframe, editor.getValue());
+    if (App.safeGet(CONFIG.protectedStorageKey) === '1') {
+      // 初回描画前にsandboxを適用する（保存済みコードのスクリプトを実行しないため）
+      setProtectedMode(true);
+    } else {
+      App.renderPreview(iframe, editor.getValue());
+    }
 
     editor.on('change', commitChange);
 
@@ -252,6 +271,13 @@
     $('theme-toggle-btn').addEventListener('click', theme.toggle);
     $('help-btn').addEventListener('click', helpModal.toggle);
     $('help-close-btn').addEventListener('click', helpModal.close);
+    $('protected-mode-btn').addEventListener('click', function () {
+      setProtectedMode(!protectedMode);
+      App.showToast(
+        protectedMode ? '保護プレビュー: ON（プレビュー内のスクリプトを実行しません）' : '保護プレビュー: OFF',
+        protectedMode ? 'success' : undefined
+      );
+    });
 
     $('open-btn').addEventListener('click', function () {
       $('file-input').click();

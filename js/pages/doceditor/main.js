@@ -11,6 +11,7 @@
     storageKey: 'docEditorCode',
     layoutStorageKey: 'docEditorLayout',
     themeStorageKey: 'docEditorTheme',
+    protectedStorageKey: 'docEditorProtected',
     debounceDelay: 300,
     designSyncDelay: 600,
     quotaWarnChars: 3.5 * 1024 * 1024, // localStorage上限(約5M文字)に近づいたら警告
@@ -29,6 +30,7 @@
 
   var state = {
     designMode: false,
+    protectedMode: false,
     activeTab: 'code',
     syncingFromDesign: false,
     designToken: window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
@@ -203,6 +205,11 @@
   }
 
   function enableDesignMode() {
+    if (state.protectedMode) {
+      // sandbox化されたiframeでは注入スクリプトが実行できない
+      App.showToast('保護プレビュー中はデザインモードを使用できません', 'error');
+      return;
+    }
     state.designMode = true;
     $('design-mode-btn').classList.add('active');
     $('preview-panel').classList.add('design-active');
@@ -230,6 +237,27 @@
   function toggleDesignMode() {
     if (state.designMode) disableDesignMode();
     else enableDesignMode();
+  }
+
+  /* ---- 保護プレビュー（信頼しないHTMLを開くモード） ---- */
+  function applyProtectedUi(on) {
+    var btn = $('protected-mode-btn');
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+    $('design-mode-btn').disabled = on;
+  }
+
+  function setProtectedMode(on) {
+    if (on && state.designMode) disableDesignMode();
+    state.protectedMode = on;
+    App.safeSet(CONFIG.protectedStorageKey, on ? '1' : '0');
+    applyProtectedUi(on);
+    iframe = App.recreatePreviewIframe(iframe, on ? App.PROTECTED_SANDBOX : null);
+    updatePreview();
+    App.showToast(
+      on ? '保護プレビュー: ON（プレビュー内のスクリプトを実行しません）' : '保護プレビュー: OFF',
+      on ? 'success' : undefined
+    );
   }
 
   /**
@@ -530,6 +558,12 @@
     setSaveStatus('saved');
     theme.init();
     layout.init();
+    state.protectedMode = App.safeGet(CONFIG.protectedStorageKey) === '1';
+    if (state.protectedMode) {
+      // 初回描画前にsandboxを適用する（保存済みコードのスクリプトを実行しないため）
+      applyProtectedUi(true);
+      iframe = App.recreatePreviewIframe(iframe, App.PROTECTED_SANDBOX);
+    }
     updatePreview();
 
     editor.on('change', handleEditorInput);
@@ -564,7 +598,15 @@
     $('help-btn').addEventListener('click', helpModal.toggle);
     $('help-close-btn').addEventListener('click', helpModal.close);
     $('design-mode-btn').addEventListener('click', toggleDesignMode);
+    $('protected-mode-btn').addEventListener('click', function () {
+      setProtectedMode(!state.protectedMode);
+    });
     $('print-btn').addEventListener('click', function () {
+      if (state.protectedMode) {
+        // sandbox（allow-modalsなし）ではiframe内のprint()がブロックされる
+        App.showToast('保護プレビュー中は印刷できません', 'error');
+        return;
+      }
       var win = iframe.contentWindow;
       if (win) win.print();
     });
@@ -615,8 +657,8 @@
 
     if (typeof window.feather !== 'undefined') window.feather.replace();
 
-    // Design Modeをデフォルト起動
-    enableDesignMode();
+    // Design Modeをデフォルト起動（保護プレビュー中は注入スクリプトが動かないため起動しない）
+    if (!state.protectedMode) enableDesignMode();
   }
 
   initialize();
