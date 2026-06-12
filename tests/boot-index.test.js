@@ -20,6 +20,7 @@ beforeAll(async () => {
   await import('../js/lib/storage.js');
   await import('../js/lib/toast.js');
   await import('../js/lib/keymap.js');
+  await import('../js/lib/modal.js');
   await import('../js/lib/editor.js');
   await import('../js/lib/theme.js');
   await import('../js/lib/layout.js');

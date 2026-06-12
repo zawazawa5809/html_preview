@@ -489,6 +489,7 @@ body.dragging-tb * {
   display: none;
 }
 .help-modal {
+  position: relative;
   background: var(--app-bg-primary);
   color: var(--app-text-primary);
   border: 1px solid var(--app-border-default);
@@ -498,6 +499,23 @@ body.dragging-tb * {
   max-height: 80vh;
   overflow: auto;
   padding: 20px 24px;
+}
+.help-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--app-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.help-close-btn:hover {
+  background: var(--app-bg-secondary);
+  color: var(--app-text-primary);
 }
 .help-modal h2 {
   font-size: 15px;

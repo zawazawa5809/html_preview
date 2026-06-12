@@ -482,13 +482,8 @@
     );
   }
 
-  /* ---- ヘルプモーダル ---- */
-  function toggleHelp() {
-    helpOverlay.hidden = !helpOverlay.hidden;
-  }
-  function closeHelp() {
-    helpOverlay.hidden = true;
-  }
+  /* ---- ヘルプモーダル（フォーカストラップ + フォーカス復元付き） ---- */
+  var helpModal = App.createModal(helpOverlay);
 
   /** Designタブで選択要素をDeleteキー削除してよい状況か */
   function canDeleteByKey() {
@@ -509,10 +504,8 @@
   var KEY_BINDINGS = [
     {
       key: 'Escape',
-      when: function () {
-        return !helpOverlay.hidden;
-      },
-      run: closeHelp,
+      when: helpModal.isOpen,
+      run: helpModal.close,
       help: null,
     },
     {
@@ -526,7 +519,7 @@
       when: function (e) {
         return !App.isTypingContext(e.target);
       },
-      run: toggleHelp,
+      run: helpModal.toggle,
       help: ['?', 'このヘルプを表示'],
     },
     { key: 's', ctrl: true, run: saveToFile, help: ['Ctrl + S', 'HTMLファイルをダウンロード'] },
@@ -654,7 +647,8 @@
     $('clear-btn').addEventListener('click', clearEditor);
     $('save-btn').addEventListener('click', saveToFile);
     $('theme-toggle-btn').addEventListener('click', theme.toggle);
-    $('help-btn').addEventListener('click', toggleHelp);
+    $('help-btn').addEventListener('click', helpModal.toggle);
+    $('help-close-btn').addEventListener('click', helpModal.close);
     $('design-mode-btn').addEventListener('click', toggleDesignMode);
     $('print-btn').addEventListener('click', function () {
       var win = iframe.contentWindow;
@@ -691,7 +685,7 @@
     });
 
     helpOverlay.addEventListener('click', function (e) {
-      if (e.target === helpOverlay) closeHelp();
+      if (e.target === helpOverlay) helpModal.close();
     });
     App.renderHelpRows($('help-table'), KEY_BINDINGS, HELP_EXTRA_ROWS);
     document.addEventListener('keydown', App.createKeymap(KEY_BINDINGS), true);

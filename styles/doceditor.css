@@ -153,6 +153,10 @@
 .dt-section-header:hover {
   background: var(--da-accent-glow);
 }
+.dt-section-header:focus-visible {
+  outline: 2px solid var(--da-secondary);
+  outline-offset: -2px;
+}
 .dt-section-header .dt-chevron {
   width: 14px;
   height: 14px;

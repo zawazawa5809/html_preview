@@ -31,6 +31,7 @@
     <script defer src="js/lib/storage.js"></script>
     <script defer src="js/lib/toast.js"></script>
     <script defer src="js/lib/keymap.js"></script>
+    <script defer src="js/lib/modal.js"></script>
     <script defer src="js/lib/editor.js"></script>
     <script defer src="js/lib/theme.js"></script>
     <script defer src="js/lib/layout.js"></script>
@@ -145,7 +146,7 @@
               <button class="dt-btn" id="dt-paste-style" title="スタイル貼り付け"><i data-feather="clipboard"></i></button>
               <button class="dt-btn" id="dt-page-break" title="ページ区切り挿入"><i data-feather="scissors"></i></button>
               <div class="dt-add-wrap">
-                <button class="dt-btn" id="dt-add-child" title="子要素追加"><i data-feather="plus"></i></button>
+                <button class="dt-btn" id="dt-add-child" title="子要素追加" aria-haspopup="true" aria-expanded="false"><i data-feather="plus"></i></button>
                 <div class="dt-add-dropdown" id="dt-add-dropdown" style="display: none">
                   <div class="dt-dropdown-category">Layout</div>
                   <button data-template="container">Container</button>
@@ -175,7 +176,7 @@
 
           <div id="dt-controls" style="display: none">
             <!-- Colors -->
-            <div class="dt-section-header" data-section="dt-colors">
+            <div class="dt-section-header" data-section="dt-colors" tabindex="0" role="button" aria-expanded="true" aria-controls="dt-colors">
               <span>Colors</span>
               <i data-feather="chevron-down" class="dt-chevron"></i>
             </div>
@@ -199,7 +200,7 @@
             </div>
 
             <!-- Typography -->
-            <div class="dt-section-header collapsed" data-section="dt-typography">
+            <div class="dt-section-header collapsed" data-section="dt-typography" tabindex="0" role="button" aria-expanded="false" aria-controls="dt-typography">
               <span>Typography</span>
               <i data-feather="chevron-down" class="dt-chevron"></i>
             </div>
@@ -241,7 +242,7 @@
             </div>
 
             <!-- Spacing -->
-            <div class="dt-section-header collapsed" data-section="dt-spacing">
+            <div class="dt-section-header collapsed" data-section="dt-spacing" tabindex="0" role="button" aria-expanded="false" aria-controls="dt-spacing">
               <span>Spacing</span>
               <i data-feather="chevron-down" class="dt-chevron"></i>
             </div>
@@ -276,7 +277,7 @@
             </div>
 
             <!-- Box -->
-            <div class="dt-section-header collapsed" data-section="dt-box">
+            <div class="dt-section-header collapsed" data-section="dt-box" tabindex="0" role="button" aria-expanded="false" aria-controls="dt-box">
               <span>Box</span>
               <i data-feather="chevron-down" class="dt-chevron"></i>
             </div>
@@ -323,7 +324,7 @@
             </div>
 
             <!-- Table -->
-            <div class="dt-section-header" data-section="dt-table" id="dt-table-header" style="display: none">
+            <div class="dt-section-header" data-section="dt-table" id="dt-table-header" style="display: none" tabindex="0" role="button" aria-expanded="true" aria-controls="dt-table">
               <span>Table</span>
               <i data-feather="chevron-down" class="dt-chevron"></i>
             </div>
@@ -356,6 +357,7 @@
 
     <div class="help-overlay" id="help-overlay" hidden role="dialog" aria-modal="true" aria-label="キーボードショートカット一覧">
       <div class="help-modal">
+        <button class="help-close-btn" id="help-close-btn" aria-label="ヘルプを閉じる">✕</button>
         <h2>キーボードショートカット</h2>
         <!-- 行は js/pages/doceditor/main.js のキーマップ定義から生成される -->
         <table id="help-table"></table>

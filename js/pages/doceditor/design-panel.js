@@ -32,13 +32,21 @@
       el.style[prop] = value;
     }
 
-    /* ---- セクション開閉 ---- */
+    /* ---- セクション開閉（クリック / Enter / Space） ---- */
     document.querySelectorAll('.dt-section-header').forEach(function (header) {
-      header.addEventListener('click', function () {
+      function toggleSection() {
         var body = $(header.getAttribute('data-section'));
         if (!body) return;
         var collapsed = header.classList.toggle('collapsed');
         body.classList.toggle('collapsed', collapsed);
+        header.setAttribute('aria-expanded', String(!collapsed));
+      }
+      header.addEventListener('click', toggleSection);
+      header.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleSection();
+        }
       });
     });
 
@@ -164,16 +172,19 @@
 
     /* ---- 子要素追加ドロップダウン ---- */
     var dropdown = $('dt-add-dropdown');
+    var addChildBtn = $('dt-add-child');
 
     function closeDropdown() {
       dropdown.style.display = 'none';
       state.dropdownOpen = false;
+      addChildBtn.setAttribute('aria-expanded', 'false');
     }
 
-    $('dt-add-child').addEventListener('click', function (e) {
+    addChildBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       state.dropdownOpen = !state.dropdownOpen;
       dropdown.style.display = state.dropdownOpen ? '' : 'none';
+      addChildBtn.setAttribute('aria-expanded', String(state.dropdownOpen));
     });
     dropdown.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-template]');

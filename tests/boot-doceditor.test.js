@@ -19,6 +19,7 @@ beforeAll(async () => {
   await import('../js/lib/storage.js');
   await import('../js/lib/toast.js');
   await import('../js/lib/keymap.js');
+  await import('../js/lib/modal.js');
   await import('../js/lib/editor.js');
   await import('../js/lib/theme.js');
   await import('../js/lib/layout.js');
@@ -71,6 +72,40 @@ describe('doceditor.html 起動', () => {
 
   it('ヘルプ表にデザインモード行が含まれる', () => {
     expect(document.getElementById('help-table').textContent).toContain('デザインモード切替');
+  });
+
+  it('セクションヘッダはEnter/Spaceで開閉でき、aria-expandedが追従する', () => {
+    const header = document.querySelector('.dt-section-header[data-section="dt-colors"]');
+    const body = document.getElementById('dt-colors');
+    expect(header.getAttribute('aria-expanded')).toBe('true');
+
+    header.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(body.classList.contains('collapsed')).toBe(true);
+    expect(header.getAttribute('aria-expanded')).toBe('false');
+
+    header.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    expect(body.classList.contains('collapsed')).toBe(false);
+    expect(header.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('子要素追加ドロップダウンの開閉で aria-expanded が追従する', () => {
+    const btn = document.getElementById('dt-add-child');
+    btn.click();
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
+    btn.click();
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('ヘルプモーダルを開くと閉じるボタンにフォーカスし、閉じると復元される', () => {
+    const helpBtn = document.getElementById('help-btn');
+    helpBtn.focus();
+    helpBtn.click();
+    expect(document.getElementById('help-overlay').hidden).toBe(false);
+    expect(document.activeElement.id).toBe('help-close-btn');
+
+    document.getElementById('help-close-btn').click();
+    expect(document.getElementById('help-overlay').hidden).toBe(true);
+    expect(document.activeElement.id).toBe('help-btn');
   });
 
   it('__design_undo__ メッセージで選択パネルがクリアされる（多段Undo経路）', () => {

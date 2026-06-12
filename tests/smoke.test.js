@@ -62,6 +62,7 @@ describe.each(PAGES)('%s', (page) => {
       'file-input',
       'save-btn',
       'help-btn',
+      'help-close-btn',
     ];
     for (const id of required) {
       expect(doc.getElementById(id), `#${id} がない`).not.toBeNull();
@@ -77,6 +78,24 @@ describe.each(PAGES)('%s', (page) => {
 
 describe('doceditor.html 固有', () => {
   const doc = parse('doceditor.html');
+
+  it('Designパネルのセクション開閉がキーボード操作可能なマークアップになっている', () => {
+    const headers = [...doc.querySelectorAll('.dt-section-header')];
+    expect(headers.length).toBeGreaterThan(0);
+    for (const h of headers) {
+      expect(h.getAttribute('tabindex')).toBe('0');
+      expect(h.getAttribute('role')).toBe('button');
+      expect(['true', 'false']).toContain(h.getAttribute('aria-expanded'));
+      expect(h.getAttribute('aria-controls')).toBe(h.getAttribute('data-section'));
+    }
+  });
+
+  it('子要素追加ドロップダウンのトリガーに aria-haspopup/aria-expanded がある', () => {
+    const btn = doc.getElementById('dt-add-child');
+    expect(btn.getAttribute('aria-haspopup')).toBe('true');
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('Design/Outline タブと design toolbar 要素が存在する', () => {
     [
       'tab-code',
