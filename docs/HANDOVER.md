@@ -1,73 +1,77 @@
-# 引き継ぎ資料（HANDOVER）
+# HANDOVER — 引き継ぎドキュメント
 
-最終更新: 2026-06-12（PR #22 マージ時点 / v2.0.0）
+最終更新: 2026-06-12 / 対象: `main`（PR #22 マージ済み）
 
-このドキュメントは、本リポジトリの開発を引き継ぐ人向けの案内です。
-詳細な実装ガイドは [CLAUDE.md](../CLAUDE.md)、設計判断の経緯は [docs/adr/](adr/) を一次情報として参照してください。
+## 1. 現在の状態
 
-## 1. プロジェクト概要
+- PR #22「マルチファイル構成へ移行」は **main へマージ済み**（マージコミット `0ce23c2`）。CI全チェックgreen、レビュー指摘1件（keymapのShift照合）は修正・resolve済み
+- GitHub Pages 稼働確認済み（main マージで `deploy-pages.yml` が自動デプロイ）
+- テスト: 12ファイル / 98テスト。`npm test` で全GREEN
 
-ブラウザ上でHTMLをリアルタイム編集・プレビューできるWebツール群。
+### 直近の主要コミット
 
-| ページ | 役割 |
-|--------|------|
-| `index.html` | コード編集ベースのHTMLプレビューアー |
-| `doceditor.html` | AI生成HTMLドキュメントのGUI修正（要素選択・スタイル編集・D&D並べ替え・テーブル/画像編集・アウトライン・印刷） |
+| コミット | 内容 |
+|----------|------|
+| `52060a2` | マルチファイル構成への移行本体（62ファイル） |
+| `d285bbb` | keymap: 修飾キー無し印字キーのShift照合をスキップ（US配列の `?` 対応） |
 
-**最重要の制約: ビルド不要・完全オフライン動作**。`file://` で直接開けること、かつ同一ファイル群をそのまま GitHub Pages で公開できることを両立しています（ADR-0001）。この制約から、CDN参照は禁止・依存は `vendor/` 同梱・ESMではなくクラシック `<script defer>` + `window.App` 名前空間という構成になっています（ADR-0002）。
+## 2. このリポジトリの歩き方
 
-## 2. 現在の状態
+- アーキテクチャの根拠: `docs/adr/0001`（オフライン/ホスト同一成果物・CDN全廃）、`0002`（no-build + Vite移行手順固定）、`0003`（TDD/CI方針）。**構成を変える前に必ずADRを読むこと**
+- 開発規約の詳細: `CLAUDE.md`（モジュール一覧・Key Patterns・Testing Notes）
+- 開発コマンド: `npm test` / `npm run test:watch` / `npm run vendor`（依存更新時のみ）
+- 動作確認: HTMLをブラウザで直接開く。サーバー不要
 
-- **PR #22**（2026-06-12 マージ）で単一HTMLファイル構成からマルチファイル構成（`styles/` + `js/lib/` + `js/pages/` + `vendor/`）へ移行済み
-- テスト: Vitest + jsdom で **12ファイル / 98テスト、全件パス**（2026-06-12 確認）
-- CI: GitHub Actions で push/PR ごとにテスト + vendor整合性チェック（`.github/workflows/ci.yml`）
-- デプロイ: main へのマージで GitHub Pages へ自動デプロイ（`.github/workflows/deploy-pages.yml`）。初回のみ Settings → Pages → Source を「GitHub Actions」に設定する必要あり
-- 既知の未完了タスク・バグは現時点でなし
+### 壊しやすいポイント（先に知っておくべき不変条件）
 
-## 3. セットアップと日常の開発フロー
+- 外部URL参照を追加しない。`tests/smoke.test.js` が落ちる（意図的なガード）
+- HTMLのscript/link追加・ID変更はスモークテストと両ページの整合を確認
+- アクセント色は `--da-secondary`（CSS）と `App.design.ACCENT`（JS）の2箇所で同値 `#5b8fcc` を維持
+- ショートカットは各ページの `KEY_BINDINGS` 配列だけを編集する（ヘルプ表は自動生成）
+- 注入スクリプト（`designRuntime`）は自己完結必須。外側スコープを参照すると `toString()` 注入で壊れる。`cfg` 引数経由で渡すこと
+- `vendor/` は生成物。手編集するとCIの整合性チェックで落ちる
 
-```bash
-npm install        # 開発ツール（Vitest等）の取得。実行時には不要
-npm test           # テスト一括実行
-npm run test:watch # ウォッチモード
-npm run vendor     # 依存更新時のみ: node_modules → vendor/ の再生成
-```
+### jsdomで検証できない領域（変更時は手動確認）
 
-- **動作確認**はブラウザで `index.html` / `doceditor.html` を直接開くだけ（サーバー不要）
-- **TDDで進める**（ADR-0003）: 挙動を変える前にテストを書く/直す
-- **依存更新**: `package.json` を変更 → `npm install && npm run vendor`。`vendor/` は生成物なので**直接編集禁止**（CIが乖離を検出します）
+gutterドラッグリサイズ / 印刷 / クリップボード実挙動 / CodeMirror実描画（折りたたみ・検索ダイアログ）/ Design Modeのリサイズハンドル・D&Dの実操作感
 
-## 4. アーキテクチャの要点（はまりやすい所）
+## 3. 改善バックログ（推奨順）
 
-詳細は CLAUDE.md に一覧がありますが、引き継ぎ時に特に注意すべき点:
+### P1: 価値が高く、すぐ着手できる
 
-- **外部URL参照は一切追加しない**こと。`tests/smoke.test.js` が外部URL参照ゼロ・script/link の実在・必須DOM IDを機械的に検証しており、HTML構造を変えたらこのテストを追従させる
-- **スクリプトのロード順**はHTMLの `<script defer>` の列挙順がすべて。モジュール間参照は呼び出し時に行う規約でロード順依存を最小化している
-- **キーボードショートカット**は各ページの `KEY_BINDINGS` 配列が単一情報源で、ヘルプモーダルの表も同配列から自動生成される。ハンドラとヘルプ表を別々に編集しないこと
-- **Design Mode の注入スクリプト**（`js/pages/doceditor/design-mode.js`）は `designRuntime(cfg)` という実関数を `toString()` で文字列化して iframe に注入する方式。文字列連結でスクリプトを書かないこと。iframe↔親の通信は `postMessage` + ランダムtoken検証
-- **アクセント色 #5b8fcc** はCSS変数 `--da-secondary` と注入側JSの `App.design.ACCENT` の2箇所にあり、同値を維持すること
-- 色は必ず `styles/tokens.css` の変数を使う。`transition: all` は使わない
+1. **E2Eテスト（Playwright）の導入**
+   上記「jsdomで検証できない領域」が現状すべて手動。実ブラウザでの起動・編集・ドラッグ・Design Mode選択のスモークE2EをCIに足せば、手動確認をほぼ撤廃できる。静的ファイルなので `npx serve` 不要、`file://` をそのまま開ける
+2. **ESLint + Prettier + CIのlintステップ**
+   現状フォーマッタ・リンタ無し。ES5スタイル（var/function）を規約として固定し、`no-undef` でグローバル参照ミス（`App.xxx` のtypo）を静的検出できる。導入コストは小さい
+3. **カバレッジ計測（`vitest --coverage` + CI閾値）**
+   テスト網の穴（特に `js/pages/doceditor/main.js` の分岐）を可視化する
 
-## 5. テストでカバーできていないもの（手動確認が必要）
+### P2: 機能・品質の底上げ
 
-jsdomの制約により以下は自動テスト対象外です。関連箇所を変更したら手動確認してください:
+1. **Design Modeの複数段Undo履歴**
+   現状は直近1操作の「元に戻す」トーストのみ。`syncDesignToEditor` 時にスナップショットをリングバッファ（例: 20件）で保持すれば、Ctrl+Z での多段Undoに拡張できる。エディタ側のCodeMirror履歴と統合するのが理想
+2. **ソース行ハイライトの精度向上（既知の制限）**
+   `highlightSourceLine` はタグ名の最初の出現行を強調するだけで、同名タグが複数あると違う行を指す。要素のDOMパス（親からのインデックス列）をiframe側から送り、ソース側で出現順カウントで対応付けると正確になる
+3. **`document.execCommand` 脱却**
+   書式ツールバー（太字/色等）とtextareaフォールバックのundo/redoが非推奨APIに依存。Selection/Range APIベースの実装に置き換える。ブラウザから消えるまでは動くため緊急ではない
+4. **プレビューiframeのセキュリティ方針の明文化**
+   貼り付けたHTML内のスクリプトは親と同一オリジンで実行される（localStorageに到達可能）。Design Modeが同一オリジン前提のため sandbox 化とはトレードオフ。最低限READMEへの注意書き、将来的には「信頼しないHTMLを開くモード」（`sandbox="allow-same-origin"` なし＋Design Mode無効）の追加を検討
+5. **アクセシビリティ強化**
+   ヘルプモーダルのフォーカストラップ、`dt-add-dropdown` への `aria-expanded`/`aria-haspopup`、Designパネルのセクション開閉のキーボード操作（現状クリックのみ）
 
-- 実レイアウト（分割表示・gutterのドラッグリサイズ）
-- 印刷（DocEditorの印刷機能）
-- クリップボード操作
-- `file://` での実ブラウザ動作（特に vendor/ 欠損時のtextareaフォールバックバナー）
+### P3: 中期（タイミングを見て）
 
-## 6. 将来の選択肢
+1. **CodeMirror 6 への更新 + Vite移行（セットで実施）**
+   CM5はメンテナンスモード。CM6はESMのみのため、ADR-0002に固定したVite移行手順とセットで行うのが効率的。移行トリガーの目安: TypeScriptが欲しくなった時 / 依存が増えてvendor管理が煩雑になった時 / CM5に支障が出た時
+2. **大容量ドキュメント対応**
+   localStorage上限（約5MB）が実質の文書サイズ上限。IndexedDBへの移行で解消できるが、現在の容量警告で実用上は足りている
+3. **サンプルコンテンツの `<template>` 化**
+   `DEFAULT_CONTENT` がJS文字列連結のため編集しづらい。HTML内 `<template>` 要素に移せばマークアップとして編集できる（スモークテストの追従が必要）
+4. **モバイル/タッチでのDesign Mode操作**
+   リサイズハンドル・D&DがマウスイベントのみのためタッチQ未対応。需要があれば PointerEvent への統一で対応
 
-- **Vite移行**: 必要になった場合の移行手順は ADR-0002 に固定済み。現状は `file://` 動作要件があるため移行しない判断
-- localStorage 容量（3.5M文字で警告）を超えるドキュメントを扱う需要が出たら、保存方式の再検討が必要（`js/lib/storage.js` の `createCodeStore`）
+## 4. 運用メモ
 
-## 7. 主要ドキュメントの場所
-
-| ドキュメント | 内容 |
-|--------------|------|
-| `README.md` | 利用者向けの概要・使い方 |
-| `CLAUDE.md` | 開発者向け詳細（モジュール一覧・パターン・テスト方針） |
-| `docs/adr/0001` | オフライン/ホスト両対応の配布方針（CDN禁止の根拠） |
-| `docs/adr/0002` | ビルド無し・クラシックスクリプト構成と Vite 移行手順 |
-| `docs/adr/0003` | TDD（Vitest）と CI/CD の方針 |
+- 依存更新フロー: package.jsonのバージョン変更 → `npm install && npm run vendor` → コミット（vendor差分込み）。CIが乖離を検出する
+- デプロイ: mainマージのみ。ロールバックはmainのrevert
+- localStorageキー: ページごとに独立（`htmlPreviewer*` / `docEditor*`）。**キー変更はユーザーの保存データ消失を意味する**ので避ける
