@@ -4,51 +4,78 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ブラウザ上でHTMLをリアルタイム編集・プレビューできるシングルファイルWebアプリケーション。コード編集の`index.html`とGUI編集の`doceditor.html`の2本構成。
+ブラウザ上でHTMLをリアルタイム編集・プレビューできるWebツール群。コード編集の`index.html`とGUI編集の`doceditor.html`の2ページ構成。**ビルド不要・完全オフライン動作**（`file://`で直接開ける）かつ、同一ファイル群をそのまま静的ホスティング（GitHub Pages）で公開できる。
 
 ## Architecture
 
-- **シングルファイル構成**: 各HTMLファイルが独立した完結アプリケーション。ビルド不要
-- **共通パターン**: `index.html`と`doceditor.html`はSoft Charcoal CSS変数・ツールバー・テーマ切替など同じ設計パターンを共有。変更時は両ファイルを確認する
-- **エディタ**: CodeMirror 5.65.7（CDN）を使用。`elements.htmlEditor`は初期化後CodeMirrorインスタンスに置き換わる（`getValue()` / `setValue()` / `replaceRange()`等のAPIを使用）
-- **外部CDN依存**: Feather Icons, lodash (debounce), CodeMirror, Noto Sans JP
-- **ツール間導線**: 両ファイルのツールバーに相互リンクナビゲーション（`.toolbar-nav`）
-- **状態管理**: 各アプリがIIFE内でstate objectとlocalStorageで状態を管理
+設計判断の経緯と根拠は `docs/adr/` を必ず参照すること。
 
-## Files
+- **ADR-0001**: 実行時の外部オリジン依存ゼロ（CDN禁止）。依存は `vendor/` に同梱
+- **ADR-0002**: `file://` ではESMがCORSでブロックされるため、クラシック`<script defer>` + `window.App` 名前空間パターン。Vite移行手順を固定済み
+- **ADR-0003**: Vitest + jsdom でTDD。CI/CDはGitHub Actions
 
-| File | 用途 | localStorage Keys |
-|------|------|-------------------|
-| `index.html` | HTMLリアルタイムプレビュー | `htmlPreviewerCode`, `htmlPreviewerLayout`, `htmlPreviewerTheme` |
-| `doceditor.html` | AI生成HTMLドキュメント修正エディタ | `docEditorCode`, `docEditorLayout`, `docEditorTheme` |
+### フォルダ構成
+
+| パス | 役割 |
+|------|------|
+| `index.html` / `doceditor.html` | ページ本体（マークアップのみ。CSS/JSは外部参照） |
+| `styles/tokens.css` | デザイントークン（da-*パレット / app-*セマンティック / ダークテーマ） |
+| `styles/common.css` | 両ページ共通UI（ツールバー/分割レイアウト/gutter/トースト/ヘルプモーダル） |
+| `styles/doceditor.css` | DocEditor固有UI（タブ/Designパネル/アウトライン） |
+| `js/lib/` | 共有モジュール。1ファイル1責務。IIFEで `window.App` に登録 |
+| `js/pages/index.js` | プレビューアーのエントリ |
+| `js/pages/doceditor/` | DocEditorのエントリ(main.js)と固有モジュール |
+| `vendor/` | 実行時依存（**生成物。直接編集禁止。** `npm run vendor` で再生成） |
+| `tests/` | Vitestテスト |
+| `scripts/vendor.mjs` | node_modules → vendor/ のコピー（依存リストの単一情報源） |
+
+localStorage keys: `htmlPreviewerCode/Layout/Theme`（index）, `docEditorCode/Layout/Theme`（doceditor）
+
+### js/lib/ モジュール一覧
+
+| ファイル | 提供API（App.*） |
+|----------|------------------|
+| `core.js` | `debounce`(flush/cancel付), `escHtml`, `colorToHex`, `parsePx`, `logError` |
+| `storage.js` | `safeGet/safeSet`, `createSaveStatus`, `createCodeStore`（容量警告含む） |
+| `toast.js` | `showToast(msg, type, {actionLabel, onAction})` |
+| `keymap.js` | `createKeymap`(宣言的KB定義), `renderHelpRows`(ヘルプ表生成), `isTypingContext` |
+| `editor.js` | `createEditor`（CodeMirror初期化。失敗時はtextareaアダプタにフォールバック） |
+| `theme.js` | `createTheme`（data-theme属性 + localStorage） |
+| `layout.js` | `createLayout`(lr/tb/po切替), `initSplitDrag`(gutterリサイズ) |
+| `preview.js` | `renderPreview`(iframe描画+エラー表示), `getIframeDoc` |
+| `file-io.js` | `filenameFromTitle`, `jstTimestamp`, `validateHtmlFile`, `readHtmlFile`, `downloadHtml` |
+
+### DocEditor (js/pages/doceditor/)
+
+- `design-mode.js`: Design Modeの中核。**注入スクリプトは `designRuntime(cfg)` という実関数**で、`buildInjectionScript()` が `toString()` + JSON設定引数で文字列化する（文字列連結でスクリプトを書かないこと）。`STYLE_PROPS`/`EXCLUDED_TAGS`/`templates`/`elementAction`/`tableContext`/`serializeCleanHtml` を提供
+- `design-panel.js`: スタイル編集パネル。`createDesignPanel(ctx)` でDI（ctx経由でiframe/同期/削除へアクセス）
+- `outline.js`: 見出しツリー（クリックでスクロール+フラッシュ）
+- `main.js`: 配線。タブ・Design Mode ON/OFF（デフォルト起動）・postMessageハンドラ・DOM→ソース同期（`serializeCleanHtml`→`html_beautify`→`replaceRange`）・印刷
 
 ## Development
 
-ブラウザで直接HTMLファイルを開くだけ。サーバー不要。
+- **動作確認**: HTMLファイルをブラウザで直接開く（サーバー不要）
+- **テスト**: `npm test`（Vitest + jsdom）。**TDDで進める**: 挙動変更の前にテストを書く/直す
+- **依存更新**: package.jsonを変更 → `npm install && npm run vendor`（vendor/を手で編集しない）
+- **CI**: push/PRでテスト + vendor整合性チェック。mainマージでGitHub Pagesへ自動デプロイ
 
 ## Key Patterns
 
-- **レイアウト**: `lr`(左右分割), `tb`(上下分割), `po`(プレビューのみ)の3モード
-- **ダークテーマ**: `data-theme="dark"` on `<html>` + CSS変数のオーバーライド
-- **デバウンス保存**: lodash `_.debounce`で300ms遅延のlocalStorage書き込み
-- **保存ステータス表示**: ツールバーの`#save-status`に「保存中…/✓ 自動保存済み/保存失敗」を`setSaveStatus()`で表示
-- **Undoトースト**: 破壊的操作（クリア/貼り付け/ファイル読込/要素削除）は`showTemporaryMessage(msg, type, {actionLabel, onAction})`で「元に戻す」アクション付きトースト（6秒表示）を出す。復元は操作前の内容をクロージャで保持して`restoreContent()`
-- **容量事前警告**: `CONFIG.quotaWarnChars`(3.5M文字)超過で保存時に警告トースト（1回のみ、下回るとリセット）
-- **CDNフォールバック**: CodeMirror読み込み失敗時は`createTextareaFallback()`がCM互換アダプタを返しtextareaのまま動作+警告バナー。Feather失敗時は`applyIconFallbacks()`でUnicode文字に置換
-- **ショートカットヘルプ**: `?`キーまたはツールバーのヘルプボタンで`#help-overlay`モーダル表示。Escape/外側クリックで閉じる
-- **iframeプレビュー**: エディタ内容を`iframeDoc.open()/write()/close()`で描画
-- **gutterリサイズ**: mouse/touchイベント + overlay要素でパネル比率を変更
+- **名前空間**: 全モジュールはIIFE内で `window.App` に登録。モジュール間参照は呼び出し時に行う（ロード順依存の最小化）。スクリプトのロード順はHTMLの`<script defer>`列挙順
+- **キーボードショートカット**: 各ページの `KEY_BINDINGS` 配列（key/ctrl/shift/when/run/help）が単一情報源。ヘルプモーダルの表も同配列から `renderHelpRows` で生成される。**ハンドラとヘルプ表を別々に編集しないこと**
+- **Undoトースト**: 破壊的操作（クリア/貼り付け/ファイル読込/要素削除）は `showToast(msg, 'success', {actionLabel:'元に戻す', onAction})` で6秒トースト。操作前内容をクロージャで保持（`setContentWithUndo`）
+- **保存ステータス**: `createSaveStatus` が `#save-status` に「保存中…/✓ 自動保存済み/保存失敗」を表示。`createCodeStore` が3.5M文字超過で容量警告（1回のみ、下回るとリセット）
+- **デザイントークン**: 色は必ず `styles/tokens.css` の変数を使う。アクセント色はCSSが `--da-secondary`、iframe注入側JSが `App.design.ACCENT`（同値 #5b8fcc を維持すること）
+- **CSSアニメーション**: `transition: all` は使わない（対象プロパティを明示）
+- **レイアウト**: `lr`(左右)/`tb`(上下)/`po`(プレビューのみ)。クラス `layout-*` で切替、50%初期値はCSS側が持つ
+- **iframeプレビュー**: `renderPreview()` が `iframeDoc.open()/write()/close()`。DocEditorはDesign Mode中の再描画時に `design.injectInto()` を再実行
+- **Design Modeメッセージ**: iframe↔親は `postMessage` + ランダムtoken検証（`__design_click__`/`__design_change__`/`__design_deselect__`/`__design_action__`/`__design_toast__`）
+- **DOM→ソース同期**: `serializeCleanHtml()` がdesigner注入物と編集用属性を除去 → `beautifyHtml()` → CodeMirror全置換。`syncingFromDesign` フラグでchangeループを抑止
+- **エディタフォールバック**: `createEditor` はCodeMirror不在時にCM互換textareaアダプタを返し `.asset-warning` バナーを表示（vendor/欠損などの異常系）
 
-## DocEditor固有の設計
+## Testing Notes
 
-- AI生成HTMLドキュメントのGUI修正に特化
-- **Design Modeがデフォルト起動**: 起動時から視覚編集モード。Code/Design/Outlineの3タブ切替
-- 視覚編集機能一式: 要素選択、スタイル編集パネル（Colors/Typography/Spacing/Box）、ブレッドクラム、アクションバー、D&D並べ替え、8方向リサイズハンドル、要素テンプレート挿入、スタイルコピー/ペースト
-- **インライン文字装飾ツールバー**: プレビュー上でテキスト選択→フローティングツールバー（太字/斜体/下線/取消線/文字色/背景色/リンク/書式クリア）。`document.execCommand()` で即座に適用
-- **テーブル視覚編集**: テーブル要素選択時にTableセクション表示。行追加（上/下）、列追加（左/右）、行削除、列削除。`table.insertRow()` / `row.insertCell()` でDOM直接操作
-- **画像ドラッグ&ドロップ**: プレビューiframeに画像ファイルをドロップ → `FileReader.readAsDataURL()` でbase64変換 → `<img>` 要素として挿入（2MB上限警告）
-- **ドキュメントアウトライン**: iframe DOMの `h1`〜`h6` を解析し見出し構造ツリー表示。クリックでスクロール
-- **ソース行ハイライト**: Design Mode要素選択時、CodeMirror内の対応行をハイライト+スクロール
-- **印刷**: ツールバーのプリンターボタンで `iframe.contentWindow.print()` を呼出
-- `syncDesignToEditor()`: `serializeCleanHtml()` でdesigner injected要素を除去 → `beautifyHtml()` で整形 → `replaceRange(0..end)` でCodeMirror全体置換
-- CodeMirror拡張: fold(xml-fold/brace-fold) + search(dialog/searchcursor) + active-line + js-beautify
+- テストはクラシックスクリプトを `import '../js/lib/x.js'` の副作用ロードで読み込み、`window.App` 経由で検証する
+- `tests/smoke.test.js` が参照整合性（script/link実在・**外部URL参照ゼロ**・必須DOM ID）を守っている。HTML構造を変えたらここを追従させる
+- 注入スクリプトは `new Function` による構文検証 + jsdom実行でメッセージプロトコルまで検証している
+- jsdomで検証できないもの（実レイアウト・印刷・クリップボード・ドラッグリサイズ）は手動確認

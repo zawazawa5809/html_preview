@@ -1,0 +1,19 @@
+{
+  "name": "html-preview-tools",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ブラウザ上でHTMLをリアルタイム編集・プレビューできるWebツール群（ビルド不要・オフライン動作）",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "vendor": "node scripts/vendor.mjs"
+  },
+  "devDependencies": {
+    "codemirror": "^5.65.7",
+    "feather-icons": "^4.29.1",
+    "js-beautify": "^1.15.1",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.8"
+  }
+}

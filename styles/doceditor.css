@@ -1,0 +1,437 @@
+/*
+ * doceditor.css — DocEditor 固有UI
+ * （Code/Design/Outlineタブ / Designツールバー / アウトライン / ソース行ハイライト）
+ */
+
+/* ---- Panel tabs ---- */
+.panel-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0;
+  border-left: none;
+}
+.panel-tab {
+  background: transparent;
+  border: none;
+  color: var(--app-panel-header-text);
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  opacity: 0.6;
+  transition:
+    opacity var(--duration-normal),
+    border-color var(--duration-normal),
+    background-color var(--duration-normal);
+}
+.panel-tab.active {
+  opacity: 1;
+  border-bottom-color: var(--da-secondary);
+}
+.panel-tab:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.panel-tab:not(:disabled):hover {
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* DocEditorのプレビューはパディング無しの全面表示 */
+.preview-panel .panel-content {
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+#preview-container { flex-grow: 1; }
+
+/* Design Mode中はプレビューにアクセント枠 */
+.preview-panel.design-active .panel-content {
+  border: 2px solid var(--da-secondary);
+  border-radius: 0 0 4px 4px;
+}
+
+/* ---- Design toolbar ---- */
+.design-toolbar {
+  background: var(--app-bg-secondary);
+  border-top: 1px solid var(--app-border-default);
+  overflow-y: auto;
+  flex-grow: 1;
+  font-size: 12px;
+}
+.design-toolbar::-webkit-scrollbar { width: 5px; }
+.design-toolbar::-webkit-scrollbar-track { background: transparent; }
+.design-toolbar::-webkit-scrollbar-thumb {
+  background: var(--da-ash);
+  border-radius: 3px;
+}
+
+.dt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--app-panel-header-bg);
+  border-bottom: 1px solid var(--app-border-default);
+  gap: 8px;
+}
+.dt-element-tag {
+  font-family: "Noto Sans Mono", Consolas, monospace;
+  font-size: 13px;
+  color: var(--da-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dt-hint {
+  font-size: 11px;
+  color: var(--da-stone);
+  padding: 8px 12px;
+  text-align: center;
+}
+.dt-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.dt-btn {
+  background: none;
+  border: 1px solid var(--da-graphite);
+  border-radius: 4px;
+  padding: 3px 5px;
+  cursor: pointer;
+  color: var(--da-cloud);
+  display: flex;
+  align-items: center;
+  transition:
+    background-color var(--duration-fast),
+    border-color var(--duration-fast),
+    color var(--duration-fast);
+}
+.dt-btn:hover {
+  background: var(--da-accent-muted);
+  border-color: var(--da-secondary);
+  color: var(--da-snow);
+}
+.dt-btn svg { width: 13px; height: 13px; }
+.dt-btn .dt-btn-label {
+  font-size: 10px;
+  margin-left: 2px;
+}
+.dt-btn.dt-btn-danger { color: var(--da-error); }
+
+.dt-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--app-text-secondary);
+  border-bottom: 1px solid var(--app-border-default);
+  user-select: none;
+  transition: background-color var(--duration-fast);
+}
+.dt-section-header:hover { background: var(--da-accent-glow); }
+.dt-section-header .dt-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 200ms var(--ease-out-expo);
+}
+.dt-section-header.collapsed .dt-chevron { transform: rotate(-90deg); }
+
+.dt-section-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 1px solid var(--app-border-default);
+}
+.dt-section-body.collapsed { display: none; }
+
+.dt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dt-row label {
+  min-width: 65px;
+  color: var(--app-text-secondary);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.dt-row.dt-row-wrap {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dt-row.dt-row-center {
+  margin-top: 4px;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dt-color-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dt-color-row label {
+  min-width: 50px;
+  color: var(--app-text-secondary);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.dt-color-row input[type="color"] {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--app-border-default);
+  border-radius: 4px;
+  padding: 1px;
+  cursor: pointer;
+  background: none;
+}
+
+.dt-input,
+.dt-input-sm,
+.dt-select {
+  border: 1px solid var(--app-border-default);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  background: var(--app-editor-bg);
+  color: var(--app-text-primary);
+  font-family: inherit;
+}
+.dt-input { width: 90px; }
+.dt-input-sm { width: 52px; }
+
+.dt-row input[type="range"] {
+  flex: 1;
+  min-width: 60px;
+  accent-color: var(--da-secondary);
+  height: 16px;
+}
+
+.dt-opacity-value {
+  min-width: 28px;
+  text-align: right;
+}
+
+.dt-btn-group {
+  display: flex;
+  gap: 1px;
+  background: var(--app-border-default);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.dt-btn-sm {
+  background: var(--app-bg-secondary);
+  border: none;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--app-text-secondary);
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast);
+}
+.dt-btn-sm:hover,
+.dt-btn-sm.active {
+  background: var(--da-accent-muted);
+  color: var(--app-text-primary);
+}
+
+.dt-transparent-btn {
+  background: none;
+  border: 1px solid var(--app-border-default);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--app-text-muted);
+  line-height: 1;
+}
+.dt-transparent-btn:hover {
+  border-color: var(--da-error);
+  color: var(--da-error);
+}
+
+.dt-link-btn {
+  background: none;
+  border: 1px solid var(--app-border-default);
+  border-radius: 4px;
+  padding: 2px 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--app-text-muted);
+  display: flex;
+  align-items: center;
+}
+.dt-link-btn.linked {
+  color: var(--da-secondary);
+  border-color: var(--da-secondary);
+}
+.dt-link-btn svg { width: 12px; height: 12px; }
+.dt-link-btn .dt-btn-label { margin-left: 3px; }
+
+/* ---- Box model diagram ---- */
+.dt-box-model {
+  width: 100%;
+  max-width: 260px;
+  margin: 4px auto;
+  font-size: 10px;
+}
+.dt-box-margin {
+  position: relative;
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px dashed rgba(255, 165, 0, 0.3);
+  padding: 18px 24px;
+}
+.dt-box-padding {
+  position: relative;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px dashed rgba(76, 175, 80, 0.3);
+  padding: 18px 24px;
+}
+.dt-box-content {
+  background: rgba(91, 143, 204, 0.15);
+  border: 1px solid rgba(91, 143, 204, 0.3);
+  padding: 6px;
+  text-align: center;
+  color: var(--app-text-muted);
+  font-size: 10px;
+}
+.dt-box-label {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: 9px;
+  color: var(--app-text-muted);
+  opacity: 0.7;
+}
+.dt-box-input {
+  position: absolute;
+  width: 32px;
+  text-align: center;
+  border: 1px solid var(--app-border-default);
+  border-radius: 3px;
+  font-size: 10px;
+  padding: 1px;
+  background: var(--app-editor-bg);
+  color: var(--app-text-primary);
+  font-family: inherit;
+}
+.dt-box-input:focus {
+  outline: 1px solid var(--da-secondary);
+  border-color: var(--da-secondary);
+}
+.dt-box-top { top: 1px; left: 50%; transform: translateX(-50%); }
+.dt-box-right { right: 2px; top: 50%; transform: translateY(-50%); }
+.dt-box-bottom { bottom: 1px; left: 50%; transform: translateX(-50%); }
+.dt-box-left { left: 2px; top: 50%; transform: translateY(-50%); }
+
+/* ---- Add child dropdown ---- */
+.dt-add-wrap { position: relative; }
+.dt-add-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--app-bg-primary);
+  border: 1px solid var(--app-border-default);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  min-width: 120px;
+  padding: 4px 0;
+}
+.dt-add-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-family: "Noto Sans Mono", Consolas, monospace;
+  color: var(--app-text-primary);
+  cursor: pointer;
+}
+.dt-add-dropdown button:hover { background: var(--da-accent-muted); }
+.dt-dropdown-category {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--app-text-muted);
+  padding: 6px 12px 2px;
+  border-top: 1px solid var(--app-border-default);
+}
+.dt-dropdown-category:first-child { border-top: none; }
+
+/* ---- Breadcrumb ---- */
+.dt-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px 12px;
+  font-size: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--app-border-default);
+  background: var(--app-panel-header-bg);
+  min-height: 0;
+}
+.dt-breadcrumb:empty { display: none; }
+.dt-breadcrumb-item {
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--da-stone);
+  font-family: "Noto Sans Mono", Consolas, monospace;
+}
+.dt-breadcrumb-item:hover {
+  background: var(--da-accent-muted);
+  color: var(--da-snow);
+}
+.dt-breadcrumb-item.active { color: var(--da-secondary); }
+.dt-breadcrumb-sep {
+  color: var(--da-ash);
+  font-size: 9px;
+}
+
+/* ---- Outline panel ---- */
+.outline-item {
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  border-left: 2px solid transparent;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.outline-item:hover {
+  background: var(--da-accent-glow);
+  color: var(--app-text-primary);
+  border-left-color: var(--da-secondary);
+}
+.outline-item[data-level="1"] { padding-left: 12px; font-weight: 600; font-size: 13px; }
+.outline-item[data-level="2"] { padding-left: 24px; font-weight: 500; }
+.outline-item[data-level="3"] { padding-left: 36px; }
+.outline-item[data-level="4"] { padding-left: 48px; font-size: 11px; }
+.outline-item[data-level="5"] { padding-left: 60px; font-size: 11px; }
+.outline-item[data-level="6"] { padding-left: 72px; font-size: 11px; }
+
+/* ---- Design Mode選択要素のソース行ハイライト ---- */
+/* rgba は tokens.css の --da-secondary (#5b8fcc) と同色 */
+.cm-design-highlight { background: rgba(91, 143, 204, 0.12) !important; }
