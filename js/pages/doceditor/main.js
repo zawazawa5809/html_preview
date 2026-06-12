@@ -186,7 +186,10 @@
   /* ---- プレビュー / 保存 ---- */
   function updatePreview() {
     App.renderPreview(iframe, editor.getValue());
-    if (state.designMode) design.injectInto(iframe.contentDocument, state.designToken);
+    if (state.designMode) {
+      design.injectInto(iframe.contentDocument, state.designToken);
+      panel.clearSelection(); // ソース起点の再描画で選択は失われるためパネルも追従
+    }
     scheduleOutline();
   }
 
@@ -211,6 +214,7 @@
     if (!iframeDoc || !iframeDoc.documentElement) return;
 
     var html = beautifyHtml(design.serializeCleanHtml(iframeDoc));
+    if (html === editor.getValue()) return; // 実質変更なし（エディタ履歴を汚さない）
 
     state.syncingFromDesign = true;
     // changeイベントが発火しなかった場合でもフラグが残らないようにする
@@ -314,16 +318,34 @@
     else enableDesignMode();
   }
 
+  /**
+   * Design Mode中の多段Undo/Redo。DOM→ソース同期が1操作=1履歴entryとして
+   * エディタ履歴に積まれるため、エディタのundo/redoへ集約する。
+   * 戻した内容はchangeイベント経由でプレビューに再描画される。
+   */
+  function designHistoryStep(dir) {
+    scheduleSync.flush(); // 未確定のDesign変更を履歴に確定させてから操作する
+    panel.clearSelection();
+    if (dir === 'undo') editor.undo();
+    else editor.redo();
+  }
+
   /* ---- iframe からのメッセージ ---- */
   function handleDesignMessage(e) {
     if (!e.data || e.data.token !== state.designToken) return;
     switch (e.data.type) {
       case '__design_click__':
         panel.showSelection(e.data.tag, e.data.styles, e.data.ancestors);
-        highlightSourceLine(e.data.tag);
+        highlightSourceLine(e.data.tag, e.data.occurrence);
         break;
       case '__design_change__':
         scheduleSync();
+        break;
+      case '__design_undo__':
+        designHistoryStep('undo');
+        break;
+      case '__design_redo__':
+        designHistoryStep('redo');
         break;
       case '__design_deselect__':
         panel.clearSelection();
@@ -344,15 +366,30 @@
   }
 
   /* ---- ソース行ハイライト ---- */
-  function highlightSourceLine(tag) {
+  /**
+   * 選択要素の開始タグ行を強調する。occurrence（同名タグの出現順、iframe側で
+   * 算出）でN番目の開始タグを特定するため、同名タグが複数あっても正しい行を指す。
+   */
+  function highlightSourceLine(tag, occurrence) {
     state.highlightedLines.forEach(function (line) {
       editor.removeLineClass(line, 'background', 'cm-design-highlight');
     });
     state.highlightedLines = [];
 
     var tagName = tag.split(/[#.]/)[0];
-    var cursor = editor.getSearchCursor('<' + tagName, null, { caseFold: true });
-    if (cursor.findNext()) {
+    // 前方一致の誤検出を防ぐ（例: <p が <pre に一致しない）
+    var query = new RegExp('<' + tagName + '(?=[\\s>/])', 'i');
+    var cursor = editor.getSearchCursor(query, null, { caseFold: true });
+    var remaining = typeof occurrence === 'number' && occurrence >= 0 ? occurrence : 0;
+    var found = false;
+    while (cursor.findNext()) {
+      if (remaining === 0) {
+        found = true;
+        break;
+      }
+      remaining--;
+    }
+    if (found) {
       var line = cursor.from().line;
       editor.addLineClass(line, 'background', 'cm-design-highlight');
       state.highlightedLines.push(line);

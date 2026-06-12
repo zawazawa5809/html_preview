@@ -148,3 +148,55 @@ describe('App.design.STYLE_PROPS', () => {
     props.forEach((p) => expect(src).toContain(p));
   });
 });
+
+function bootRuntime(token) {
+  const messages = [];
+  window.parent.postMessage = (data) => messages.push(data);
+  new Function(design().buildInjectionScript(token))();
+  return messages;
+}
+
+describe('注入ランタイム: Undo/Redoキーの親への中継', () => {
+  it('Ctrl+Z で __design_undo__ が送られる', () => {
+    const messages = bootRuntime('tok-undo');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+    expect(messages.some((m) => m.type === '__design_undo__' && m.token === 'tok-undo')).toBe(true);
+  });
+
+  it('Ctrl+Shift+Z / Ctrl+Y で __design_redo__ が送られる', () => {
+    const messages = bootRuntime('tok-redo');
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Z', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    );
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'y', ctrlKey: true, bubbles: true, cancelable: true }));
+    expect(messages.filter((m) => m.type === '__design_redo__' && m.token === 'tok-redo').length).toBe(2);
+  });
+
+  it('contenteditable 編集中はネイティブのundoに任せる（中継しない）', () => {
+    document.body.innerHTML = '<p id="edit" contenteditable="true">text</p>';
+    const messages = bootRuntime('tok-ce');
+    document
+      .getElementById('edit')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+    expect(messages.some((m) => m.type === '__design_undo__')).toBe(false);
+  });
+});
+
+describe('注入ランタイム: クリック選択の出現順 (occurrence)', () => {
+  it('同名タグの何番目かが __design_click__ に含まれる', () => {
+    document.body.innerHTML = '<p id="p1">a</p><p id="p2">b</p>';
+    const messages = bootRuntime('tok-occ');
+    document.getElementById('p2').click();
+    const click = messages.find((m) => m.type === '__design_click__' && m.token === 'tok-occ');
+    expect(click.occurrence).toBe(1);
+  });
+
+  it('designer注入要素は出現順カウントから除外される', () => {
+    document.body.innerHTML = '<div id="d1">a</div><div id="d2">b</div>';
+    const messages = bootRuntime('tok-occ2');
+    // 注入ランタイム自身が複数の<div>（オーバーレイ等）をbodyに追加している状況で
+    document.getElementById('d2').click();
+    const click = messages.find((m) => m.type === '__design_click__' && m.token === 'tok-occ2');
+    expect(click.occurrence).toBe(1);
+  });
+});

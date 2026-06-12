@@ -55,6 +55,44 @@ test('アウトラインタブに見出しツリーが表示される', async ({
   expect(await items.count()).toBeGreaterThan(0);
 });
 
+test('多段Undo: 2回の削除をCtrl+Z 2回で順に戻せる', async ({ page }) => {
+  const preview = page.frameLocator('#preview-container');
+
+  await preview.locator('h1').first().click();
+  await page.locator('#dt-delete').click();
+  await expect(preview.locator('h1')).toHaveCount(0);
+
+  const h2Count = await preview.locator('h2').count();
+  await preview.locator('h2').first().click();
+  await page.locator('#dt-delete').click();
+  await expect(preview.locator('h2')).toHaveCount(h2Count - 1);
+
+  // iframe内（要素以外の余白）にフォーカスしてCtrl+Z → 親エディタ履歴のundoに中継される
+  await preview.locator('body').click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(preview.locator('h2')).toHaveCount(h2Count);
+
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(preview.locator('h1')).toHaveCount(1);
+});
+
+test('要素クリックでソースの正しい行がハイライトされる（同名タグの出現順）', async ({ page }) => {
+  const preview = page.frameLocator('#preview-container');
+  // サンプル中の2番目のh2（「進捗状況」）を選択
+  await preview.locator('h2').nth(1).click();
+  await page.locator('#tab-code').click();
+
+  const highlighted = await page.evaluate(() => {
+    const cm = document.querySelector('.CodeMirror').CodeMirror;
+    for (let i = 0; i < cm.lineCount(); i++) {
+      const info = cm.lineInfo(i);
+      if (info && info.bgClass && info.bgClass.indexOf('cm-design-highlight') !== -1) return cm.getLine(i);
+    }
+    return null;
+  });
+  expect(highlighted).toContain('進捗状況');
+});
+
 test('Design Mode OFFで注入物が除去され、ONで復帰する', async ({ page }) => {
   const btn = page.locator('#design-mode-btn');
   const preview = page.frameLocator('#preview-container');

@@ -324,6 +324,17 @@
       return styles;
     }
 
+    /** 同名タグの中で何番目の要素か（designer注入物は除外）。ソース行特定用 */
+    function occurrenceIndex(el) {
+      var all = document.getElementsByTagName(el.tagName);
+      var idx = 0;
+      for (var i = 0; i < all.length; i++) {
+        if (all[i] === el) return idx;
+        if (!isInjected(all[i])) idx++;
+      }
+      return idx;
+    }
+
     /** 選択状態を親に通知し、選択UI（アクションバー/リサイズハンドル）を更新 */
     function notifySelect(el) {
       var ancestors = [];
@@ -332,7 +343,13 @@
         ancestors.unshift(tagInfo(p));
         p = p.parentElement;
       }
-      post({ type: '__design_click__', tag: tagInfo(el), styles: snapshot(el), ancestors: ancestors });
+      post({
+        type: '__design_click__',
+        tag: tagInfo(el),
+        styles: snapshot(el),
+        ancestors: ancestors,
+        occurrence: occurrenceIndex(el),
+      });
       showActionBar(el);
       updateResizeHandles(el);
     }
@@ -418,6 +435,16 @@
       });
     });
 
+    /** contenteditable="true" の編集コンテキスト内か（ネイティブ編集を妨げない判定用） */
+    function inEditableContext(node) {
+      var el = node && node.nodeType === 1 ? node : null;
+      while (el) {
+        if (el.getAttribute && el.getAttribute('contenteditable') === 'true') return true;
+        el = el.parentElement;
+      }
+      return false;
+    }
+
     /* ---- keyboard ---- */
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && selected) {
@@ -431,6 +458,17 @@
         e.preventDefault();
         // 削除は親側に集約（「元に戻す」トーストを出すため）
         post({ type: '__design_action__', action: 'delete' });
+      }
+      // Undo/Redoは親のエディタ履歴に集約する（テキスト編集中はネイティブ動作を優先）
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !inEditableContext(e.target)) {
+        var k = e.key.toLowerCase();
+        if (k === 'z') {
+          e.preventDefault();
+          post({ type: e.shiftKey ? '__design_redo__' : '__design_undo__' });
+        } else if (k === 'y' && !e.shiftKey) {
+          e.preventDefault();
+          post({ type: '__design_redo__' });
+        }
       }
     });
 

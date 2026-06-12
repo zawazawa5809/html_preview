@@ -72,4 +72,22 @@ describe('doceditor.html 起動', () => {
   it('ヘルプ表にデザインモード行が含まれる', () => {
     expect(document.getElementById('help-table').textContent).toContain('デザインモード切替');
   });
+
+  it('__design_undo__ メッセージで選択パネルがクリアされる（多段Undo経路）', () => {
+    // 注入スクリプトからtokenを取得してiframe→親メッセージを再現する
+    const iframeDoc = document.getElementById('preview-container').contentDocument;
+    const script = iframeDoc.querySelector('script[data-designer-injected]').textContent;
+    const token = script.match(/"token":\s*"([^"]+)"/)[1];
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { token, type: '__design_click__', tag: 'p', styles: {}, ancestors: [], occurrence: 0 },
+      })
+    );
+    expect(document.getElementById('dt-controls').style.display).toBe('');
+
+    window.dispatchEvent(new MessageEvent('message', { data: { token, type: '__design_undo__' } }));
+    expect(document.getElementById('dt-controls').style.display).toBe('none');
+    expect(document.getElementById('dt-hint').style.display).toBe('');
+  });
 });
